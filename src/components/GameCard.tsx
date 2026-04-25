@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { Game } from '../types'
 
-const coverColors: Record<string, string> = {
+export const coverColors: Record<string, string> = {
   minesweeper:   'from-sky-400 to-blue-500',
   snake:         'from-green-400 to-emerald-500',
   '24points':    'from-orange-400 to-pink-500',
@@ -17,7 +17,7 @@ const coverColors: Record<string, string> = {
   gomoku:         'from-stone-400 to-gray-600',
 }
 
-const coverIcons: Record<string, string> = {
+export const coverIcons: Record<string, string> = {
   minesweeper:   '💣',
   snake:         '🐍',
   '24points':    '🃏',
@@ -51,23 +51,18 @@ export default function GameCard({ game }: Props) {
   return (
     <Link
       to={`/game/${game.id}`}
-      className="group block bg-fun-card border-2 border-fun-border rounded-3xl overflow-hidden shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200"
+      className="group block bg-fun-card border-2 border-fun-border rounded-3xl overflow-hidden shadow-card hover:shadow-card-hover hover:shadow-2xl hover:-translate-y-1 transition-all transition-shadow duration-200"
     >
       {/* Cover */}
       <div className={`bg-gradient-to-br ${gradient} h-44 flex items-center justify-center relative overflow-hidden`}>
-        <span className="text-7xl group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 select-none drop-shadow-lg">
+        <span className="text-7xl group-hover:scale-105 transition-transform duration-300 select-none drop-shadow-lg">
           {icon}
         </span>
         {/* Difficulty badge */}
         <div className="absolute top-3 right-3 flex flex-wrap gap-1 justify-end max-w-[140px]">
-          {levels.map(lv => (
-            <span
-              key={lv}
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border-2 bg-white/90 ${difficultyChip[lv] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}
-            >
-              {lv}
-            </span>
-          ))}
+          <span className="bg-white/80 text-fun-text text-xs font-bold px-2 py-1 rounded-full">
+            3 档可选
+          </span>
         </div>
       </div>
 
@@ -83,7 +78,7 @@ export default function GameCard({ game }: Props) {
           {game.tags.map(tag => (
             <span
               key={tag}
-              className="text-xs font-bold px-3 py-1 rounded-full bg-fun-accent/10 text-fun-accent border-2 border-fun-accent/20"
+              className="text-xs font-bold px-3 py-1 rounded-full bg-fun-border text-fun-muted border-2 border-fun-accent/20"
             >
               {tag}
             </span>
