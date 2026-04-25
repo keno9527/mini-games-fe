@@ -41,3 +41,9 @@ export interface UserStats {
   totalScore: number
   gameStats: GameStat[]
 }
+
+export interface PlayRankItem {
+  gameId: string
+  gameName: string
+  playCount: number
+}

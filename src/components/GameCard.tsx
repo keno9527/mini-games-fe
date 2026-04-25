@@ -8,6 +8,13 @@ const coverColors: Record<string, string> = {
   '2048':        'from-yellow-400 to-orange-400',
   memory:        'from-pink-400 to-rose-500',
   'whack-a-mole':'from-lime-400 to-green-500',
+  'slide-puzzle': 'from-cyan-400 to-blue-500',
+  'reaction-test':'from-lime-400 to-yellow-500',
+  'tic-tac-toe':  'from-violet-400 to-indigo-500',
+  tetris:         'from-indigo-400 to-blue-600',
+  breakout:       'from-red-400 to-orange-500',
+  wordle:         'from-emerald-400 to-teal-500',
+  gomoku:         'from-stone-400 to-gray-600',
 }
 
 const coverIcons: Record<string, string> = {
@@ -17,6 +24,13 @@ const coverIcons: Record<string, string> = {
   '2048':        '🔢',
   memory:        '🎴',
   'whack-a-mole':'🐹',
+  'slide-puzzle': '🧩',
+  'reaction-test':'⚡',
+  'tic-tac-toe':  '❌',
+  tetris:         '🧱',
+  breakout:       '🏓',
+  wordle:         '📝',
+  gomoku:         '⚫',
 }
 
 const difficultyChip: Record<string, string> = {

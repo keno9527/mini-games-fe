@@ -1,73 +1,80 @@
-# React + TypeScript + Vite
+# Mini Games FE
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+一个基于 React + TypeScript + Vite 构建的小游戏合集前端项目，内置多款经典休闲小游戏，开箱即玩。
 
-Currently, two official plugins are available:
+## 技术栈
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **框架**：React 19 + TypeScript
+- **构建工具**：Vite 8
+- **路由**：React Router 7
+- **状态管理**：Zustand
+- **样式**：Tailwind CSS 3
+- **HTTP 请求**：Axios
 
-## React Compiler
+## 游戏列表
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+项目内置以下小游戏（位于 `src/games/`）：
 
-## Expanding the ESLint configuration
+- 打砖块 Breakout
+- 2048
+- 五子棋 Gomoku
+- 记忆翻牌 Memory Card
+- 扫雷 Minesweeper
+- 反应力测试 Reaction Test
+- 华容道 Slide Puzzle
+- 贪吃蛇 Snake
+- 俄罗斯方块 Tetris
+- 井字棋 Tic-Tac-Toe
+- 24 点 Twenty-Four Points
+- 打地鼠 Whack-A-Mole
+- 猜单词 Wordle
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 目录结构
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── api/          # 接口请求
+├── assets/       # 静态资源
+├── components/   # 通用组件（GameCard / Header / UserSelector）
+├── games/        # 各个小游戏组件
+├── pages/        # 页面（Home / GameDetail / Profile）
+├── store/        # Zustand 状态管理
+├── types/        # TypeScript 类型定义
+├── App.tsx
+└── main.tsx
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 快速开始
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 环境要求
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Node.js 18+
+- npm / pnpm / yarn
+
+### 安装依赖
+
+```bash
+npm install
 ```
+
+### 启动开发服务器
+
+```bash
+npm run dev
+```
+
+### 构建生产包
+
+```bash
+npm run build
+```
+
+### 预览构建产物
+
+```bash
+npm run preview
+```
+
+## 许可证
+
+仅用于学习与交流。

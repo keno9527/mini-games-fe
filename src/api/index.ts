@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Game, User, GameRecord, UserStats } from '../types'
+import type { Game, User, GameRecord, UserStats, PlayRankItem } from '../types'
 
 const api = axios.create({
   baseURL: '/api',
@@ -73,3 +73,7 @@ export const createRecord = (
   data: { gameId: string; score: number; duration: number; result: string }
 ): Promise<GameRecord> =>
   api.post(`/users/${userId}/records`, data).then(r => r.data)
+
+// Ranking
+export const getPlayRanking = (): Promise<PlayRankItem[]> =>
+  api.get('/records/ranking').then(r => r.data)
