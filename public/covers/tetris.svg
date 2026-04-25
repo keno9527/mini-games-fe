@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200">
+  <rect width="320" height="200" rx="24" fill="#1f1333"/>
+  <g>
+    <rect x="96"  y="40"  width="24" height="24" fill="#a855f7" stroke="rgba(255,255,255,0.25)"/>
+    <rect x="120" y="40"  width="24" height="24" fill="#a855f7" stroke="rgba(255,255,255,0.25)"/>
+    <rect x="144" y="40"  width="24" height="24" fill="#a855f7" stroke="rgba(255,255,255,0.25)"/>
+    <rect x="120" y="64"  width="24" height="24" fill="#a855f7" stroke="rgba(255,255,255,0.25)"/>
+
+    <rect x="176" y="88"  width="24" height="24" fill="#fbbf24" stroke="rgba(255,255,255,0.25)"/>
+    <rect x="200" y="88"  width="24" height="24" fill="#fbbf24" stroke="rgba(255,255,255,0.25)"/>
+    <rect x="176" y="112" width="24" height="24" fill="#fbbf24" stroke="rgba(255,255,255,0.25)"/>
+    <rect x="200" y="112" width="24" height="24" fill="#fbbf24" stroke="rgba(255,255,255,0.25)"/>
+
+    <rect x="72"  y="136" width="24" height="24" fill="#38bdf8" stroke="rgba(255,255,255,0.25)"/>
+    <rect x="96"  y="136" width="24" height="24" fill="#38bdf8" stroke="rgba(255,255,255,0.25)"/>
+    <rect x="120" y="136" width="24" height="24" fill="#38bdf8" stroke="rgba(255,255,255,0.25)"/>
+    <rect x="144" y="136" width="24" height="24" fill="#38bdf8" stroke="rgba(255,255,255,0.25)"/>
+
+    <rect x="224" y="152" width="24" height="24" fill="#f87171" stroke="rgba(255,255,255,0.25)"/>
+    <rect x="200" y="152" width="24" height="24" fill="#f87171" stroke="rgba(255,255,255,0.25)"/>
+    <rect x="200" y="128" width="24" height="24" fill="#f87171" stroke="rgba(255,255,255,0.25)"/>
+  </g>
+</svg>

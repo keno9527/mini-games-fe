@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200">
+  <rect width="320" height="200" rx="24" fill="#e0f2fe"/>
+  <rect x="40" y="36" width="120" height="120" rx="12" fill="#38bdf8" opacity="0.35"/>
+  <rect x="52" y="48" width="48" height="48" rx="8" fill="#fff" stroke="#0ea5e9" stroke-width="3"/>
+  <rect x="108" y="48" width="48" height="48" rx="8" fill="#fff" stroke="#0ea5e9" stroke-width="3"/>
+  <rect x="52" y="104" width="48" height="48" rx="8" fill="#fff" stroke="#0ea5e9" stroke-width="3"/>
+  <text x="64" y="82" font-family="system-ui,sans-serif" font-size="28" font-weight="800" fill="#0369a1">1</text>
+  <text x="120" y="82" font-family="system-ui,sans-serif" font-size="28" font-weight="800" fill="#0369a1">2</text>
+  <text x="64" y="138" font-family="system-ui,sans-serif" font-size="28" font-weight="800" fill="#0369a1">3</text>
+  <text x="200" y="110" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="#64748b">ÑW</text>
+</svg>
