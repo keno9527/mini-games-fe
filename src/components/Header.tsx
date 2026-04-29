@@ -6,22 +6,27 @@ export default function Header() {
   const { currentUser } = useUserStore()
 
   const nav = [
-    { to: '/', label: '🎮 游戏大厅' },
-    { to: '/profile', label: '👤 个人中心' },
+    { to: '/', label: 'HOME' },
+    { to: '/profile', label: 'ME' },
   ]
 
   return (
-    <header className="sticky top-0 z-50 border-b-2 border-fun-border bg-fun-card/95 backdrop-blur">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 border-b-2 border-crt-cyan bg-[#070a1e]/95 backdrop-blur">
+      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-fun-accent to-fun-pink flex items-center justify-center text-white font-black text-lg shadow-btn">
-            G
-          </div>
-          <span className="text-xl font-black text-fun-text group-hover:text-fun-accent transition-colors">
-            Mini Game Hub
+        <Link to="/" className="flex items-center gap-1">
+          <span
+            className="font-pixel text-sm text-crt-cyan tracking-[2px]"
+            style={{ textShadow: '0 0 8px #00f0ff' }}
+          >
+            GAME
           </span>
-          <span className="text-lg">🌟</span>
+          <span
+            className="font-pixel text-sm text-crt-pink tracking-[2px]"
+            style={{ textShadow: '0 0 8px #ff2e88' }}
+          >
+            HALL
+          </span>
         </Link>
 
         {/* Nav */}
@@ -30,10 +35,10 @@ export default function Header() {
             <Link
               key={to}
               to={to}
-              className={`px-5 py-2 rounded-full text-sm font-bold transition-all shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 ${
+              className={`font-pixel text-[9px] px-2.5 py-1.5 border-2 transition-colors tracking-wider ${
                 location.pathname === to
-                  ? 'bg-fun-accent text-white'
-                  : 'bg-fun-border text-fun-text hover:bg-fun-accent/20'
+                  ? 'border-crt-cyan text-crt-cyan shadow-neon-c'
+                  : 'border-transparent text-crt-muted hover:border-crt-cyan hover:text-crt-cyan'
               }`}
             >
               {label}
@@ -46,19 +51,24 @@ export default function Header() {
           {currentUser ? (
             <Link
               to="/profile"
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-fun-border hover:bg-fun-accent/15 transition-all shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5"
+              className="flex items-center gap-2 px-3 py-1.5 border-2 border-crt-yellow hover:shadow-neon-y transition-shadow"
             >
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-fun-purple to-fun-pink flex items-center justify-center text-xs font-black text-white">
+              <div
+                className="w-6 h-6 bg-gradient-to-br from-crt-pink to-crt-purple flex items-center justify-center text-[10px] font-pixel text-white shadow-neon-p"
+                style={{ imageRendering: 'pixelated' }}
+              >
                 {currentUser.name[0]?.toUpperCase()}
               </div>
-              <span className="text-sm font-bold text-fun-text">{currentUser.name}</span>
+              <span className="font-mono-crt text-[15px] text-crt-yellow tracking-wider">
+                {currentUser.name}
+              </span>
             </Link>
           ) : (
             <Link
               to="/profile"
-              className="text-sm font-bold text-fun-muted hover:text-fun-accent transition-colors px-3 py-1.5"
+              className="font-mono-crt text-[15px] text-crt-muted hover:text-crt-pink transition-colors px-2 py-1 tracking-wider"
             >
-              未登录
+              &gt; LOG IN
             </Link>
           )}
         </div>

@@ -1,15 +1,14 @@
 export function GameCardSkeleton() {
   return (
-    <div className="bg-fun-card border-2 border-fun-border rounded-3xl overflow-hidden">
-      <div className="relative h-44 bg-fun-border animate-pulse" />
-      <div className="p-5 space-y-3">
-        <div className="h-5 w-2/3 bg-fun-border rounded animate-pulse" />
-        <div className="h-4 w-full bg-fun-border rounded animate-pulse" />
-        <div className="h-4 w-4/5 bg-fun-border rounded animate-pulse" />
-        <div className="flex gap-2 pt-2">
-          <div className="h-5 w-12 bg-fun-border rounded-full animate-pulse" />
-          <div className="h-5 w-12 bg-fun-border rounded-full animate-pulse" />
-        </div>
+    <div className="bg-crt-bg-card border-2 border-dashed border-crt-yellow/50 shadow-crt-card p-6 min-h-[260px] flex flex-col items-center justify-center gap-3">
+      <div className="font-pixel text-[10px] text-crt-yellow animate-blink tracking-widest">
+        NOW LOADING
+      </div>
+      <div className="font-mono-crt text-[18px] text-crt-cyan tracking-[0.3em]">
+        ▓▓▓▓▓▒▒▒▒▒
+      </div>
+      <div className="font-mono-crt text-[12px] text-crt-text-dim tracking-widest">
+        PLEASE WAIT...
       </div>
     </div>
   )

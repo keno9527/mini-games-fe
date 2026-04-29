@@ -2,19 +2,19 @@ import { Link } from 'react-router-dom'
 import type { Game } from '../types'
 
 export const coverColors: Record<string, string> = {
-  minesweeper:   'from-sky-400 to-blue-500',
-  snake:         'from-green-400 to-emerald-500',
-  '24points':    'from-orange-400 to-pink-500',
-  '2048':        'from-yellow-400 to-orange-400',
-  memory:        'from-pink-400 to-rose-500',
-  'whack-a-mole':'from-lime-400 to-green-500',
-  'slide-puzzle': 'from-cyan-400 to-blue-500',
-  'reaction-test':'from-lime-400 to-yellow-500',
-  'tic-tac-toe':  'from-violet-400 to-indigo-500',
-  tetris:         'from-indigo-400 to-blue-600',
-  breakout:       'from-red-400 to-orange-500',
-  wordle:         'from-emerald-400 to-teal-500',
-  gomoku:         'from-stone-400 to-gray-600',
+  minesweeper:    'from-crt-cyan to-crt-purple',
+  snake:          'from-crt-green to-crt-cyan',
+  '24points':     'from-crt-yellow to-crt-pink',
+  '2048':         'from-crt-yellow to-crt-pink',
+  memory:         'from-crt-pink to-crt-purple',
+  'whack-a-mole': 'from-crt-green to-crt-yellow',
+  'slide-puzzle': 'from-crt-cyan to-crt-purple',
+  'reaction-test':'from-crt-green to-crt-yellow',
+  'tic-tac-toe':  'from-crt-purple to-crt-pink',
+  tetris:         'from-crt-purple to-crt-pink',
+  breakout:       'from-crt-pink to-crt-yellow',
+  wordle:         'from-crt-green to-crt-cyan',
+  gomoku:         'from-crt-cyan to-crt-purple',
 }
 
 export const coverIcons: Record<string, string> = {
@@ -33,56 +33,48 @@ export const coverIcons: Record<string, string> = {
   gomoku:         '⚫',
 }
 
-const difficultyChip: Record<string, string> = {
-  简单: 'bg-green-100 text-green-700 border-green-200',
-  中等: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  复杂: 'bg-red-100 text-red-600 border-red-200',
-}
-
 interface Props {
   game: Game
 }
 
 export default function GameCard({ game }: Props) {
-  const gradient = coverColors[game.id] ?? 'from-fun-purple to-fun-pink'
+  const gradient = coverColors[game.id] ?? 'from-crt-purple to-crt-pink'
   const icon = coverIcons[game.id] ?? '🎮'
-  const levels = game.difficulties?.length ? game.difficulties : ['简单', '中等', '复杂']
 
   return (
     <Link
       to={`/game/${game.id}`}
-      className="group block bg-fun-card border-2 border-fun-border rounded-3xl overflow-hidden shadow-card hover:shadow-card-hover hover:shadow-2xl hover:-translate-y-1 transition-all transition-shadow duration-200"
+      className="group block bg-crt-bg-card border-2 border-crt-cyan shadow-crt-card hover:shadow-crt-lift hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-150"
     >
       {/* Cover */}
-      <div className={`bg-gradient-to-br ${gradient} h-44 flex items-center justify-center relative overflow-hidden`}>
-        <span className="text-7xl group-hover:scale-105 transition-transform duration-300 select-none drop-shadow-lg">
+      <div
+        className={`bg-gradient-to-br ${gradient} h-32 flex items-center justify-center relative overflow-hidden crt-scanlines`}
+      >
+        <span className="text-6xl select-none drop-shadow-[0_0_8px_rgba(0,0,0,0.4)]">
           {icon}
         </span>
-        {/* Difficulty badge */}
-        <div className="absolute top-3 right-3 flex flex-wrap gap-1 justify-end max-w-[140px]">
-          <span className="bg-white/80 text-fun-text text-xs font-bold px-2 py-1 rounded-full">
-            3 档可选
-          </span>
-        </div>
       </div>
 
       {/* Info */}
-      <div className="p-5">
-        <h3 className="text-xl font-black text-fun-text mb-1.5 group-hover:text-fun-accent transition-colors">
+      <div className="p-4">
+        <h3 className="font-pixel text-[10px] text-crt-cyan mb-2 tracking-wider uppercase truncate">
           {game.name}
         </h3>
-        <p className="text-sm text-fun-muted leading-relaxed line-clamp-2 mb-3 font-medium">
+        <p className="font-mono-crt text-[14px] text-crt-muted leading-tight line-clamp-2 mb-3 min-h-[36px]">
           {game.description}
         </p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1 mb-3 min-h-[20px]">
           {game.tags.map(tag => (
             <span
               key={tag}
-              className="text-xs font-bold px-3 py-1 rounded-full bg-fun-border text-fun-muted border-2 border-fun-accent/20"
+              className="font-mono-crt text-[12px] px-1.5 py-0.5 bg-crt-yellow/10 text-crt-yellow border border-crt-yellow leading-none"
             >
               {tag}
             </span>
           ))}
+        </div>
+        <div className="block w-full font-pixel text-[8px] py-2 text-center bg-crt-yellow text-crt-bg-deep shadow-neon-y tracking-[2px]">
+          ▶ PLAY NOW
         </div>
       </div>
     </Link>

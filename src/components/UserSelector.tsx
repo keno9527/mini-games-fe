@@ -4,12 +4,12 @@ import { useUserStore } from '../store/userStore'
 import type { User } from '../types'
 
 const avatarGradients = [
-  'from-fun-accent to-fun-yellow',
-  'from-fun-purple to-fun-pink',
-  'from-fun-sky to-fun-purple',
-  'from-fun-green to-fun-sky',
-  'from-fun-pink to-fun-accent',
-  'from-fun-yellow to-fun-green',
+  'from-crt-pink to-crt-yellow',
+  'from-crt-pink to-crt-purple',
+  'from-crt-cyan to-crt-purple',
+  'from-crt-green to-crt-cyan',
+  'from-crt-pink to-crt-cyan',
+  'from-crt-yellow to-crt-green',
 ]
 
 export default function UserSelector() {
@@ -50,46 +50,51 @@ export default function UserSelector() {
   }
 
   return (
-    <div className="bg-fun-card border-2 border-fun-border rounded-3xl p-6 shadow-card">
-      <h2 className="text-xl font-black text-fun-text mb-4 flex items-center gap-2">
-        👥 用户管理
+    <div className="bg-crt-bg-card border-2 border-crt-cyan shadow-crt-card p-5">
+      <h2 className="font-pixel text-[11px] text-crt-cyan mb-4 tracking-wider" style={{ textShadow: '0 0 6px #00f0ff' }}>
+        &gt;&gt; PLAYER SELECT
       </h2>
 
       {loading ? (
-        <p className="text-fun-muted text-sm font-semibold">加载中...</p>
+        <p className="font-mono-crt text-[15px] text-crt-muted">&gt; LOADING...</p>
       ) : (
         <div className="space-y-2 mb-5">
           {users.length === 0 && (
-            <p className="text-fun-muted text-sm font-semibold text-center py-4">暂无用户，请先创建 🎈</p>
+            <p className="font-mono-crt text-[15px] text-crt-muted text-center py-4">
+              &gt; NO PLAYER FOUND, CREATE ONE
+            </p>
           )}
           {users.map((u, idx) => (
             <div
               key={u.id}
               onClick={() => setCurrentUser(u)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer transition-all border-2 ${
+              className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all border-2 ${
                 currentUser?.id === u.id
-                  ? 'bg-fun-accent/10 border-fun-accent text-fun-text'
-                  : 'border-fun-border hover:border-fun-accent/40 hover:bg-fun-accent/5 text-fun-text'
+                  ? 'bg-crt-pink/10 border-crt-pink shadow-neon-p'
+                  : 'border-crt-border hover:border-crt-cyan'
               }`}
             >
-              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarGradients[idx % avatarGradients.length]} flex items-center justify-center text-sm font-black text-white flex-shrink-0 shadow-btn`}>
+              <div
+                className={`w-10 h-10 bg-gradient-to-br ${avatarGradients[idx % avatarGradients.length]} flex items-center justify-center font-pixel text-[11px] text-white flex-shrink-0 border-2 border-crt-yellow`}
+                style={{ imageRendering: 'pixelated' }}
+              >
                 {u.name[0]?.toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold truncate">{u.name}</p>
-                <p className="text-xs text-fun-muted font-medium">
-                  {new Date(u.createdAt).toLocaleDateString('zh-CN')}
+                <p className="font-mono-crt text-[15px] text-crt-text tracking-wider truncate">{u.name}</p>
+                <p className="font-mono-crt text-[12px] text-crt-muted">
+                  &gt; {new Date(u.createdAt).toLocaleDateString('zh-CN')}
                 </p>
               </div>
               {currentUser?.id === u.id && (
-                <span className="text-xs font-black text-fun-accent bg-fun-accent/10 px-2 py-0.5 rounded-full">当前</span>
+                <span className="font-pixel text-[7px] text-crt-bg-deep bg-crt-pink px-1.5 py-0.5 tracking-wider">ACTIVE</span>
               )}
               <button
                 onClick={(e) => handleDelete(u, e)}
-                className="text-red-400 hover:text-white hover:bg-red-400 text-xs px-2 py-1 rounded-full transition-all font-bold"
+                className="font-pixel text-[8px] text-crt-pink border border-crt-pink hover:bg-crt-pink hover:text-crt-bg-deep px-2 py-1 transition-colors"
                 title="删除用户"
               >
-                ✕
+                X
               </button>
             </div>
           ))}
@@ -103,16 +108,16 @@ export default function UserSelector() {
           value={newName}
           onChange={e => setNewName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleCreate()}
-          placeholder="新用户名称 🌟"
+          placeholder="&gt; ENTER NAME..."
           maxLength={20}
-          className="flex-1 bg-fun-bg border-2 border-fun-border rounded-2xl px-4 py-2.5 text-sm text-fun-text placeholder-fun-muted focus:outline-none focus:border-fun-accent transition-colors font-semibold"
+          className="flex-1 bg-black border-2 border-crt-cyan px-3 py-2 font-mono-crt text-[15px] text-crt-green placeholder-crt-muted focus:outline-none focus:border-crt-yellow transition-colors"
         />
         <button
           onClick={handleCreate}
           disabled={creating || !newName.trim()}
-          className="px-5 py-2.5 rounded-full bg-fun-accent text-white text-sm font-black hover:-translate-y-0.5 shadow-btn hover:shadow-btn-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none transition-all"
+          className="px-4 py-2 bg-crt-yellow text-crt-bg-deep font-pixel text-[9px] shadow-neon-y disabled:opacity-40 disabled:cursor-not-allowed transition-all tracking-wider"
         >
-          {creating ? '...' : '添加'}
+          {creating ? '...' : '+ ADD'}
         </button>
       </div>
     </div>
