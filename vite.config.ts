@@ -20,10 +20,10 @@ function appendProxyLog(line: string) {
 export default defineConfig({
   plugins: [react(), devClientLogPlugin()],
   server: {
-    port: 5173,
+    port: 5183,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8090',
         changeOrigin: true,
         configure(proxy) {
           proxy.on('proxyReq', (_proxyReq, req) => {
