@@ -8,27 +8,75 @@
 
 body {
   margin: 0;
-  background-color: #fff8f3;
-  color: #2d1b69;
-  font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  background-color: #0a0e27;
+  background-image: radial-gradient(ellipse at center, #151a3a 0%, #0a0e27 85%);
+  color: #f0f0ff;
+  font-family: 'Nunito', 'PingFang SC', 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* custom scrollbar */
+/* 扫描线 utility（叠加在元素上） */
+.crt-scanlines {
+  position: relative;
+}
+.crt-scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.03) 0,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* 游戏屏专用扫描线（更粗） */
+.crt-scanlines-heavy {
+  position: relative;
+}
+.crt-scanlines-heavy::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.4) 0,
+    rgba(0, 0, 0, 0.4) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+}
+
+/* custom scrollbar - CRT style */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #fff8f3;
+  background: #0a0e27;
 }
 ::-webkit-scrollbar-thumb {
-  background: #fde8d8;
-  border-radius: 4px;
+  background: #ff2e88;
+  border: 2px solid #0a0e27;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #fbd0bc;
+  background: #00f0ff;
+}
+
+/* 降低动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
