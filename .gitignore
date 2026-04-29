@@ -31,3 +31,6 @@ dist-ssr
 
 # AI / Tools
 .trae/
+.superpowers/
+docs/
+log/*
