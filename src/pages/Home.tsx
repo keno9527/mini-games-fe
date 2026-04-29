@@ -16,7 +16,7 @@ export default function Home() {
   useEffect(() => {
     getGames()
       .then(setGames)
-      .catch(() => setError('无法连接后端服务，请先启动 server-go'))
+      .catch(() => setError('CANNOT CONNECT TO SERVER. PLEASE START server-go'))
       .finally(() => setLoading(false))
     getPlayRanking()
       .then(setRanking)
@@ -39,16 +39,18 @@ export default function Home() {
   return (
     <main className="max-w-7xl mx-auto px-6 py-6">
       {/* Hero */}
-      <div className="text-center mb-6">
-        <h1 className="text-3xl md:text-4xl font-black text-fun-text mb-3 leading-tight">
-          欢迎来到{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-fun-accent via-fun-pink to-fun-purple">
-            游戏大厅
+      <div className="text-center mb-8 py-6">
+        <h1 className="font-pixel text-3xl md:text-5xl leading-tight tracking-widest mb-4">
+          <span className="text-crt-cyan" style={{ textShadow: '0 0 12px #00F0FF' }}>
+            GAME
+          </span>{' '}
+          <span className="text-crt-pink" style={{ textShadow: '0 0 12px #FF2EC8' }}>
+            HALL
           </span>
-          ！
         </h1>
-        <p className="text-fun-muted text-base font-semibold">
-          快来选一个游戏开始玩吧 ✨
+        <p className="font-mono-crt text-crt-green text-lg tracking-widest">
+          &gt; INSERT COIN TO PLAY_
+          <span className="animate-blink">█</span>
         </p>
       </div>
 
@@ -63,11 +65,13 @@ export default function Home() {
 
       {/* Error */}
       {error && (
-        <div className="text-center py-20 bg-red-50 rounded-3xl border-2 border-red-200">
-          <div className="text-4xl mb-3">😅</div>
-          <p className="text-red-500 font-bold mb-2">{error}</p>
-          <code className="text-xs text-fun-muted bg-white px-3 py-1.5 rounded-xl border border-fun-border font-mono">
-            cd server-go && go run .
+        <div className="text-center py-16 bg-crt-bg-card border-2 border-crt-pink shadow-crt-card">
+          <div className="font-pixel text-2xl text-crt-pink mb-4 tracking-widest" style={{ textShadow: '0 0 10px #FF2EC8' }}>
+            ERROR 404
+          </div>
+          <p className="font-mono-crt text-crt-text text-lg mb-3 tracking-wide">{error}</p>
+          <code className="inline-block text-xs text-crt-green bg-black px-4 py-2 border border-crt-green/50 font-mono-crt tracking-wider">
+            $ cd server-go && go run .
           </code>
         </div>
       )}
@@ -83,10 +87,10 @@ export default function Home() {
                 <button
                   key={tag}
                   onClick={() => setActiveTag(tag)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-colors ${
+                  className={`px-4 py-1.5 font-pixel text-[10px] tracking-widest border-2 transition-all ${
                     activeTag === tag
-                      ? 'bg-fun-text text-white border-fun-text'
-                      : 'bg-white text-fun-muted border-fun-border hover:border-fun-accent hover:text-fun-accent'
+                      ? 'bg-crt-pink text-white border-crt-pink shadow-[0_0_10px_#FF2EC8]'
+                      : 'bg-crt-bg-card text-crt-text-dim border-crt-border hover:border-crt-cyan hover:text-crt-cyan'
                   }`}
                 >
                   {tag}
@@ -96,11 +100,11 @@ export default function Home() {
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-black text-fun-text flex items-center gap-2">
-                🕹️ {activeTag === '全部' ? '全部游戏' : activeTag}
+              <h2 className="font-pixel text-lg md:text-xl text-crt-cyan tracking-widest" style={{ textShadow: '0 0 8px #00F0FF' }}>
+                &gt; {activeTag === '全部' ? 'ALL GAMES' : activeTag}
               </h2>
-              <span className="text-sm font-bold text-fun-muted bg-fun-border px-3 py-1 rounded-full">
-                {filteredGames.length} 款好玩的
+              <span className="font-mono-crt text-sm text-crt-yellow bg-black px-3 py-1 border border-crt-yellow/50 tracking-widest">
+                {filteredGames.length} TITLES
               </span>
             </div>
 
@@ -114,9 +118,9 @@ export default function Home() {
 
           {/* Right: ranking sidebar */}
           <div className="w-full lg:w-72 shrink-0">
-            <div className="bg-fun-card border-2 border-fun-border rounded-3xl p-6 sticky top-6">
-              <h3 className="text-lg font-black text-fun-text flex items-center gap-2 mb-3">
-                🔥 最近热玩 Top 5
+            <div className="bg-crt-bg-card border-2 border-crt-yellow shadow-crt-card p-6 sticky top-6">
+              <h3 className="font-pixel text-sm text-crt-yellow tracking-widest mb-4" style={{ textShadow: '0 0 8px #FFE500' }}>
+                ★ TOP 5 HOT
               </h3>
 
               {/* Rank Tabs */}
@@ -125,28 +129,30 @@ export default function Home() {
                   <button
                     key={tab}
                     onClick={() => setActiveRankTab(tab)}
-                    className={`px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors ${
+                    className={`px-3 py-1 font-pixel text-[8px] tracking-widest border-2 transition-all ${
                       activeRankTab === tab
-                        ? 'bg-fun-text text-white border-fun-text'
-                        : 'bg-white text-fun-muted border-fun-border hover:border-fun-accent hover:text-fun-accent'
+                        ? 'bg-crt-pink text-white border-crt-pink'
+                        : 'bg-transparent text-crt-text-dim border-crt-border hover:border-crt-cyan hover:text-crt-cyan'
                     }`}
                   >
-                    {tab === 'all' ? '全站' : '本周'}
+                    {tab === 'all' ? 'ALL' : 'WEEK'}
                   </button>
                 ))}
               </div>
               {activeRankTab === 'week' && (
-                <p className="text-[11px] text-fun-muted mb-3 leading-snug">
-                  基于全部记录（后端暂未支持周维度）
+                <p className="font-mono-crt text-[11px] text-crt-text-dim mb-3 leading-snug tracking-wide">
+                  &gt; based on all records
                 </p>
               )}
 
               {top5.length === 0 ? (
-                <p className="text-sm text-fun-muted font-medium text-center py-4">暂无数据</p>
+                <p className="font-mono-crt text-sm text-crt-text-dim text-center py-4 tracking-widest">
+                  NO DATA_
+                </p>
               ) : (
                 <ol className="space-y-3">
                   {top5.map((item, idx) => {
-                    const gradient = coverColors[item.gameId] ?? 'from-fun-accent to-fun-pink'
+                    const gradient = coverColors[item.gameId] ?? 'from-crt-pink to-crt-purple'
                     const icon = coverIcons[item.gameId] ?? '🎮'
                     return (
                       <li key={item.gameId}>
@@ -155,34 +161,35 @@ export default function Home() {
                           className="flex items-center gap-2 group"
                         >
                           {idx === 0 && (
-                            <span className="text-yellow-400 shrink-0" aria-label="冠军">
-                              👑
+                            <span className="text-crt-yellow shrink-0" aria-label="champion" style={{ textShadow: '0 0 6px #FFE500' }}>
+                              ♛
                             </span>
                           )}
                           <span
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-base shrink-0 bg-gradient-to-br ${gradient}`}
+                            className={`w-8 h-8 flex items-center justify-center text-base shrink-0 bg-gradient-to-br ${gradient} border border-crt-border`}
+                            style={{ imageRendering: 'pixelated' }}
                             aria-hidden
                           >
                             {icon}
                           </span>
                           <span
-                            className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${
+                            className={`w-5 h-5 flex items-center justify-center font-pixel text-[8px] shrink-0 ${
                               idx === 0
-                                ? 'bg-yellow-400 text-white'
+                                ? 'bg-crt-yellow text-black'
                                 : idx === 1
-                                  ? 'bg-gray-400 text-white'
+                                  ? 'bg-crt-cyan text-black'
                                   : idx === 2
-                                    ? 'bg-amber-600 text-white'
-                                    : 'bg-fun-border text-fun-muted'
+                                    ? 'bg-crt-pink text-white'
+                                    : 'bg-crt-border text-crt-text-dim'
                             }`}
                           >
                             {idx + 1}
                           </span>
-                          <span className="text-sm font-bold text-fun-text group-hover:text-fun-accent transition-colors truncate">
+                          <span className="font-mono-crt text-sm text-crt-text group-hover:text-crt-cyan transition-colors truncate tracking-wide">
                             {item.gameName}
                           </span>
-                          <span className="ml-auto text-xs font-bold text-fun-muted shrink-0">
-                            {item.playCount} 次
+                          <span className="ml-auto font-mono-crt text-xs text-crt-yellow shrink-0 tracking-wider">
+                            ×{item.playCount}
                           </span>
                         </Link>
                       </li>

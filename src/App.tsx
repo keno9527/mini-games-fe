@@ -7,7 +7,7 @@ import Profile from './pages/Profile'
 function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-fun-bg">
+      <div className="min-h-screen bg-crt-bg text-crt-text crt-scanlines">
         <Header />
         <Routes>
           <Route path="/" element={<Home />} />
