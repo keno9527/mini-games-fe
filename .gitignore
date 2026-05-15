@@ -8,12 +8,15 @@ pnpm-debug.log*
 lerna-debug.log*
 log/
 
-node_modules
-dist
-dist-ssr
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
 *.local
 
-# Env
+# Environment variables
 .env
 .env.*
 !.env.example
@@ -21,7 +24,8 @@ dist-ssr
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+!.vscode/settings.json
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
@@ -33,4 +37,16 @@ dist-ssr
 .trae/
 .superpowers/
 docs/
-log/*
+.gocache/
+
+# Testing
+coverage/
+.nyc_output/
+
+# OS files
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# TypeScript
+*.tsbuildinfo
