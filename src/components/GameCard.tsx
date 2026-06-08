@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 import type { Game } from '../types'
 
 export const coverColors: Record<string, string> = {
+  'ai-feihualing': 'from-crt-yellow to-crt-pink',
+  'ai-poetry-guess': 'from-crt-cyan to-crt-green',
   minesweeper:    'from-crt-cyan to-crt-purple',
   snake:          'from-crt-green to-crt-cyan',
   '24points':     'from-crt-yellow to-crt-pink',
@@ -18,6 +20,8 @@ export const coverColors: Record<string, string> = {
 }
 
 export const coverIcons: Record<string, string> = {
+  'ai-feihualing': '令',
+  'ai-poetry-guess': '画',
   minesweeper:   '💣',
   snake:         '🐍',
   '24points':    '🃏',

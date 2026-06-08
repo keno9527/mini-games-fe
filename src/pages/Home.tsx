@@ -16,7 +16,7 @@ export default function Home() {
   useEffect(() => {
     getGames()
       .then(setGames)
-      .catch(() => setError('CANNOT CONNECT TO SERVER. PLEASE START server-go'))
+      .catch(() => setError('LOCAL GAME DATA LOAD FAILED'))
       .finally(() => setLoading(false))
     getPlayRanking()
       .then(setRanking)
@@ -71,7 +71,7 @@ export default function Home() {
           </div>
           <p className="font-mono-crt text-crt-text text-lg mb-3 tracking-wide">{error}</p>
           <code className="inline-block text-xs text-crt-green bg-black px-4 py-2 border border-crt-green/50 font-mono-crt tracking-wider">
-            $ cd server-go && go run .
+            $ check src/config/games.ts
           </code>
         </div>
       )}

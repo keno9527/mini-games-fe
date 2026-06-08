@@ -1,14 +1,11 @@
 import { useEffect, useState } from 'react'
 import { getUserStats, getRecords } from '../api'
+import { games } from '../config/games'
 import { useUserStore } from '../store/userStore'
 import UserSelector from '../components/UserSelector'
 import type { UserStats, GameRecord } from '../types'
 
-const gameNames: Record<string, string> = {
-  minesweeper: '💣 扫雷',
-  snake: '🐍 贪吃蛇',
-  '24points': '🃏 24点',
-}
+const gameNames = Object.fromEntries(games.map(game => [game.id, game.name]))
 
 function formatTime(seconds: number): string {
   if (seconds < 60) return `${seconds}s`

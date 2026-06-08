@@ -15,9 +15,13 @@ import Tetris from '../games/Tetris'
 import Breakout from '../games/Breakout'
 import Wordle from '../games/Wordle'
 import Gomoku from '../games/Gomoku'
+import AIFeihualing from '../games/AIFeihualing'
+import AIPoetryGuess from '../games/AIPoetryGuess'
 import type { Game } from '../types'
 
 const gameComponents: Record<string, React.ComponentType<{ userId?: string; gameId: string }>> = {
+  'ai-feihualing': AIFeihualing,
+  'ai-poetry-guess': AIPoetryGuess,
   minesweeper: Minesweeper,
   snake: Snake,
   '24points': TwentyFourPoints,
@@ -85,7 +89,7 @@ export default function GameDetail() {
   const levels = game.difficulties?.length ? game.difficulties : ['简单', '中等', '复杂']
 
   return (
-    <main className="max-w-7xl mx-auto px-6 py-8">
+    <main className="max-w-7xl mx-auto px-2 sm:px-6 py-6 sm:py-8">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 font-mono-crt text-sm text-crt-text-dim mb-6 tracking-wider">
         <Link to="/" className="hover:text-crt-cyan transition-colors">&gt; GAME HALL</Link>
@@ -96,7 +100,7 @@ export default function GameDetail() {
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_280px] gap-8 items-start">
         {/* Game area - CRT 曲面屏外壳 */}
         <div>
-          <div className="bg-crt-bg-card border-4 border-black rounded-2xl p-6 shadow-crt-card relative overflow-hidden">
+          <div className="bg-crt-bg-card border-4 border-black rounded-2xl p-2 sm:p-6 shadow-crt-card relative overflow-hidden">
             <div className="absolute inset-0 pointer-events-none crt-scanlines opacity-60" />
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-6 flex-wrap">
