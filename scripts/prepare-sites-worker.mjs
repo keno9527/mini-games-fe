@@ -1,57 +1,9 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 const serverDir = resolve('dist', 'server')
 const workerPath = resolve(serverDir, 'index.js')
-
-const workerSource = `
-const INDEX_PATHS = ['/index.html', '/client/index.html'];
-
-async function fetchAsset(request, env) {
-  const response = await env.ASSETS.fetch(request);
-  if (response.status !== 404) return response;
-
-  const url = new URL(request.url);
-  if (url.pathname.startsWith('/client/')) return response;
-
-  const clientUrl = new URL('/client' + url.pathname, request.url);
-  return env.ASSETS.fetch(new Request(clientUrl.toString(), request));
-}
-
-async function fetchIndex(request, env) {
-  for (const path of INDEX_PATHS) {
-    const indexUrl = new URL(path, request.url);
-    const response = await env.ASSETS.fetch(new Request(indexUrl.toString(), request));
-    if (response.status !== 404) return response;
-  }
-  return new Response('Mini Games entry file is unavailable.', { status: 404 });
-}
-
-function shouldFallbackToIndex(request, response) {
-  if (response.status !== 404) return false;
-  if (request.method !== 'GET' && request.method !== 'HEAD') return false;
-
-  const url = new URL(request.url);
-  if (url.pathname.startsWith('/assets/')) return false;
-  if (url.pathname.includes('.')) return false;
-
-  const accept = request.headers.get('accept') || '';
-  return accept.includes('text/html') || accept.includes('*/*') || accept === '';
-}
-
-export default {
-  async fetch(request, env) {
-    if (!env || !env.ASSETS) {
-      return new Response('Sites static asset binding is unavailable.', { status: 500 });
-    }
-
-    const response = await fetchAsset(request, env);
-    if (!shouldFallbackToIndex(request, response)) return response;
-
-    return fetchIndex(request, env);
-  },
-};
-`.trimStart()
+const workerSourcePath = resolve('scripts', 'sites-worker-runtime.js')
 
 await mkdir(serverDir, { recursive: true })
-await writeFile(workerPath, workerSource)
+await copyFile(workerSourcePath, workerPath)
