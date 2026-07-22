@@ -107,6 +107,9 @@ const MODULES: ModuleDefinition[] = [
   { id: 'frozen-psalm', name: '冻结轨迹', glyph: '⌁', description: '预演更长的星骸轨迹，便于精确安葬。' },
   { id: 'mass-offering', name: '质量献祭', glyph: '✦', description: '星骸撞击敌舰的伤害与仪式进度提升。' },
   { id: 'last-prayer', name: '最后祷词', glyph: '✣', description: '相位闪避会释放一次短距斥力脉冲。' },
+  { id: 'mirror-rite', name: '镜面圣礼', glyph: '⬡', description: '被引力折返的敌火会造成更高核心伤害。' },
+  { id: 'merciful-orbit', name: '慈悲轨道', glyph: '◌', description: '每次稳定星骸都会修复少量舰体。' },
+  { id: 'black-vespers', name: '黑色晚祷', glyph: '†', description: '相位闪避消耗的能量显著降低。' },
 ]
 
 const TOOLS: LoadoutDefinition[] = [
@@ -122,7 +125,7 @@ const SHIPS: LoadoutDefinition[] = [
 ]
 
 const INITIAL_PROGRESSION: GameProgression = {
-  liturgies: MODULES.slice(0, 3).map(module => module.id),
+  liturgies: MODULES.slice(0, 6).map(module => module.id),
   tools: [TOOLS[0].id],
   ships: [SHIPS[0].id],
 }
@@ -511,7 +514,8 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
   const performDash = useCallback(() => {
     if (runRef.current.phase !== 'active') return
     const player = playerRef.current
-    if (player.dashCooldown > 0 || energyRef.current < 32) return
+    const dashCost = hasModule('black-vespers') ? 22 : 32
+    if (player.dashCooldown > 0 || energyRef.current < dashCost) return
     let dx = Number(keysRef.current.has('d') || keysRef.current.has('arrowright')) - Number(keysRef.current.has('a') || keysRef.current.has('arrowleft'))
     let dy = Number(keysRef.current.has('s') || keysRef.current.has('arrowdown')) - Number(keysRef.current.has('w') || keysRef.current.has('arrowup'))
     if (dx === 0 && dy === 0) {
@@ -523,7 +527,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     player.vy += (dy / length) * 330
     player.invulnerable = 0.55
     player.dashCooldown = 1.2
-    energyRef.current -= 32
+    energyRef.current -= dashCost
     emitParticles(player.x, player.y, '#e6d093', 22)
     if (hasModule('last-prayer')) {
       bodiesRef.current = bodiesRef.current.map(body => {
@@ -662,6 +666,9 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
             body.consecrated = true
             body.stable = 1.15
             emitParticles(body.x, body.y, '#e4c67d', 24)
+            if (hasModule('merciful-orbit')) {
+              runRef.current = applyRunEvent(runRef.current, { type: 'repair', amount: 8 })
+            }
             addRitual(currentRun.act === 1 ? 24 : 20, 520 + Math.round(body.mass * 100), currentRun.act === 1 ? 36 : 54, '星骸已进入安息轨道')
           }
         } else {
@@ -692,7 +699,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
           if (target.id === body.id || removed.has(target.id)) continue
           if (distance(body, target) > body.radius + target.radius) continue
           if (speed < (body.kind === 'projectile' ? 70 : 105)) continue
-          const impactDamage = body.kind === 'projectile' ? 18 : (22 + body.mass * 12)
+          const impactDamage = body.kind === 'projectile' ? (hasModule('mirror-rite') ? 30 : 18) : (22 + body.mass * 12)
           const consecrationScale = body.consecrated ? 1.85 : 1
           const baseDamage = impactDamage * damageScale * consecrationScale
           target.hp -= baseDamage
@@ -1006,10 +1013,9 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
   }, [draw, stopChoir, update])
 
   const moduleOptions = useMemo(() => {
-    const unchosen = MODULES.filter(module => !run.modules.includes(module.id))
-    const archived = unchosen.filter(module => progression.liturgies.includes(module.id))
-    const unrecorded = unchosen.filter(module => !progression.liturgies.includes(module.id))
-    return [...archived, ...unrecorded].slice(0, 3)
+    return MODULES
+      .filter(module => progression.liturgies.includes(module.id) && !run.modules.includes(module.id))
+      .slice(0, 3)
   }, [progression.liturgies, run.modules])
 
   const archiveCount = progression.liturgies.length + progression.tools.length + progression.ships.length
@@ -1040,7 +1046,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
             >
               {choirOn ? '关闭圣咏' : '开启圣咏'}
             </button>
-            <span className="rounded-full border border-[#6e2632] bg-[#2a0d13] px-3 py-2 text-[#d99aa2]">葬仪档案 {archiveCount}/12</span>
+            <span className="rounded-full border border-[#6e2632] bg-[#2a0d13] px-3 py-2 text-[#d99aa2]">葬仪档案 {archiveCount}/15</span>
           </div>
         </div>
       </div>
@@ -1093,7 +1099,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
             <div className="relative max-w-xl px-7 pb-8 sm:px-10 sm:pb-11">
               <div className="mb-3 text-[10px] font-bold uppercase tracking-[.36em] text-[#d2ae62]">Burial order 7193</div>
               <h3 className="font-serif text-3xl leading-tight text-[#fff8e9] sm:text-5xl">给死者轨道，<br />给生者真相。</h3>
-              <p className="mt-4 max-w-md text-sm leading-6 text-[#c7baa5]">你是圣轨教会的星骸葬仪师。没有炮口，只有引力。牵引残骸、折返敌火，在三幕葬仪里决定三百万个意识是否该被埋葬。</p>
+              <p className="mt-4 max-w-md text-sm leading-6 text-[#c7baa5]">你是圣轨教会的星骸葬仪师。教会说，不稳定核心一旦脱轨就会摧毁殖民航道，葬仪是唯一的封存方式。但这片“死寂”墓场，正在向你发送生命信号。</p>
               <div className="mt-4 grid max-w-md grid-cols-2 gap-2 text-[10px] text-[#a99b86]">
                 <label className="rounded-lg border border-[#79603c]/55 bg-black/35 px-3 py-2">
                   葬仪舰
