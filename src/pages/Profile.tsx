@@ -1,14 +1,9 @@
 import { useEffect, useState } from 'react'
 import { getUserStats, getRecords } from '../api'
+import { getGameRecordTitle, getResultBadgeMeta } from '../features/games/catalog'
 import { useUserStore } from '../store/userStore'
 import UserSelector from '../components/UserSelector'
 import type { UserStats, GameRecord } from '../types'
-
-const gameNames: Record<string, string> = {
-  minesweeper: '💣 扫雷',
-  snake: '🐍 贪吃蛇',
-  '24points': '🃏 24点',
-}
 
 function formatTime(seconds: number): string {
   if (seconds < 60) return `${seconds}s`
@@ -19,14 +14,9 @@ function formatTime(seconds: number): string {
 }
 
 function ResultBadge({ result }: { result: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    win:      { label: 'WIN',       cls: 'text-crt-green border-crt-green' },
-    lose:     { label: 'LOSE',      cls: 'text-crt-pink border-crt-pink' },
-    complete: { label: 'COMPLETE',  cls: 'text-crt-cyan border-crt-cyan' },
-  }
-  const { label, cls } = map[result] ?? { label: result, cls: 'text-crt-text-dim border-crt-border' }
+  const { label, className } = getResultBadgeMeta(result)
   return (
-    <span className={`font-pixel text-[8px] px-2 py-0.5 border-2 bg-transparent tracking-widest ${cls}`}>{label}</span>
+    <span className={`font-pixel text-[8px] px-2 py-0.5 border-2 bg-transparent tracking-widest ${className}`}>{label}</span>
   )
 }
 
@@ -122,7 +112,7 @@ export default function Profile() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {stats.gameStats.map(gs => (
                       <div key={gs.gameId} className="bg-black/40 border border-crt-border p-4">
-                        <p className="font-pixel text-[10px] text-crt-yellow mb-3 tracking-wider truncate">{gameNames[gs.gameId] ?? gs.gameName}</p>
+                        <p className="font-pixel text-[10px] text-crt-yellow mb-3 tracking-wider truncate">{getGameRecordTitle(gs.gameId, gs.gameName)}</p>
                         <div className="space-y-1.5 font-mono-crt text-sm">
                           <div className="flex justify-between">
                             <span className="text-crt-text-dim tracking-wider">PLAYS</span>
@@ -168,7 +158,7 @@ export default function Profile() {
                         className="flex items-center gap-4 px-4 py-3 bg-black/40 border border-crt-border hover:border-crt-cyan/60 transition-colors font-mono-crt text-sm tracking-wide"
                       >
                         <span className="text-crt-text font-bold w-24 flex-shrink-0 truncate">
-                          {gameNames[r.gameId] ?? r.gameId}
+                          {getGameRecordTitle(r.gameId)}
                         </span>
                         <ResultBadge result={r.result} />
                         <span className="text-crt-pink font-bold ml-auto tracking-wider" style={{ textShadow: '0 0 6px #FF2EC8' }}>

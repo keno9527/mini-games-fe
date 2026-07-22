@@ -1,43 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getGame } from '../api'
+import { getDifficultyChipClass, getGameComponent } from '../features/games/catalog'
 import { useUserStore } from '../store/userStore'
-import Minesweeper from '../games/Minesweeper'
-import Snake from '../games/Snake'
-import TwentyFourPoints from '../games/TwentyFourPoints'
-import Game2048 from '../games/Game2048'
-import MemoryCard from '../games/MemoryCard'
-import WhackAMole from '../games/WhackAMole'
-import SlidePuzzle from '../games/SlidePuzzle'
-import ReactionTest from '../games/ReactionTest'
-import TicTacToe from '../games/TicTacToe'
-import Tetris from '../games/Tetris'
-import Breakout from '../games/Breakout'
-import Wordle from '../games/Wordle'
-import Gomoku from '../games/Gomoku'
 import type { Game } from '../types'
-
-const gameComponents: Record<string, React.ComponentType<{ userId?: string; gameId: string }>> = {
-  minesweeper: Minesweeper,
-  snake: Snake,
-  '24points': TwentyFourPoints,
-  '2048': Game2048,
-  memory: MemoryCard,
-  'whack-a-mole': WhackAMole,
-  'slide-puzzle': SlidePuzzle,
-  'reaction-test': ReactionTest,
-  'tic-tac-toe': TicTacToe,
-  tetris: Tetris,
-  breakout: Breakout,
-  wordle: Wordle,
-  gomoku: Gomoku,
-}
-
-const difficultyChip: Record<string, string> = {
-  简单: 'bg-transparent text-crt-green border-crt-green',
-  中等: 'bg-transparent text-crt-yellow border-crt-yellow',
-  复杂: 'bg-transparent text-crt-pink border-crt-pink',
-}
 
 export default function GameDetail() {
   const { id } = useParams<{ id: string }>()
@@ -81,7 +47,7 @@ export default function GameDetail() {
     )
   }
 
-  const GameComponent = gameComponents[id]
+  const GameComponent = getGameComponent(id)
   const levels = game.difficulties?.length ? game.difficulties : ['简单', '中等', '复杂']
 
   return (
@@ -106,7 +72,7 @@ export default function GameDetail() {
                 {levels.map(lv => (
                   <span
                     key={lv}
-                    className={`font-pixel text-[9px] px-3 py-1 border-2 tracking-widest ${difficultyChip[lv] ?? 'bg-transparent text-crt-text-dim border-crt-border'}`}
+                    className={`font-pixel text-[9px] px-3 py-1 border-2 tracking-widest ${getDifficultyChipClass(lv)}`}
                   >
                     {lv}
                   </span>

@@ -17,14 +17,16 @@
 
 ## 目录结构（常用）
 
-- 源码目录：待补充
+- 源码目录：`src/`
+- 游戏配置：`src/features/games/`
+- 本地数据封装：`src/api/`
 - 配置目录：`.trae/rules/`（包含 workspace_rules.md）
 
 ## 运行与构建
 
-- 安装依赖：待补充
-- 本地启动：待补充
-- 构建产物：待补充
+- 安装依赖：`npm install`
+- 本地启动：`npm run dev`
+- 构建产物：`dist/`
 
 ## 提交与分支
 

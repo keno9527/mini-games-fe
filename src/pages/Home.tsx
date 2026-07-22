@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getGames, getPlayRanking } from '../api'
-import GameCard, { coverColors, coverIcons } from '../components/GameCard'
+import GameCard from '../components/GameCard'
 import { GameCardSkeleton } from '../components/Skeleton'
+import { getGamePresentation, getGameTarget } from '../features/games/catalog'
 import type { Game, PlayRankItem } from '../types'
 
 export default function Home() {
@@ -11,12 +12,11 @@ export default function Home() {
   const [error, setError] = useState('')
   const [activeTag, setActiveTag] = useState('全部')
   const [ranking, setRanking] = useState<PlayRankItem[]>([])
-  const [activeRankTab, setActiveRankTab] = useState<'all' | 'week'>('all')
 
   useEffect(() => {
     getGames()
       .then(setGames)
-      .catch(() => setError('CANNOT CONNECT TO SERVER. PLEASE START server-go'))
+      .catch(() => setError('本地游戏配置读取失败，请刷新页面重试'))
       .finally(() => setLoading(false))
     getPlayRanking()
       .then(setRanking)
@@ -37,21 +37,33 @@ export default function Home() {
   const top5 = ranking.slice(0, 5)
 
   return (
-    <main className="max-w-7xl mx-auto px-6 py-6">
-      {/* Hero */}
-      <div className="text-center mb-8 py-6">
-        <h1 className="font-pixel text-3xl md:text-5xl leading-tight tracking-widest mb-4">
-          <span className="text-crt-cyan" style={{ textShadow: '0 0 12px #00F0FF' }}>
-            GAME
-          </span>{' '}
-          <span className="text-crt-pink" style={{ textShadow: '0 0 12px #FF2EC8' }}>
-            HALL
-          </span>
-        </h1>
-        <p className="font-mono-crt text-crt-green text-lg tracking-widest">
-          &gt; INSERT COIN TO PLAY_
-          <span className="animate-blink">█</span>
-        </p>
+    <main className="relative mx-auto max-w-7xl px-5 pb-12 pt-7 md:px-6">
+      <div className="pixel-hero mb-7 overflow-hidden rounded-lg border-4 border-white bg-[#5fc9ff] px-6 py-7 shadow-[0_5px_0_#94cde7,0_14px_32px_rgba(28,96,142,0.18)] md:px-8">
+        <div className="relative z-10 grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
+          <div>
+            <p className="mb-3 inline-flex rounded-md bg-white/95 px-3 py-1 font-pixel text-[9px] tracking-wider text-[#0c63bf] shadow-[0_3px_0_rgba(19,86,138,0.18)]">
+              MINI GAMES
+            </p>
+            <h1
+              className="font-pixel text-3xl leading-tight text-white md:text-5xl"
+              style={{ textShadow: '3px 3px 0 #0b62b8, 6px 6px 0 rgba(0,0,0,0.16)' }}
+            >
+              游戏广场
+            </h1>
+            <p className="mt-4 max-w-2xl font-game text-base font-extrabold leading-7 text-[#164976] md:text-lg">
+              发现好玩小游戏，挑战高分，冲击排行榜。
+            </p>
+          </div>
+          <div className="hidden min-w-48 justify-self-end md:block">
+            <div className="rounded-lg border-4 border-white bg-[#ffd343] px-5 py-4 text-right shadow-[0_5px_0_#bc7a00]">
+              <div className="font-pixel text-[10px] leading-5 text-[#15456f]">PLAY NOW</div>
+              <div className="mt-2 font-game text-3xl font-black text-[#18324d]">
+                {games.length || '--'}
+              </div>
+              <div className="font-game text-sm font-extrabold text-[#5d6f7e]">款游戏</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Loading */}
@@ -65,32 +77,32 @@ export default function Home() {
 
       {/* Error */}
       {error && (
-        <div className="text-center py-16 bg-crt-bg-card border-2 border-crt-pink shadow-crt-card">
-          <div className="font-pixel text-2xl text-crt-pink mb-4 tracking-widest" style={{ textShadow: '0 0 10px #FF2EC8' }}>
-            ERROR 404
+        <div className="rounded-lg border-4 border-white bg-white px-6 py-14 text-center shadow-[0_5px_0_#9ac6df]">
+          <div className="mb-4 font-pixel text-xl tracking-wider text-[#ff4f63]">
+            数据加载失败
           </div>
-          <p className="font-mono-crt text-crt-text text-lg mb-3 tracking-wide">{error}</p>
-          <code className="inline-block text-xs text-crt-green bg-black px-4 py-2 border border-crt-green/50 font-mono-crt tracking-wider">
-            $ cd server-go && go run .
+          <p className="mb-3 font-game text-lg font-bold text-[#47637d]">{error}</p>
+          <code className="inline-block rounded-md border-2 border-[#7ec7ee] bg-[#eef9ff] px-4 py-2 font-mono-crt text-sm tracking-wider text-[#0c63bf]">
+            $ npm run dev
           </code>
         </div>
       )}
 
       {/* Main content */}
       {!loading && !error && (
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
           {/* Left: games */}
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0">
             {/* Category tabs */}
-            <div className="flex items-center gap-2 mb-6 flex-wrap">
+            <div className="mb-6 flex flex-wrap items-center gap-2">
               {allTags.map(tag => (
                 <button
                   key={tag}
                   onClick={() => setActiveTag(tag)}
-                  className={`px-4 py-1.5 font-pixel text-[10px] tracking-widest border-2 transition-all ${
+                  className={`rounded-md border-2 px-4 py-2 font-game text-sm font-black transition-all ${
                     activeTag === tag
-                      ? 'bg-crt-pink text-white border-crt-pink shadow-[0_0_10px_#FF2EC8]'
-                      : 'bg-crt-bg-card text-crt-text-dim border-crt-border hover:border-crt-cyan hover:text-crt-cyan'
+                      ? 'border-[#b46b00] bg-[#ffd343] text-[#18324d] shadow-[0_4px_0_#b46b00]'
+                      : 'border-white bg-white text-[#346887] shadow-[0_3px_0_#b6d8e8] hover:-translate-y-0.5 hover:text-[#0c63bf]'
                   }`}
                 >
                   {tag}
@@ -99,12 +111,12 @@ export default function Home() {
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-pixel text-lg md:text-xl text-crt-cyan tracking-widest" style={{ textShadow: '0 0 8px #00F0FF' }}>
-                &gt; {activeTag === '全部' ? 'ALL GAMES' : activeTag}
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <h2 className="font-game text-2xl font-black text-[#18324d]">
+                {activeTag === '全部' ? '游戏列表' : activeTag}
               </h2>
-              <span className="font-mono-crt text-sm text-crt-yellow bg-black px-3 py-1 border border-crt-yellow/50 tracking-widest">
-                {filteredGames.length} TITLES
+              <span className="rounded-md border-2 border-white bg-white px-3 py-1 font-game text-sm font-black text-[#0c63bf] shadow-[0_3px_0_#b6d8e8]">
+                {filteredGames.length} 款
               </span>
             </div>
 
@@ -117,88 +129,83 @@ export default function Home() {
           </div>
 
           {/* Right: ranking sidebar */}
-          <div className="w-full lg:w-72 shrink-0">
-            <div className="bg-crt-bg-card border-2 border-crt-yellow shadow-crt-card p-6 sticky top-6">
-              <h3 className="font-pixel text-sm text-crt-yellow tracking-widest mb-4" style={{ textShadow: '0 0 8px #FFE500' }}>
-                ★ TOP 5 HOT
-              </h3>
-
-              {/* Rank Tabs */}
-              <div className="flex items-center gap-2 mb-3">
-                {(['all', 'week'] as const).map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveRankTab(tab)}
-                    className={`px-3 py-1 font-pixel text-[8px] tracking-widest border-2 transition-all ${
-                      activeRankTab === tab
-                        ? 'bg-crt-pink text-white border-crt-pink'
-                        : 'bg-transparent text-crt-text-dim border-crt-border hover:border-crt-cyan hover:text-crt-cyan'
-                    }`}
-                  >
-                    {tab === 'all' ? 'ALL' : 'WEEK'}
-                  </button>
-                ))}
+          <aside className="w-full">
+            <div className="sticky top-24 rounded-lg border-4 border-white bg-white p-5 shadow-[0_5px_0_#9ac6df,0_12px_24px_rgba(34,91,130,0.16)]">
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <h3 className="font-game text-xl font-black text-[#18324d]">
+                  热门排行榜
+                </h3>
+                <span className="rounded-md bg-[#e9f5ff] px-2 py-1 font-pixel text-[8px] text-[#0c63bf]">
+                  TOP 5
+                </span>
               </div>
-              {activeRankTab === 'week' && (
-                <p className="font-mono-crt text-[11px] text-crt-text-dim mb-3 leading-snug tracking-wide">
-                  &gt; based on all records
-                </p>
-              )}
 
               {top5.length === 0 ? (
-                <p className="font-mono-crt text-sm text-crt-text-dim text-center py-4 tracking-widest">
-                  NO DATA_
-                </p>
+                <div className="rounded-lg border-2 border-dashed border-[#b6d8e8] bg-[#f4fbff] px-4 py-8 text-center">
+                  <p className="font-game text-sm font-extrabold text-[#58708b]">
+                    暂无排行记录
+                  </p>
+                </div>
               ) : (
                 <ol className="space-y-3">
                   {top5.map((item, idx) => {
-                    const gradient = coverColors[item.gameId] ?? 'from-crt-pink to-crt-purple'
-                    const icon = coverIcons[item.gameId] ?? '🎮'
+                    const { coverGradient, icon } = getGamePresentation(item.gameId)
+                    const target = getGameTarget(item.gameId)
+                    const rankingContent = (
+                      <>
+                        <span
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gradient-to-br text-lg ${coverGradient}`}
+                          style={{ imageRendering: 'pixelated' }}
+                          aria-hidden
+                        >
+                          {icon}
+                        </span>
+                        <span
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md font-pixel text-[9px] ${
+                            idx === 0
+                              ? 'bg-[#ffd343] text-[#18324d]'
+                              : idx === 1
+                                ? 'bg-[#8dd7ff] text-[#18324d]'
+                                : idx === 2
+                                  ? 'bg-[#ff9b5a] text-white'
+                                  : 'bg-[#e9f5ff] text-[#47637d]'
+                          }`}
+                        >
+                          {idx + 1}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate font-game text-sm font-black text-[#24435f] transition-colors group-hover:text-[#0c63bf]">
+                          {item.gameName}
+                        </span>
+                        <span className="shrink-0 rounded-md bg-[#edf7e6] px-2 py-1 font-game text-xs font-black text-[#2e8a33]">
+                          {item.playCount}
+                        </span>
+                      </>
+                    )
+                    const rankingClassName = 'group flex items-center gap-3 rounded-lg border-2 border-[#e5f3fb] bg-[#f7fcff] p-2 transition-all hover:border-[#8fd0f1] hover:bg-white'
+
                     return (
                       <li key={item.gameId}>
-                        <Link
-                          to={`/game/${item.gameId}`}
-                          className="flex items-center gap-2 group"
-                        >
-                          {idx === 0 && (
-                            <span className="text-crt-yellow shrink-0" aria-label="champion" style={{ textShadow: '0 0 6px #FFE500' }}>
-                              ♛
-                            </span>
-                          )}
-                          <span
-                            className={`w-8 h-8 flex items-center justify-center text-base shrink-0 bg-gradient-to-br ${gradient} border border-crt-border`}
-                            style={{ imageRendering: 'pixelated' }}
-                            aria-hidden
+                        {target.isExternal ? (
+                          <a
+                            href={target.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={rankingClassName}
                           >
-                            {icon}
-                          </span>
-                          <span
-                            className={`w-5 h-5 flex items-center justify-center font-pixel text-[8px] shrink-0 ${
-                              idx === 0
-                                ? 'bg-crt-yellow text-black'
-                                : idx === 1
-                                  ? 'bg-crt-cyan text-black'
-                                  : idx === 2
-                                    ? 'bg-crt-pink text-white'
-                                    : 'bg-crt-border text-crt-text-dim'
-                            }`}
-                          >
-                            {idx + 1}
-                          </span>
-                          <span className="font-mono-crt text-sm text-crt-text group-hover:text-crt-cyan transition-colors truncate tracking-wide">
-                            {item.gameName}
-                          </span>
-                          <span className="ml-auto font-mono-crt text-xs text-crt-yellow shrink-0 tracking-wider">
-                            ×{item.playCount}
-                          </span>
-                        </Link>
+                            {rankingContent}
+                          </a>
+                        ) : (
+                          <Link to={target.href} className={rankingClassName}>
+                            {rankingContent}
+                          </Link>
+                        )}
                       </li>
                     )
                   })}
                 </ol>
               )}
             </div>
-          </div>
+          </aside>
         </div>
       )}
     </main>

@@ -11,19 +11,22 @@ export default function Header() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 border-b-2 border-crt-cyan bg-[#070a1e]/95 backdrop-blur">
-      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+    <header className="sticky top-0 z-50 border-b-4 border-[#0b5bb8] bg-[#0757c8] text-white shadow-[0_5px_0_#083b86]">
+      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-1">
+        <Link to="/" className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[#ffd343] text-xl shadow-[inset_0_-3px_0_rgba(0,0,0,0.18),0_3px_0_#a86800]">
+            ★
+          </span>
           <span
-            className="font-pixel text-sm text-crt-cyan tracking-[2px]"
-            style={{ textShadow: '0 0 8px #00f0ff' }}
+            className="font-pixel text-sm tracking-[1px] text-white"
+            style={{ textShadow: '2px 2px 0 #083b86' }}
           >
             GAME
           </span>
           <span
-            className="font-pixel text-sm text-crt-pink tracking-[2px]"
-            style={{ textShadow: '0 0 8px #ff2e88' }}
+            className="font-pixel text-sm tracking-[1px] text-[#ffd343]"
+            style={{ textShadow: '2px 2px 0 #083b86' }}
           >
             HALL
           </span>
@@ -35,10 +38,10 @@ export default function Header() {
             <Link
               key={to}
               to={to}
-              className={`font-pixel text-[9px] px-2.5 py-1.5 border-2 transition-colors tracking-wider ${
+              className={`rounded-md px-4 py-2 font-pixel text-[9px] tracking-wider transition-all ${
                 location.pathname === to
-                  ? 'border-crt-cyan text-crt-cyan shadow-neon-c'
-                  : 'border-transparent text-crt-muted hover:border-crt-cyan hover:text-crt-cyan'
+                  ? 'bg-white text-[#0757c8] shadow-[0_4px_0_#ffd343]'
+                  : 'text-blue-100 hover:bg-white/15 hover:text-white'
               }`}
             >
               {label}
@@ -51,24 +54,24 @@ export default function Header() {
           {currentUser ? (
             <Link
               to="/profile"
-              className="flex items-center gap-2 px-3 py-1.5 border-2 border-crt-yellow hover:shadow-neon-y transition-shadow"
+              className="flex items-center gap-2 rounded-lg bg-white/15 px-3 py-2 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.18)] transition-all hover:bg-white/25"
             >
               <div
-                className="w-6 h-6 bg-gradient-to-br from-crt-pink to-crt-purple flex items-center justify-center text-[10px] font-pixel text-white shadow-neon-p"
+                className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-[#ff4f63] to-[#ff9b2f] text-[10px] font-pixel text-white shadow-[0_3px_0_#8b2d19]"
                 style={{ imageRendering: 'pixelated' }}
               >
                 {currentUser.name[0]?.toUpperCase()}
               </div>
-              <span className="font-mono-crt text-[15px] text-crt-yellow tracking-wider">
+              <span className="font-game text-sm font-extrabold text-white">
                 {currentUser.name}
               </span>
             </Link>
           ) : (
             <Link
               to="/profile"
-              className="font-mono-crt text-[15px] text-crt-muted hover:text-crt-pink transition-colors px-2 py-1 tracking-wider"
+              className="rounded-lg bg-[#ffd343] px-5 py-2 font-game text-sm font-extrabold text-[#18324d] shadow-[0_4px_0_#b46b00] transition-transform hover:-translate-y-0.5"
             >
-              &gt; LOG IN
+              登录 / 注册
             </Link>
           )}
         </div>

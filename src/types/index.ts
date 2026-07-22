@@ -6,6 +6,8 @@ export interface Game {
   tags: string[]
   /** 简单、中等、复杂 */
   difficulties: string[]
+  externalUrl?: string
+  externalLabel?: string
 }
 
 export interface User {

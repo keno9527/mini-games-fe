@@ -9,7 +9,7 @@
 - **路由**：React Router 7
 - **状态管理**：Zustand
 - **样式**：Tailwind CSS 3
-- **HTTP 请求**：Axios
+- **数据**：前端配置文件 + localStorage
 
 ## 游戏列表
 
@@ -33,9 +33,10 @@
 
 ```
 src/
-├── api/          # 接口请求
+├── api/          # 前端本地数据读写封装（保留异步接口）
 ├── assets/       # 静态资源
 ├── components/   # 通用组件（GameCard / Header / UserSelector）
+├── features/     # 领域配置（游戏目录 / 展示配置）
 ├── games/        # 各个小游戏组件
 ├── pages/        # 页面（Home / GameDetail / Profile）
 ├── store/        # Zustand 状态管理
