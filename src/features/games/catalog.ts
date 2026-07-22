@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import Breakout from '../../games/Breakout'
 import Gomoku from '../../games/Gomoku'
+import GravityGraveyard from '../../games/GravityGraveyard'
 import MemoryCard from '../../games/MemoryCard'
 import Minesweeper from '../../games/Minesweeper'
 import ReactionTest from '../../games/ReactionTest'
@@ -29,6 +30,10 @@ const fallbackPresentation: GamePresentation = {
 }
 
 const gamePresentations: Record<string, GamePresentation> = {
+  'gravity-graveyard': {
+    coverGradient: 'from-[#050507] via-[#4a111c] to-[#b8914e]',
+    icon: '◉',
+  },
   'starlight-catcher': {
     coverGradient: 'from-[#18225f] via-[#6d4df6] to-[#ffd66b]',
     icon: '✦',
@@ -84,6 +89,7 @@ const gamePresentations: Record<string, GamePresentation> = {
 }
 
 const gameComponents: Record<string, ComponentType<GameComponentProps>> = {
+  'gravity-graveyard': GravityGraveyard,
   minesweeper: Minesweeper,
   snake: Snake,
   '24points': TwentyFourPoints,

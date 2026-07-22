@@ -2,6 +2,14 @@ import type { Game, PlayRankItem } from '../../types'
 
 export const gameCatalog: Game[] = [
   {
+    id: 'gravity-graveyard',
+    name: '引力墓场',
+    description: '化身星骸葬仪师，以牵引与斥力改写残骸和敌火的轨道，在三幕宇宙葬仪中作出最终裁决。',
+    coverImage: '/covers/gravity-graveyard.png',
+    tags: ['物理', '动作', '策略', '叙事'],
+    difficulties: ['葬仪'],
+  },
+  {
     id: 'minesweeper',
     name: '扫雷',
     description: '经典扫雷：左键揭开、右键插旗。含简单、中等、复杂三档盘面与雷数。',
@@ -110,6 +118,7 @@ export const gameCatalog: Game[] = [
 ]
 
 export const defaultPlayRanking: PlayRankItem[] = [
+  { gameId: 'gravity-graveyard', gameName: '引力墓场', playCount: 1562 },
   { gameId: 'starlight-catcher', gameName: '星光收集局', playCount: 1396 },
   { gameId: 'snake', gameName: '贪吃蛇', playCount: 1268 },
   { gameId: 'minesweeper', gameName: '扫雷', playCount: 986 },
