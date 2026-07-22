@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
 import Home from './pages/Home'
 import GameDetail from './pages/GameDetail'
@@ -6,7 +6,7 @@ import Profile from './pages/Profile'
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <div className="min-h-screen game-plaza text-[#18324d]">
         <Header />
         <Routes>
@@ -15,7 +15,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
         </Routes>
       </div>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
 
