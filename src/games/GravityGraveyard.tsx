@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createRecord } from '../api'
+import { createRecord, getGameProgression, saveGameProgression, type GameProgression } from '../api'
 import {
   applyRunEvent,
   integrateBody,
@@ -15,7 +15,7 @@ interface Props {
   gameId: string
 }
 
-type BodyKind = 'wreck' | 'projectile' | 'heretic' | 'cathedral'
+type BodyKind = 'wreck' | 'asteroid' | 'projectile' | 'heretic' | 'cathedral'
 
 interface GraveBody {
   id: number
@@ -30,6 +30,7 @@ interface GraveBody {
   rotation: number
   spin: number
   stable: number
+  consecrated: boolean
   age: number
 }
 
@@ -68,10 +69,15 @@ interface ModuleDefinition {
   description: string
 }
 
+interface LoadoutDefinition {
+  id: string
+  name: string
+  description: string
+}
+
 const W = 960
 const H = 560
 const BURIAL_ZONE = { x: 760, y: 280, radius: 78 }
-const UNLOCKS_KEY = 'gravity-graveyard-unlocked-liturgies'
 
 const ACT_COPY: Record<RunAct, { title: string; subtitle: string; objective: string; transmission: string }> = {
   1: {
@@ -103,7 +109,23 @@ const MODULES: ModuleDefinition[] = [
   { id: 'last-prayer', name: '最后祷词', glyph: '✣', description: '相位闪避会释放一次短距斥力脉冲。' },
 ]
 
-const INITIAL_UNLOCKS = MODULES.slice(0, 3).map(module => module.id)
+const TOOLS: LoadoutDefinition[] = [
+  { id: 'funeral-anchor', name: '标准葬锚', description: '均衡的牵引与斥力圣印。' },
+  { id: 'orbit-needle', name: '圣轨针', description: '轨迹预演更长，但圣印作用更柔和。' },
+  { id: 'severance-bell', name: '断轨钟', description: '回收圣印时释放一次斥力波。' },
+]
+
+const SHIPS: LoadoutDefinition[] = [
+  { id: 'ivory-coffin', name: '白棺级', description: '均衡葬仪舰。' },
+  { id: 'pilgrim-wing', name: '巡礼翼', description: '机动更敏捷，惯性更难控制。' },
+  { id: 'echo-barge', name: '回声驳', description: '机动较慢，但碰撞伤害更低。' },
+]
+
+const INITIAL_PROGRESSION: GameProgression = {
+  liturgies: MODULES.slice(0, 3).map(module => module.id),
+  tools: [TOOLS[0].id],
+  ships: [SHIPS[0].id],
+}
 
 const initialRun = (): RunState => ({
   phase: 'briefing',
@@ -128,13 +150,11 @@ const initialPlayer = (): PlayerBody => ({
   shieldCooldown: 0,
 })
 
-function loadUnlocks(): string[] {
-  try {
-    const stored = JSON.parse(window.localStorage.getItem(UNLOCKS_KEY) ?? '[]')
-    if (!Array.isArray(stored)) return INITIAL_UNLOCKS
-    return Array.from(new Set([...INITIAL_UNLOCKS, ...stored.filter(item => typeof item === 'string')]))
-  } catch {
-    return INITIAL_UNLOCKS
+function mergeProgression(stored: GameProgression): GameProgression {
+  return {
+    liturgies: Array.from(new Set([...INITIAL_PROGRESSION.liturgies, ...stored.liturgies])),
+    tools: Array.from(new Set([...INITIAL_PROGRESSION.tools, ...stored.tools])),
+    ships: Array.from(new Set([...INITIAL_PROGRESSION.ships, ...stored.ships])),
   }
 }
 
@@ -189,7 +209,9 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     energy: 100,
     message: messageRef.current,
   })
-  const [unlocked, setUnlocked] = useState<string[]>(loadUnlocks)
+  const [progression, setProgression] = useState<GameProgression>(() => mergeProgression(getGameProgression(gameId)))
+  const [selectedTool, setSelectedTool] = useState(TOOLS[0].id)
+  const [selectedShip, setSelectedShip] = useState(SHIPS[0].id)
   const [choirOn, setChoirOn] = useState(false)
   const [endingChoice, setEndingChoice] = useState('')
 
@@ -236,12 +258,13 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       y: 85 + Math.random() * (H - 170),
       vx: side < 0 ? 45 + Math.random() * 35 : -45 - Math.random() * 35,
       vy: -22 + Math.random() * 44,
-      radius: kind === 'projectile' ? 5 : kind === 'heretic' ? 17 : 15 + Math.random() * 11,
-      mass: kind === 'wreck' ? 1.2 + Math.random() * 1.6 : 1,
+      radius: kind === 'projectile' ? 5 : kind === 'heretic' ? 17 : kind === 'asteroid' ? 12 + Math.random() * 9 : 15 + Math.random() * 11,
+      mass: kind === 'wreck' ? 1.2 + Math.random() * 1.6 : kind === 'asteroid' ? 0.9 + Math.random() * 1.2 : 1,
       hp: kind === 'heretic' ? 48 + act * 8 : kind === 'cathedral' ? 180 : 1,
       rotation: Math.random() * Math.PI * 2,
       spin: -0.7 + Math.random() * 1.4,
       stable: 0,
+      consecrated: false,
       age: 0,
     }
     return { ...base, ...overrides }
@@ -262,6 +285,10 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       vx: 12 - index * 5,
       vy: index % 2 === 0 ? 24 : -19,
     }))
+    bodiesRef.current.push(
+      makeBody('asteroid', act, { x: 310, y: 70, vx: 36, vy: 22 }),
+      makeBody('asteroid', act, { x: 610, y: 485, vx: -28, vy: -20 }),
+    )
     if (act >= 2) {
       bodiesRef.current.push(makeBody('heretic', act, { x: 780, y: 120, vx: -14, vy: 28 }))
       if (act === 2) bodiesRef.current.push(makeBody('heretic', act, { x: 835, y: 430, vx: -16, vy: -25 }))
@@ -301,24 +328,41 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     if (!AudioContextClass) return
     const context = new AudioContextClass()
     const master = context.createGain()
-    master.gain.value = 0.026
+    master.gain.value = 0.018
     master.connect(context.destination)
-    const filter = context.createBiquadFilter()
-    filter.type = 'lowpass'
-    filter.frequency.value = 520
-    filter.Q.value = 0.7
-    filter.connect(master)
-    const nodes: AudioNode[] = [master, filter]
-    ;[55, 82.41, 110].forEach((frequency, index) => {
-      const oscillator = context.createOscillator()
-      const gain = context.createGain()
-      oscillator.type = index === 1 ? 'triangle' : 'sine'
-      oscillator.frequency.value = frequency
-      gain.gain.value = index === 1 ? 0.32 : 0.5
-      oscillator.connect(gain)
-      gain.connect(filter)
-      oscillator.start()
-      nodes.push(oscillator, gain)
+    const lowFormant = context.createBiquadFilter()
+    lowFormant.type = 'bandpass'
+    lowFormant.frequency.value = 520
+    lowFormant.Q.value = 0.8
+    lowFormant.connect(master)
+    const highFormant = context.createBiquadFilter()
+    highFormant.type = 'bandpass'
+    highFormant.frequency.value = 1120
+    highFormant.Q.value = 1.4
+    highFormant.connect(master)
+    const breath = context.createOscillator()
+    const breathDepth = context.createGain()
+    breath.type = 'sine'
+    breath.frequency.value = 0.075
+    breathDepth.gain.value = 0.006
+    breath.connect(breathDepth)
+    breathDepth.connect(master.gain)
+    breath.start()
+    const nodes: AudioNode[] = [master, lowFormant, highFormant, breath, breathDepth]
+    ;[110, 146.83, 174.61, 220].forEach((frequency, chordIndex) => {
+      ;[-7, 7].forEach(detune => {
+        const oscillator = context.createOscillator()
+        const gain = context.createGain()
+        oscillator.type = chordIndex % 2 === 0 ? 'triangle' : 'sine'
+        oscillator.frequency.value = frequency
+        oscillator.detune.value = detune
+        gain.gain.value = chordIndex === 0 ? 0.1 : 0.065
+        oscillator.connect(gain)
+        gain.connect(lowFormant)
+        gain.connect(highFormant)
+        oscillator.start()
+        nodes.push(oscillator, gain)
+      })
     })
     audioRef.current = { context, nodes }
     setChoirOn(true)
@@ -369,7 +413,8 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       emitParticles(player.x, player.y, '#f4d38a', 18)
       return
     }
-    const next = applyRunEvent(runRef.current, { type: 'damage', amount })
+    const effectiveAmount = selectedShip === 'echo-barge' ? amount * 0.65 : amount
+    const next = applyRunEvent(runRef.current, { type: 'damage', amount: effectiveAmount })
     runRef.current = next
     player.invulnerable = 0.9
     emitParticles(player.x, player.y, '#d4585c', 18)
@@ -378,7 +423,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       void submitRecord('lose', next.score)
       syncHud()
     }
-  }, [emitParticles, hasModule, submitRecord, syncHud])
+  }, [emitParticles, hasModule, selectedShip, submitRecord, syncHud])
 
   const addRitual = useCallback((ritual: number, score: number, savedLives: number, message: string) => {
     if (runRef.current.phase !== 'active') return
@@ -396,7 +441,8 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
   const chooseModule = useCallback((moduleId: string) => {
     const next = applyRunEvent(runRef.current, { type: 'choose-module', moduleId })
     runRef.current = next
-    prepareAct(next.act)
+    if (next.phase === 'active') prepareAct(next.act)
+    else messageRef.current = ACT_COPY[3].transmission
     syncHud()
   }, [prepareAct, syncHud])
 
@@ -408,21 +454,29 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     )
     runRef.current = next
     setEndingChoice(choice)
-    const nextUnlock = MODULES.find(module => !unlocked.includes(module.id))
-    if (nextUnlock) {
-      const upgraded = [...unlocked, nextUnlock.id]
-      window.localStorage.setItem(UNLOCKS_KEY, JSON.stringify(upgraded))
-      setUnlocked(upgraded)
-      messageRef.current = `新礼器解锁：${nextUnlock.name}`
+    const nextLiturgy = MODULES.find(module => !progression.liturgies.includes(module.id))
+    const nextTool = TOOLS.find(tool => !progression.tools.includes(tool.id))
+    const nextShip = SHIPS.find(ship => !progression.ships.includes(ship.id))
+    const upgraded: GameProgression = {
+      liturgies: nextLiturgy ? [...progression.liturgies, nextLiturgy.id] : progression.liturgies,
+      tools: nextTool ? [...progression.tools, nextTool.id] : progression.tools,
+      ships: nextShip ? [...progression.ships, nextShip.id] : progression.ships,
+    }
+    const discoveries = [nextLiturgy, nextTool, nextShip].filter((item): item is ModuleDefinition | LoadoutDefinition => Boolean(item))
+    if (discoveries.length > 0) {
+      saveGameProgression(gameId, upgraded)
+      setProgression(upgraded)
+      messageRef.current = `新档案解锁：${discoveries.map(item => item.name).join(' · ')}`
     }
     syncHud()
     void submitRecord('win', next.score)
-  }, [submitRecord, syncHud, unlocked])
+  }, [gameId, progression, submitRecord, syncHud])
 
   const placeAnchor = useCallback((mode: 'pull' | 'repel', point: Vec2) => {
     if (runRef.current.phase !== 'active') return
     const limit = runRef.current.modules.includes('twin-choir') ? 2 : 1
-    const strength = runRef.current.modules.includes('choir-lens') ? 760000 : 560000
+    const baseStrength = selectedTool === 'orbit-needle' ? 470000 : 560000
+    const strength = runRef.current.modules.includes('choir-lens') ? baseStrength * 1.35 : baseStrength
     const anchors = anchorsRef.current
     if (anchors.length >= limit) anchors.shift()
     anchors.push({
@@ -434,7 +488,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     })
     messageRef.current = mode === 'pull' ? '牵引圣印已落下' : '斥力圣印已落下'
     syncHud()
-  }, [syncHud])
+  }, [selectedTool, syncHud])
 
   const pointerPosition = useCallback((event: React.PointerEvent<HTMLCanvasElement>): Vec2 => {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -492,8 +546,20 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       if (event.repeat) return
       if (key === ' ') performDash()
       if (key === 'q' && runRef.current.phase === 'active') {
-        anchorsRef.current.pop()
-        messageRef.current = '圣印已回收'
+        const recovered = anchorsRef.current.pop()
+        if (recovered && selectedTool === 'severance-bell') {
+          bodiesRef.current = bodiesRef.current.map(body => {
+            const dx = body.x - recovered.x
+            const dy = body.y - recovered.y
+            const dist = Math.hypot(dx, dy)
+            if (dist === 0 || dist > 155 || body.kind === 'cathedral') return body
+            return { ...body, vx: body.vx + (dx / dist) * 165, vy: body.vy + (dy / dist) * 165 }
+          })
+          emitParticles(recovered.x, recovered.y, '#c96b73', 20)
+          messageRef.current = '断轨钟释放斥力回声'
+        } else {
+          messageRef.current = '圣印已回收'
+        }
         syncHud()
       }
     }
@@ -504,7 +570,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       window.removeEventListener('keydown', keyDown)
       window.removeEventListener('keyup', keyUp)
     }
-  }, [performDash, syncHud])
+  }, [emitParticles, performDash, selectedTool, syncHud])
 
   const update = useCallback((dt: number) => {
     const currentRun = runRef.current
@@ -516,15 +582,20 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     const inputX = Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft'))
     const inputY = Number(keys.has('s') || keys.has('arrowdown')) - Number(keys.has('w') || keys.has('arrowup'))
     const inputLength = Math.hypot(inputX, inputY) || 1
+    const shipMotion = selectedShip === 'pilgrim-wing'
+      ? { thrust: 290, maxSpeed: 410, drag: 0.989 }
+      : selectedShip === 'echo-barge'
+        ? { thrust: 195, maxSpeed: 300, drag: 0.979 }
+        : { thrust: 240, maxSpeed: 360, drag: 0.985 }
     if (inputX || inputY) {
-      player.vx += (inputX / inputLength) * 240 * dt
-      player.vy += (inputY / inputLength) * 240 * dt
+      player.vx += (inputX / inputLength) * shipMotion.thrust * dt
+      player.vy += (inputY / inputLength) * shipMotion.thrust * dt
     }
-    const gravityPlayer = integrateBody(player, anchorsRef.current, dt, 360)
+    const gravityPlayer = integrateBody(player, anchorsRef.current, dt, shipMotion.maxSpeed)
     player.x = clamp(gravityPlayer.x, 18, W - 18)
     player.y = clamp(gravityPlayer.y, 18, H - 18)
-    player.vx = gravityPlayer.vx * Math.pow(0.985, dt * 60)
-    player.vy = gravityPlayer.vy * Math.pow(0.985, dt * 60)
+    player.vx = gravityPlayer.vx * Math.pow(shipMotion.drag, dt * 60)
+    player.vy = gravityPlayer.vy * Math.pow(shipMotion.drag, dt * 60)
     player.angle = Math.atan2(pointerRef.current.y - player.y, pointerRef.current.x - player.x)
     player.invulnerable = Math.max(0, player.invulnerable - dt)
     player.dashCooldown = Math.max(0, player.dashCooldown - dt)
@@ -534,7 +605,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     spawnTimerRef.current -= dt
     const wrecks = bodiesRef.current.filter(body => body.kind === 'wreck').length
     if (spawnTimerRef.current <= 0 && wrecks < 7) {
-      bodiesRef.current.push(makeBody('wreck', currentRun.act))
+      bodiesRef.current.push(makeBody(Math.random() < 0.22 ? 'asteroid' : 'wreck', currentRun.act))
       spawnTimerRef.current = currentRun.act === 1 ? 3.7 : 3.1
     }
 
@@ -583,12 +654,13 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     const targets = bodiesRef.current.filter(body => body.kind === 'heretic' || body.kind === 'cathedral')
     for (const body of bodiesRef.current) {
       if (removed.has(body.id)) continue
-      if (body.kind === 'wreck' && currentRun.act < 3) {
+      if (body.kind === 'wreck' && !body.consecrated && currentRun.act < 3) {
         const speed = Math.hypot(body.vx, body.vy)
         if (distance(body, BURIAL_ZONE) < BURIAL_ZONE.radius - body.radius && speed < 112) {
           body.stable += dt
           if (body.stable >= 1.15) {
-            removed.add(body.id)
+            body.consecrated = true
+            body.stable = 1.15
             emitParticles(body.x, body.y, '#e4c67d', 24)
             addRitual(currentRun.act === 1 ? 24 : 20, 520 + Math.round(body.mass * 100), currentRun.act === 1 ? 36 : 54, '星骸已进入安息轨道')
           }
@@ -597,13 +669,32 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
         }
       }
 
-      if (body.kind === 'projectile' || body.kind === 'wreck') {
+      if (body.kind === 'projectile') {
+        const blocker = bodiesRef.current.find(candidate =>
+          candidate.id !== body.id
+          && !removed.has(candidate.id)
+          && (candidate.kind === 'wreck' || candidate.kind === 'asteroid')
+          && distance(body, candidate) <= body.radius + candidate.radius
+        )
+        if (blocker) {
+          removed.add(body.id)
+          blocker.vx += body.vx * 0.11
+          blocker.vy += body.vy * 0.11
+          emitParticles(body.x, body.y, blocker.consecrated ? '#e7ca80' : '#a99b86', 10)
+          messageRef.current = blocker.consecrated ? '安息轨道挡下了敌火' : '星骸构成临时护盾'
+          continue
+        }
+      }
+
+      if (body.kind === 'projectile' || body.kind === 'wreck' || body.kind === 'asteroid') {
         const speed = Math.hypot(body.vx, body.vy)
         for (const target of targets) {
           if (target.id === body.id || removed.has(target.id)) continue
           if (distance(body, target) > body.radius + target.radius) continue
-          if (speed < (body.kind === 'wreck' ? 105 : 70)) continue
-          const baseDamage = body.kind === 'wreck' ? (22 + body.mass * 12) * damageScale : 18
+          if (speed < (body.kind === 'projectile' ? 70 : 105)) continue
+          const impactDamage = body.kind === 'projectile' ? 18 : (22 + body.mass * 12)
+          const consecrationScale = body.consecrated ? 1.85 : 1
+          const baseDamage = impactDamage * damageScale * consecrationScale
           target.hp -= baseDamage
           removed.add(body.id)
           emitParticles(body.x, body.y, target.kind === 'cathedral' ? '#f0cb70' : '#b45b62', 20)
@@ -613,7 +704,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
             if (target.hp <= 0) removed.add(target.id)
           } else if (target.hp <= 0) {
             removed.add(target.id)
-            addRitual(16, 780, 42, '异端舰的信标沉默了')
+            addRitual(16, 780, 0, '异端舰失去武装，逃生信标仍在闪烁')
           }
           break
         }
@@ -630,7 +721,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
           const length = Math.hypot(dx, dy) || 1
           player.vx += (dx / length) * 95
           player.vy += (dy / length) * 95
-          if (body.kind === 'wreck') {
+          if (body.kind === 'wreck' || body.kind === 'asteroid') {
             body.vx -= (dx / length) * 70
             body.vy -= (dy / length) * 70
           }
@@ -655,7 +746,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       hudTimerRef.current = 0
       syncHud()
     }
-  }, [addRitual, dealDamage, emitParticles, hasModule, makeBody, syncHud])
+  }, [addRitual, dealDamage, emitParticles, hasModule, makeBody, selectedShip, syncHud])
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current
@@ -747,7 +838,8 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
 
     const previewBody = bodiesRef.current.find(body => body.kind === 'wreck')
     if (previewBody && anchorsRef.current.length > 0) {
-      const points = predictTrajectory(previewBody, anchorsRef.current, hasModule('frozen-psalm') ? 54 : 30, 0.075)
+      const longPreview = hasModule('frozen-psalm') || selectedTool === 'orbit-needle'
+      const points = predictTrajectory(previewBody, anchorsRef.current, longPreview ? 54 : 30, 0.075)
       ctx.save()
       ctx.strokeStyle = 'rgba(236, 211, 153, .34)'
       ctx.lineWidth = 1
@@ -780,11 +872,39 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
         ctx.closePath()
         ctx.fill()
         ctx.stroke()
+        if (body.consecrated) {
+          ctx.strokeStyle = '#efd791'
+          ctx.setLineDash([2, 4])
+          ctx.beginPath()
+          ctx.arc(0, 0, body.radius + 6, 0, Math.PI * 2)
+          ctx.stroke()
+          ctx.setLineDash([])
+        }
         ctx.strokeStyle = 'rgba(246, 225, 177, .48)'
         ctx.beginPath()
         ctx.moveTo(-body.radius * 0.5, body.radius * 0.3)
         ctx.lineTo(body.radius * 0.25, -body.radius * 0.45)
         ctx.stroke()
+      } else if (body.kind === 'asteroid') {
+        ctx.fillStyle = '#4c4541'
+        ctx.strokeStyle = '#8e8175'
+        ctx.lineWidth = 1.2
+        ctx.beginPath()
+        for (let point = 0; point < 9; point += 1) {
+          const angle = (point / 9) * Math.PI * 2
+          const radius = body.radius * (point % 2 === 0 ? 1 : 0.76)
+          const x = Math.cos(angle) * radius
+          const y = Math.sin(angle) * radius
+          if (point === 0) ctx.moveTo(x, y)
+          else ctx.lineTo(x, y)
+        }
+        ctx.closePath()
+        ctx.fill()
+        ctx.stroke()
+        ctx.fillStyle = '#292522'
+        ctx.beginPath()
+        ctx.arc(-body.radius * 0.2, -body.radius * 0.15, body.radius * 0.22, 0, Math.PI * 2)
+        ctx.fill()
       } else if (body.kind === 'projectile') {
         ctx.fillStyle = '#d95562'
         ctx.shadowColor = '#ef4356'
@@ -868,7 +988,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     vignette.addColorStop(1, 'rgba(0,0,0,.58)')
     ctx.fillStyle = vignette
     ctx.fillRect(0, 0, W, H)
-  }, [hasModule, stars])
+  }, [hasModule, selectedTool, stars])
 
   useEffect(() => {
     const frame = (time: number) => {
@@ -886,9 +1006,13 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
   }, [draw, stopChoir, update])
 
   const moduleOptions = useMemo(() => {
-    const available = MODULES.filter(module => unlocked.includes(module.id) && !run.modules.includes(module.id))
-    return available.slice(0, 3)
-  }, [run.modules, unlocked])
+    const unchosen = MODULES.filter(module => !run.modules.includes(module.id))
+    const archived = unchosen.filter(module => progression.liturgies.includes(module.id))
+    const unrecorded = unchosen.filter(module => !progression.liturgies.includes(module.id))
+    return [...archived, ...unrecorded].slice(0, 3)
+  }, [progression.liturgies, run.modules])
+
+  const archiveCount = progression.liturgies.length + progression.tools.length + progression.ships.length
 
   const concordUnlocked = run.hull >= 55 && run.savedLives >= 140
   const endingCopy = endingChoice === 'burial'
@@ -916,7 +1040,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
             >
               {choirOn ? '关闭圣咏' : '开启圣咏'}
             </button>
-            <span className="rounded-full border border-[#6e2632] bg-[#2a0d13] px-3 py-2 text-[#d99aa2]">礼器藏库 {unlocked.length}/6</span>
+            <span className="rounded-full border border-[#6e2632] bg-[#2a0d13] px-3 py-2 text-[#d99aa2]">葬仪档案 {archiveCount}/12</span>
           </div>
         </div>
       </div>
@@ -970,6 +1094,20 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
               <div className="mb-3 text-[10px] font-bold uppercase tracking-[.36em] text-[#d2ae62]">Burial order 7193</div>
               <h3 className="font-serif text-3xl leading-tight text-[#fff8e9] sm:text-5xl">给死者轨道，<br />给生者真相。</h3>
               <p className="mt-4 max-w-md text-sm leading-6 text-[#c7baa5]">你是圣轨教会的星骸葬仪师。没有炮口，只有引力。牵引残骸、折返敌火，在三幕葬仪里决定三百万个意识是否该被埋葬。</p>
+              <div className="mt-4 grid max-w-md grid-cols-2 gap-2 text-[10px] text-[#a99b86]">
+                <label className="rounded-lg border border-[#79603c]/55 bg-black/35 px-3 py-2">
+                  葬仪舰
+                  <select value={selectedShip} onChange={event => setSelectedShip(event.target.value)} className="mt-1 block w-full bg-transparent text-xs text-[#ead9b6] outline-none">
+                    {SHIPS.filter(ship => progression.ships.includes(ship.id)).map(ship => <option key={ship.id} value={ship.id} className="bg-[#120d0e]">{ship.name} · {ship.description}</option>)}
+                  </select>
+                </label>
+                <label className="rounded-lg border border-[#79603c]/55 bg-black/35 px-3 py-2">
+                  引力工具
+                  <select value={selectedTool} onChange={event => setSelectedTool(event.target.value)} className="mt-1 block w-full bg-transparent text-xs text-[#ead9b6] outline-none">
+                    {TOOLS.filter(tool => progression.tools.includes(tool.id)).map(tool => <option key={tool.id} value={tool.id} className="bg-[#120d0e]">{tool.name} · {tool.description}</option>)}
+                  </select>
+                </label>
+              </div>
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <button type="button" onClick={startRun} className="rounded-full border border-[#e1c176] bg-[#d2ae62] px-6 py-3 text-xs font-black tracking-[.2em] text-[#17100a] shadow-[0_0_30px_rgba(210,174,98,.28)] transition hover:bg-[#ead18d]">接受葬仪</button>
                 <span className="text-[11px] text-[#9f927e]">桌面端 · 键鼠 · 单局约 10–15 分钟</span>
@@ -983,7 +1121,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
             <div className="w-full max-w-3xl">
               <div className="text-center">
                 <div className="text-[10px] font-bold uppercase tracking-[.3em] text-[#c6a35c]">Act {run.act} completed</div>
-                <h3 className="mt-2 font-serif text-3xl text-[#f3e8d1]">从遗言中取一件礼器</h3>
+                <h3 className="mt-2 font-serif text-3xl text-[#f3e8d1]">{run.act === 3 ? '为最终裁决选择一件礼器' : '从遗言中取一件礼器'}</h3>
                 <p className="mt-2 text-sm text-[#998e7b]">数值不会带入下一局。新的规则，会。</p>
               </div>
               <div className="mt-7 grid gap-3 md:grid-cols-3">

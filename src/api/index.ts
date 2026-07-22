@@ -1,6 +1,9 @@
 import { defaultPlayRanking, gameCatalog, getCatalogGame } from '../features/games/data'
 import type { Game, User, GameRecord, UserStats, PlayRankItem } from '../types'
 
+export { getGameProgression, saveGameProgression } from './progression'
+export type { GameProgression } from './progression'
+
 const USERS_KEY = 'mini-games-local-users'
 const RECORDS_KEY = 'mini-games-local-records'
 

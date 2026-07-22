@@ -118,13 +118,22 @@ test('fatal hull damage ends the run immediately', () => {
   assert.equal(next.hull, 0)
 })
 
-test('completing the third act opens the ending choice', () => {
-  const next = applyRunEvent(
+test('completing the third act grants a final module before the ending choice', () => {
+  const interlude = applyRunEvent(
     { ...activeRun, act: 3, ritual: 96 },
     { type: 'stabilized', ritual: 8, score: 900, savedLives: 40 },
   )
 
-  assert.equal(next.phase, 'ending')
-  assert.equal(next.ritual, 100)
-  assert.equal(next.savedLives, 40)
+  assert.equal(interlude.phase, 'interlude')
+  assert.equal(interlude.ritual, 100)
+  assert.equal(interlude.savedLives, 40)
+
+  const ending = applyRunEvent(interlude, {
+    type: 'choose-module',
+    moduleId: 'last-prayer',
+  })
+
+  assert.equal(ending.phase, 'ending')
+  assert.equal(ending.act, 3)
+  assert.deepEqual(ending.modules, ['last-prayer'])
 })

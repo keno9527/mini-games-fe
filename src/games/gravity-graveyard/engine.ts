@@ -120,16 +120,16 @@ export function applyRunEvent(state: RunState, event: RunEvent): RunState {
         ritual,
         score: Math.max(0, state.score + event.score),
         savedLives: state.savedLives + Math.max(0, event.savedLives),
-        phase: completed ? (state.act === 3 ? 'ending' : 'interlude') : state.phase,
+        phase: completed ? 'interlude' : state.phase,
       }
     }
     case 'choose-module':
       if (state.phase !== 'interlude') return state
       return {
         ...state,
-        phase: 'active',
+        phase: state.act === 3 ? 'ending' : 'active',
         act: Math.min(3, state.act + 1) as RunAct,
-        ritual: 0,
+        ritual: state.act === 3 ? state.ritual : 0,
         modules: state.modules.includes(event.moduleId)
           ? state.modules
           : [...state.modules, event.moduleId],
