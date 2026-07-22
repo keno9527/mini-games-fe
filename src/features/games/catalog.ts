@@ -1,6 +1,5 @@
 import type { ComponentType } from 'react'
 import Breakout from '../../games/Breakout'
-import Game2048 from '../../games/Game2048'
 import Gomoku from '../../games/Gomoku'
 import MemoryCard from '../../games/MemoryCard'
 import Minesweeper from '../../games/Minesweeper'
@@ -46,10 +45,6 @@ const gamePresentations: Record<string, GamePresentation> = {
     coverGradient: 'from-[#8bc8ff] via-[#4f7ce8] to-[#b27cff]',
     icon: '🃏',
   },
-  '2048': {
-    coverGradient: 'from-[#ffe19b] via-[#ff944d] to-[#ff5f57]',
-    icon: '🔢',
-  },
   memory: {
     coverGradient: 'from-[#57b8ff] via-[#786dff] to-[#b66dff]',
     icon: '🎴',
@@ -92,7 +87,6 @@ const gameComponents: Record<string, ComponentType<GameComponentProps>> = {
   minesweeper: Minesweeper,
   snake: Snake,
   '24points': TwentyFourPoints,
-  '2048': Game2048,
   memory: MemoryCard,
   'whack-a-mole': WhackAMole,
   'slide-puzzle': SlidePuzzle,

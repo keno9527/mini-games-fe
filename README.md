@@ -16,7 +16,6 @@
 项目内置以下小游戏（位于 `src/games/`）：
 
 - 打砖块 Breakout
-- 2048
 - 五子棋 Gomoku
 - 记忆翻牌 Memory Card
 - 扫雷 Minesweeper

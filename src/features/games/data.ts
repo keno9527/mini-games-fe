@@ -26,14 +26,6 @@ export const gameCatalog: Game[] = [
     difficulties: ['简单', '中等', '复杂'],
   },
   {
-    id: '2048',
-    name: '2048',
-    description: '滑动合并数字。简单 3x3、中等 4x4、复杂 5x5，目标分数随盘面调整。',
-    coverImage: '/covers/2048.svg',
-    tags: ['益智', '数学'],
-    difficulties: ['简单', '中等', '复杂'],
-  },
-  {
     id: 'memory',
     name: '记忆翻牌',
     description: '翻开找相同一对。三档难度对应不同对数。',
@@ -120,7 +112,6 @@ export const gameCatalog: Game[] = [
 export const defaultPlayRanking: PlayRankItem[] = [
   { gameId: 'starlight-catcher', gameName: '星光收集局', playCount: 1396 },
   { gameId: 'snake', gameName: '贪吃蛇', playCount: 1268 },
-  { gameId: '2048', gameName: '2048', playCount: 1120 },
   { gameId: 'minesweeper', gameName: '扫雷', playCount: 986 },
   { gameId: 'tetris', gameName: '俄罗斯方块', playCount: 872 },
   { gameId: 'memory', gameName: '记忆翻牌', playCount: 765 },

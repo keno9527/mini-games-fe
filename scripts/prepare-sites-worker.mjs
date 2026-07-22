@@ -5,7 +5,27 @@ const serverDir = resolve('dist', 'server')
 const workerPath = resolve(serverDir, 'index.js')
 
 const workerSource = `
-const INDEX_PATH = '/index.html';
+const INDEX_PATHS = ['/index.html', '/client/index.html'];
+
+async function fetchAsset(request, env) {
+  const response = await env.ASSETS.fetch(request);
+  if (response.status !== 404) return response;
+
+  const url = new URL(request.url);
+  if (url.pathname.startsWith('/client/')) return response;
+
+  const clientUrl = new URL('/client' + url.pathname, request.url);
+  return env.ASSETS.fetch(new Request(clientUrl.toString(), request));
+}
+
+async function fetchIndex(request, env) {
+  for (const path of INDEX_PATHS) {
+    const indexUrl = new URL(path, request.url);
+    const response = await env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+    if (response.status !== 404) return response;
+  }
+  return new Response('Mini Games entry file is unavailable.', { status: 404 });
+}
 
 function shouldFallbackToIndex(request, response) {
   if (response.status !== 404) return false;
@@ -25,11 +45,10 @@ export default {
       return new Response('Sites static asset binding is unavailable.', { status: 500 });
     }
 
-    const response = await env.ASSETS.fetch(request);
+    const response = await fetchAsset(request, env);
     if (!shouldFallbackToIndex(request, response)) return response;
 
-    const indexUrl = new URL(INDEX_PATH, request.url);
-    return env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+    return fetchIndex(request, env);
   },
 };
 `.trimStart()
