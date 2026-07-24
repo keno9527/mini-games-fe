@@ -2,6 +2,14 @@ import type { Game, PlayRankItem } from '../../types'
 
 export const gameCatalog: Game[] = [
   {
+    id: 'tower-defense',
+    name: '绿野防线',
+    description: '在蜿蜒的萤石小径旁布置植物守卫，搭配速射、减速与范围炮塔，抵挡五波荒原来客。',
+    coverImage: '/covers/tower-defense.svg',
+    tags: ['塔防', '策略', '休闲'],
+    difficulties: ['守卫战'],
+  },
+  {
     id: 'gravity-graveyard',
     name: '引力墓场',
     description: '化身星骸葬仪师，以牵引与斥力改写残骸和敌火的轨道，在三幕宇宙葬仪中作出最终裁决。',

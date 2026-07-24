@@ -9,6 +9,7 @@ import SlidePuzzle from '../../games/SlidePuzzle'
 import Snake from '../../games/Snake'
 import Tetris from '../../games/Tetris'
 import TicTacToe from '../../games/TicTacToe'
+import TowerDefense from '../../games/TowerDefense'
 import TwentyFourPoints from '../../games/TwentyFourPoints'
 import WhackAMole from '../../games/WhackAMole'
 import Wordle from '../../games/Wordle'
@@ -30,6 +31,10 @@ const fallbackPresentation: GamePresentation = {
 }
 
 const gamePresentations: Record<string, GamePresentation> = {
+  'tower-defense': {
+    coverGradient: 'from-[#315f3d] via-[#73b658] to-[#f2ce61]',
+    icon: '♜',
+  },
   'gravity-graveyard': {
     coverGradient: 'from-[#050507] via-[#4a111c] to-[#b8914e]',
     icon: '◉',
@@ -89,6 +94,7 @@ const gamePresentations: Record<string, GamePresentation> = {
 }
 
 const gameComponents: Record<string, ComponentType<GameComponentProps>> = {
+  'tower-defense': TowerDefense,
   'gravity-graveyard': GravityGraveyard,
   minesweeper: Minesweeper,
   snake: Snake,
