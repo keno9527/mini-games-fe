@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getGame } from '../api'
-import { getDifficultyChipClass, getGameComponent } from '../features/games/catalog'
+import { getDifficultyChipClass } from '../features/games/catalog'
+import { getGameComponent } from '../games/registry'
 import { useUserStore } from '../store/userStore'
 import type { Game } from '../types'
 
@@ -85,7 +86,15 @@ export default function GameDetail() {
               </div>
 
               {GameComponent ? (
-                <GameComponent userId={currentUser?.id} gameId={id} />
+                <Suspense
+                  fallback={(
+                    <div className="py-20 text-center font-pixel text-[10px] tracking-widest text-crt-cyan">
+                      LOADING GAME...
+                    </div>
+                  )}
+                >
+                  <GameComponent userId={currentUser?.id} gameId={id} />
+                </Suspense>
               ) : (
                 <div className="text-center py-20 font-pixel text-crt-yellow tracking-widest">
                   COMING SOON...

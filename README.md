@@ -15,6 +15,9 @@
 
 项目内置以下小游戏（位于 `src/games/`）：
 
+- 坦克大战 Tank Battle
+- 绿野防线 Tower Defense
+- 引力墓场 Gravity Graveyard
 - 打砖块 Breakout
 - 五子棋 Gomoku
 - 记忆翻牌 Memory Card
@@ -35,14 +38,16 @@ src/
 ├── api/          # 前端本地数据读写封装（保留异步接口）
 ├── assets/       # 静态资源
 ├── components/   # 通用组件（GameCard / Header / UserSelector）
-├── features/     # 领域配置（游戏目录 / 展示配置）
-├── games/        # 各个小游戏组件
+├── features/     # 广场领域配置（游戏清单 / 展示配置）
+├── games/        # 游戏模块注册表与各游戏独立目录
 ├── pages/        # 页面（Home / GameDetail / Profile）
 ├── store/        # Zustand 状态管理
 ├── types/        # TypeScript 类型定义
 ├── App.tsx
 └── main.tsx
 ```
+
+每个本地游戏目录通过 `manifest.ts` 声明广场元数据、视觉配置和懒加载入口，具体实现从该目录的 `index.tsx` 进入。新增或优化游戏时，游戏内改动保持在对应目录，主框架只通过 `src/games/registry.ts` 读取统一接口。
 
 ## 快速开始
 

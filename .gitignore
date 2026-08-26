@@ -34,3 +34,6 @@ dist-ssr
 .superpowers/
 docs/
 log/*
+.codex-audit/
+.openai/
+
