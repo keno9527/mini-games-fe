@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { createRecord } from '../../api'
+import { createRecord } from '@/api'
 
 interface Props {
   userId?: string
@@ -63,7 +63,7 @@ export default function ReactionTest({ userId, gameId }: Props) {
         await createRecord(userId, { gameId, score, duration: durationSec, result: 'complete' })
       } catch {}
     },
-    [userId, gameId]
+    [userId, gameId],
   )
 
   const finishGame = useCallback(
@@ -73,7 +73,7 @@ export default function ReactionTest({ userId, gameId }: Props) {
       const dur = Math.max(1, Math.floor((Date.now() - sessionStartRef.current) / 1000))
       void submitSession(finalScore, dur)
     },
-    [submitSession]
+    [submitSession],
   )
 
   const scheduleWait = useCallback(
@@ -104,7 +104,7 @@ export default function ReactionTest({ userId, gameId }: Props) {
         }, c.readyTimeout)
       }, delay)
     },
-    [finishGame]
+    [finishGame],
   )
 
   const startGame = () => {
@@ -128,7 +128,7 @@ export default function ReactionTest({ userId, gameId }: Props) {
 
     if (phase === 'waiting') {
       clearTimers()
-      setTotalScore(s => {
+      setTotalScore((s) => {
         const ns = Math.max(0, s - c.earlyPenalty)
         scoreRef.current = ns
         return ns
@@ -181,7 +181,7 @@ export default function ReactionTest({ userId, gameId }: Props) {
   return (
     <div className="flex flex-col items-center gap-5">
       <div className="flex flex-wrap gap-2 justify-center">
-        {(Object.keys(CFG) as Level[]).map(lv => (
+        {(Object.keys(CFG) as Level[]).map((lv) => (
           <button
             key={lv}
             type="button"

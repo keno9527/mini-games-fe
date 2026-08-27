@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { createRecord } from '../../api'
+import { createRecord } from '@/api'
 
 interface Props {
   userId?: string
@@ -8,8 +8,24 @@ interface Props {
 
 type DiffLevel = '简单' | '中等' | '复杂'
 
-const EMOJIS_POOL = ['🐱', '🐶', '🦊', '🐻', '🐼', '🦁', '🐯', '🐸',
-                     '🐙', '🦋', '🌈', '⭐', '🍎', '🍓', '🎈', '🚀']
+const EMOJIS_POOL = [
+  '🐱',
+  '🐶',
+  '🦊',
+  '🐻',
+  '🐼',
+  '🦁',
+  '🐯',
+  '🐸',
+  '🐙',
+  '🦋',
+  '🌈',
+  '⭐',
+  '🍎',
+  '🍓',
+  '🎈',
+  '🚀',
+]
 
 const CONFIGS: Record<DiffLevel, { pairs: number; emoji: string }> = {
   简单: { pairs: 6, emoji: '😊' },
@@ -20,8 +36,8 @@ const CONFIGS: Record<DiffLevel, { pairs: number; emoji: string }> = {
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
   }
   return a
 }
@@ -50,25 +66,31 @@ export default function MemoryCard({ userId, gameId }: Props) {
 
   const cfg = CONFIGS[difficulty]
 
-  const submitRecord = useCallback(async (score: number, duration: number) => {
-    if (!userId || submitted) return
-    setSubmitted(true)
-    try {
-      await createRecord(userId, { gameId, score, duration, result: 'win' })
-    } catch {}
-  }, [userId, gameId, submitted])
+  const submitRecord = useCallback(
+    async (score: number, duration: number) => {
+      if (!userId || submitted) return
+      setSubmitted(true)
+      try {
+        await createRecord(userId, { gameId, score, duration, result: 'win' })
+      } catch {}
+    },
+    [userId, gameId, submitted],
+  )
 
-  const reset = useCallback((diff: DiffLevel = difficulty) => {
-    const c = CONFIGS[diff]
-    setCards(makeCards(c.pairs))
-    setFlipped(new Set())
-    setMatched(new Set())
-    setSelected([])
-    setSteps(0)
-    setLocked(false)
-    setStatus('idle')
-    setSubmitted(false)
-  }, [difficulty])
+  const reset = useCallback(
+    (diff: DiffLevel = difficulty) => {
+      const c = CONFIGS[diff]
+      setCards(makeCards(c.pairs))
+      setFlipped(new Set())
+      setMatched(new Set())
+      setSelected([])
+      setSteps(0)
+      setLocked(false)
+      setStatus('idle')
+      setSubmitted(false)
+    },
+    [difficulty],
+  )
 
   const handleFlip = (id: number) => {
     if (locked) return
@@ -86,7 +108,7 @@ export default function MemoryCard({ userId, gameId }: Props) {
     setSelected(newSelected)
 
     if (newSelected.length === 2) {
-      setSteps(s => s + 1)
+      setSteps((s) => s + 1)
       setLocked(true)
 
       const [a, b] = newSelected
@@ -133,10 +155,13 @@ export default function MemoryCard({ userId, gameId }: Props) {
     <div className="flex flex-col items-center gap-5">
       {/* Controls */}
       <div className="flex items-center gap-3 flex-wrap justify-center">
-        {(Object.keys(CONFIGS) as DiffLevel[]).map(d => (
+        {(Object.keys(CONFIGS) as DiffLevel[]).map((d) => (
           <button
             key={d}
-            onClick={() => { setDifficulty(d); reset(d) }}
+            onClick={() => {
+              setDifficulty(d)
+              reset(d)
+            }}
             className={`px-4 py-2 rounded-full text-sm font-black transition-all border-2 shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 ${
               difficulty === d
                 ? 'bg-fun-pink text-white border-fun-pink'
@@ -148,7 +173,9 @@ export default function MemoryCard({ userId, gameId }: Props) {
         ))}
         <div className="flex items-center gap-3 bg-fun-bg border-2 border-fun-border rounded-full px-4 py-2 text-sm font-bold text-fun-muted">
           <span>👣 {steps} 步</span>
-          <span>✅ {matched.size / 2}/{cfg.pairs} 对</span>
+          <span>
+            ✅ {matched.size / 2}/{cfg.pairs} 对
+          </span>
         </div>
         <button
           onClick={() => reset()}
@@ -201,9 +228,7 @@ export default function MemoryCard({ userId, gameId }: Props) {
                 {/* Front face */}
                 <div
                   className={`absolute inset-0 rounded-2xl border-2 flex items-center justify-center shadow-card text-4xl transition-all ${
-                    isMatched
-                      ? 'border-fun-green bg-green-50'
-                      : 'border-fun-pink/50 bg-pink-50'
+                    isMatched ? 'border-fun-green bg-green-50' : 'border-fun-pink/50 bg-pink-50'
                   }`}
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                 >
@@ -225,7 +250,9 @@ export default function MemoryCard({ userId, gameId }: Props) {
       )}
 
       {status === 'idle' && (
-        <p className="text-sm text-fun-muted font-semibold">点击任意一张牌开始游戏！找到所有配对 🃏</p>
+        <p className="text-sm text-fun-muted font-semibold">
+          点击任意一张牌开始游戏！找到所有配对 🃏
+        </p>
       )}
     </div>
   )

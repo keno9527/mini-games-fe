@@ -62,31 +62,31 @@ export enum SceneKind {
 
 /** 一帧内的输入快照，不可变以避免 tick 中途输入抖动 */
 export interface InputSnapshot {
-  readonly up: boolean;
-  readonly down: boolean;
-  readonly left: boolean;
-  readonly right: boolean;
-  readonly fire: boolean;
+  readonly up: boolean
+  readonly down: boolean
+  readonly left: boolean
+  readonly right: boolean
+  readonly fire: boolean
   /** 暂停为边沿触发：仅在按下的那一帧为 true */
-  readonly pauseEdge: boolean;
+  readonly pauseEdge: boolean
   /** 确认键（开始游戏 / 重开）边沿触发 */
-  readonly confirmEdge: boolean;
+  readonly confirmEdge: boolean
 }
 
 /** 轴对齐矩形，单位为逻辑像素 */
 export interface Rect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 /** 子弹击中地形的结果 */
 export interface TerrainHitResult {
   /** 是否命中了阻挡子弹的地形 */
-  hit: boolean;
+  hit: boolean
   /** 是否真正破坏了地形（钢墙被弱子弹击中时 hit 为 true 但 destroyed 为 false） */
-  destroyed: boolean;
+  destroyed: boolean
 }
 
 /** 关卡数据。地形用字符矩阵表达，便于直接手写与阅读。 */
@@ -95,23 +95,23 @@ export interface LevelData {
    * GRID_SIZE 行字符串，每行 GRID_SIZE 个字符：
    * `.` 空地 / `#` 砖墙 / `@` 钢墙 / `~` 水 / `*` 草地 / `%` 冰面
    */
-  readonly terrain: readonly string[];
+  readonly terrain: readonly string[]
   /** 本关敌方坦克按出场顺序的类型配额，长度应等于 ENEMIES_PER_LEVEL */
-  readonly enemyQueue: readonly EnemyKind[];
+  readonly enemyQueue: readonly EnemyKind[]
 }
 
 /** 敌方 / 玩家坦克的属性配置 */
 export interface TankSpec {
   /** 每帧移动的逻辑像素数 */
-  readonly moveSpeed: number;
+  readonly moveSpeed: number
   /** 子弹每帧移动的逻辑像素数 */
-  readonly bulletSpeed: number;
+  readonly bulletSpeed: number
   /** 可承受的击中次数 */
-  readonly armor: number;
+  readonly armor: number
   /** 同屏可存在的自身子弹数 */
-  readonly maxBullets: number;
+  readonly maxBullets: number
   /** 子弹威力：>= 2 可击穿钢墙 */
-  readonly bulletPower: number;
+  readonly bulletPower: number
   /** 击毁得分 */
-  readonly score: number;
+  readonly score: number
 }

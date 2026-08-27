@@ -1,12 +1,11 @@
-import type { GameManifest } from '../manifest.ts'
+import type { GameManifest } from '@/games/manifest.ts'
 
 export default {
   game: {
     id: 'tower-defense',
     name: '绿野防线',
-    description: '在蜿蜒的萤石小径旁布置植物守卫，搭配速射、减速与范围炮塔，抵挡五波荒原来客。',
-    coverImage: '/covers/tower-defense.svg',
-    tags: ['塔防', '策略', '休闲'],
+    description: '六种特色守卫、飞行与分裂敌人、可破坏障碍物、三大主动技能，八波挑战守护萝卜！',
+    tags: ['塔防', '策略', '保卫萝卜'],
     difficulties: ['守卫战'],
   },
   presentation: {

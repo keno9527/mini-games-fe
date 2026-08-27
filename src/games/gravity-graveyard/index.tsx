@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createRecord, getGameProgression, saveGameProgression, type GameProgression } from '../../api'
+import { createRecord } from '@/api'
+import {
+  getGameProgression,
+  saveGameProgression,
+  type GameProgression,
+} from '@/games/gravity-graveyard/progression'
 import {
   applyRunEvent,
   integrateBody,
@@ -8,7 +13,7 @@ import {
   type RunAct,
   type RunState,
   type Vec2,
-} from './engine'
+} from '@/games/gravity-graveyard/engine'
 
 interface Props {
   userId?: string
@@ -79,7 +84,10 @@ const W = 960
 const H = 560
 const BURIAL_ZONE = { x: 760, y: 280, radius: 78 }
 
-const ACT_COPY: Record<RunAct, { title: string; subtitle: string; objective: string; transmission: string }> = {
+const ACT_COPY: Record<
+  RunAct,
+  { title: string; subtitle: string; objective: string; transmission: string }
+> = {
   1: {
     title: '第一幕 · 静默墓场',
     subtitle: '为无名星骸完成最后一次稳定轨道。',
@@ -101,15 +109,55 @@ const ACT_COPY: Record<RunAct, { title: string; subtitle: string; objective: str
 }
 
 const MODULES: ModuleDefinition[] = [
-  { id: 'twin-choir', name: '双锚共鸣', glyph: 'Ⅱ', description: '可同时维持两枚引力锚，制造弹弓轨道。' },
-  { id: 'choir-lens', name: '圣咏透镜', glyph: '◉', description: '引力锚强度提升 35%，轨道弯折更锐利。' },
+  {
+    id: 'twin-choir',
+    name: '双锚共鸣',
+    glyph: 'Ⅱ',
+    description: '可同时维持两枚引力锚，制造弹弓轨道。',
+  },
+  {
+    id: 'choir-lens',
+    name: '圣咏透镜',
+    glyph: '◉',
+    description: '引力锚强度提升 35%，轨道弯折更锐利。',
+  },
   { id: 'reliquary', name: '遗骸圣匣', glyph: '◇', description: '每 12 秒抵消一次碰撞伤害。' },
-  { id: 'frozen-psalm', name: '冻结轨迹', glyph: '⌁', description: '预演更长的星骸轨迹，便于精确安葬。' },
-  { id: 'mass-offering', name: '质量献祭', glyph: '✦', description: '星骸撞击敌舰的伤害与仪式进度提升。' },
-  { id: 'last-prayer', name: '最后祷词', glyph: '✣', description: '相位闪避会释放一次短距斥力脉冲。' },
-  { id: 'mirror-rite', name: '镜面圣礼', glyph: '⬡', description: '被引力折返的敌火会造成更高核心伤害。' },
-  { id: 'merciful-orbit', name: '慈悲轨道', glyph: '◌', description: '每次稳定星骸都会修复少量舰体。' },
-  { id: 'black-vespers', name: '黑色晚祷', glyph: '†', description: '相位闪避消耗的能量显著降低。' },
+  {
+    id: 'frozen-psalm',
+    name: '冻结轨迹',
+    glyph: '⌁',
+    description: '预演更长的星骸轨迹，便于精确安葬。',
+  },
+  {
+    id: 'mass-offering',
+    name: '质量献祭',
+    glyph: '✦',
+    description: '星骸撞击敌舰的伤害与仪式进度提升。',
+  },
+  {
+    id: 'last-prayer',
+    name: '最后祷词',
+    glyph: '✣',
+    description: '相位闪避会释放一次短距斥力脉冲。',
+  },
+  {
+    id: 'mirror-rite',
+    name: '镜面圣礼',
+    glyph: '⬡',
+    description: '被引力折返的敌火会造成更高核心伤害。',
+  },
+  {
+    id: 'merciful-orbit',
+    name: '慈悲轨道',
+    glyph: '◌',
+    description: '每次稳定星骸都会修复少量舰体。',
+  },
+  {
+    id: 'black-vespers',
+    name: '黑色晚祷',
+    glyph: '†',
+    description: '相位闪避消耗的能量显著降低。',
+  },
 ]
 
 const TOOLS: LoadoutDefinition[] = [
@@ -125,7 +173,7 @@ const SHIPS: LoadoutDefinition[] = [
 ]
 
 const INITIAL_PROGRESSION: GameProgression = {
-  liturgies: MODULES.slice(0, 6).map(module => module.id),
+  liturgies: MODULES.slice(0, 6).map((module) => module.id),
   tools: [TOOLS[0].id],
   ships: [SHIPS[0].id],
 }
@@ -212,7 +260,9 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     energy: 100,
     message: messageRef.current,
   })
-  const [progression, setProgression] = useState<GameProgression>(() => mergeProgression(getGameProgression(gameId)))
+  const [progression, setProgression] = useState<GameProgression>(() =>
+    mergeProgression(getGameProgression(gameId)),
+  )
   const [selectedTool, setSelectedTool] = useState(TOOLS[0].id)
   const [selectedShip, setSelectedShip] = useState(SHIPS[0].id)
   const [choirOn, setChoirOn] = useState(false)
@@ -221,7 +271,6 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
   const stars = useMemo(seededStars, [])
   const actCopy = ACT_COPY[run.act]
   const hasModule = useCallback((id: string) => runRef.current.modules.includes(id), [])
-  const maxAnchors = hasModule('twin-choir') ? 2 : 1
 
   const syncHud = useCallback(() => {
     const next = { ...runRef.current, modules: [...runRef.current.modules] }
@@ -251,71 +300,98 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     }
   }, [])
 
-  const makeBody = useCallback((kind: BodyKind, act: RunAct, overrides: Partial<GraveBody> = {}): GraveBody => {
-    entityIdRef.current += 1
-    const side = Math.random() > 0.5 ? -1 : 1
-    const base: GraveBody = {
-      id: entityIdRef.current,
-      kind,
-      x: kind === 'heretic' ? 720 + Math.random() * 120 : side < 0 ? -40 : W + 40,
-      y: 85 + Math.random() * (H - 170),
-      vx: side < 0 ? 45 + Math.random() * 35 : -45 - Math.random() * 35,
-      vy: -22 + Math.random() * 44,
-      radius: kind === 'projectile' ? 5 : kind === 'heretic' ? 17 : kind === 'asteroid' ? 12 + Math.random() * 9 : 15 + Math.random() * 11,
-      mass: kind === 'wreck' ? 1.2 + Math.random() * 1.6 : kind === 'asteroid' ? 0.9 + Math.random() * 1.2 : 1,
-      hp: kind === 'heretic' ? 48 + act * 8 : kind === 'cathedral' ? 180 : 1,
-      rotation: Math.random() * Math.PI * 2,
-      spin: -0.7 + Math.random() * 1.4,
-      stable: 0,
-      consecrated: false,
-      age: 0,
-    }
-    return { ...base, ...overrides }
-  }, [])
+  const makeBody = useCallback(
+    (kind: BodyKind, act: RunAct, overrides: Partial<GraveBody> = {}): GraveBody => {
+      entityIdRef.current += 1
+      const side = Math.random() > 0.5 ? -1 : 1
+      const base: GraveBody = {
+        id: entityIdRef.current,
+        kind,
+        x: kind === 'heretic' ? 720 + Math.random() * 120 : side < 0 ? -40 : W + 40,
+        y: 85 + Math.random() * (H - 170),
+        vx: side < 0 ? 45 + Math.random() * 35 : -45 - Math.random() * 35,
+        vy: -22 + Math.random() * 44,
+        radius:
+          kind === 'projectile'
+            ? 5
+            : kind === 'heretic'
+              ? 17
+              : kind === 'asteroid'
+                ? 12 + Math.random() * 9
+                : 15 + Math.random() * 11,
+        mass:
+          kind === 'wreck'
+            ? 1.2 + Math.random() * 1.6
+            : kind === 'asteroid'
+              ? 0.9 + Math.random() * 1.2
+              : 1,
+        hp: kind === 'heretic' ? 48 + act * 8 : kind === 'cathedral' ? 180 : 1,
+        rotation: Math.random() * Math.PI * 2,
+        spin: -0.7 + Math.random() * 1.4,
+        stable: 0,
+        consecrated: false,
+        age: 0,
+      }
+      return { ...base, ...overrides }
+    },
+    [],
+  )
 
-  const prepareAct = useCallback((act: RunAct) => {
-    anchorsRef.current = []
-    particlesRef.current = []
-    playerRef.current = initialPlayer()
-    energyRef.current = 100
-    spawnTimerRef.current = 1.5
-    shotTimerRef.current = 1.8
-    messageRef.current = ACT_COPY[act].transmission
-    const wreckCount = act === 1 ? 5 : 4
-    bodiesRef.current = Array.from({ length: wreckCount }, (_, index) => makeBody('wreck', act, {
-      x: 350 + index * 72,
-      y: 100 + (index % 3) * 155,
-      vx: 12 - index * 5,
-      vy: index % 2 === 0 ? 24 : -19,
-    }))
-    bodiesRef.current.push(
-      makeBody('asteroid', act, { x: 310, y: 70, vx: 36, vy: 22 }),
-      makeBody('asteroid', act, { x: 610, y: 485, vx: -28, vy: -20 }),
-    )
-    if (act >= 2) {
-      bodiesRef.current.push(makeBody('heretic', act, { x: 780, y: 120, vx: -14, vy: 28 }))
-      if (act === 2) bodiesRef.current.push(makeBody('heretic', act, { x: 835, y: 430, vx: -16, vy: -25 }))
-    }
-    if (act === 3) {
-      bossHpRef.current = 180
-      bodiesRef.current = bodiesRef.current.filter(body => body.kind !== 'heretic')
-      bodiesRef.current.push(makeBody('cathedral', act, {
-        x: BURIAL_ZONE.x,
-        y: BURIAL_ZONE.y,
-        vx: 0,
-        vy: 0,
-        radius: 54,
-        hp: 180,
-        spin: 0.08,
-      }))
-    }
-  }, [makeBody])
+  const prepareAct = useCallback(
+    (act: RunAct) => {
+      anchorsRef.current = []
+      particlesRef.current = []
+      playerRef.current = initialPlayer()
+      energyRef.current = 100
+      spawnTimerRef.current = 1.5
+      shotTimerRef.current = 1.8
+      messageRef.current = ACT_COPY[act].transmission
+      const wreckCount = act === 1 ? 5 : 4
+      bodiesRef.current = Array.from({ length: wreckCount }, (_, index) =>
+        makeBody('wreck', act, {
+          x: 350 + index * 72,
+          y: 100 + (index % 3) * 155,
+          vx: 12 - index * 5,
+          vy: index % 2 === 0 ? 24 : -19,
+        }),
+      )
+      bodiesRef.current.push(
+        makeBody('asteroid', act, { x: 310, y: 70, vx: 36, vy: 22 }),
+        makeBody('asteroid', act, { x: 610, y: 485, vx: -28, vy: -20 }),
+      )
+      if (act >= 2) {
+        bodiesRef.current.push(makeBody('heretic', act, { x: 780, y: 120, vx: -14, vy: 28 }))
+        if (act === 2)
+          bodiesRef.current.push(makeBody('heretic', act, { x: 835, y: 430, vx: -16, vy: -25 }))
+      }
+      if (act === 3) {
+        bossHpRef.current = 180
+        bodiesRef.current = bodiesRef.current.filter((body) => body.kind !== 'heretic')
+        bodiesRef.current.push(
+          makeBody('cathedral', act, {
+            x: BURIAL_ZONE.x,
+            y: BURIAL_ZONE.y,
+            vx: 0,
+            vy: 0,
+            radius: 54,
+            hp: 180,
+            spin: 0.08,
+          }),
+        )
+      }
+    },
+    [makeBody],
+  )
 
   const stopChoir = useCallback(() => {
     if (!audioRef.current) return
     const { context, nodes } = audioRef.current
-    nodes.forEach(node => {
-      try { node.disconnect() } catch { /* already disconnected */ }
+    nodes.forEach((node) => {
+      try {
+        node.disconnect()
+      } catch {
+        /* already disconnected */
+      }
     })
     void context.close()
     audioRef.current = null
@@ -353,7 +429,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     breath.start()
     const nodes: AudioNode[] = [master, lowFormant, highFormant, breath, breathDepth]
     ;[110, 146.83, 174.61, 220].forEach((frequency, chordIndex) => {
-      ;[-7, 7].forEach(detune => {
+      ;[-7, 7].forEach((detune) => {
         const oscillator = context.createOscillator()
         const gain = context.createGain()
         oscillator.type = chordIndex % 2 === 0 ? 'triangle' : 'sine'
@@ -395,103 +471,125 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     syncHud()
   }, [syncHud])
 
-  const submitRecord = useCallback(async (result: 'win' | 'lose', score: number) => {
-    if (!userId || submittedRef.current) return
-    submittedRef.current = true
-    const duration = Math.max(1, Math.round((Date.now() - startTimeRef.current) / 1000))
-    try {
-      await createRecord(userId, { gameId, score, duration, result })
-    } catch {
-      submittedRef.current = false
-    }
-  }, [gameId, userId])
+  const submitRecord = useCallback(
+    async (result: 'win' | 'lose', score: number) => {
+      if (!userId || submittedRef.current) return
+      submittedRef.current = true
+      const duration = Math.max(1, Math.round((Date.now() - startTimeRef.current) / 1000))
+      try {
+        await createRecord(userId, { gameId, score, duration, result })
+      } catch {
+        submittedRef.current = false
+      }
+    },
+    [gameId, userId],
+  )
 
-  const dealDamage = useCallback((amount: number) => {
-    const player = playerRef.current
-    if (player.invulnerable > 0) return
-    if (hasModule('reliquary') && player.shieldCooldown <= 0) {
-      player.shieldCooldown = 12
-      player.invulnerable = 0.45
-      messageRef.current = '遗骸圣匣吞没了撞击'
-      emitParticles(player.x, player.y, '#f4d38a', 18)
-      return
-    }
-    const effectiveAmount = selectedShip === 'echo-barge' ? amount * 0.65 : amount
-    const next = applyRunEvent(runRef.current, { type: 'damage', amount: effectiveAmount })
-    runRef.current = next
-    player.invulnerable = 0.9
-    emitParticles(player.x, player.y, '#d4585c', 18)
-    if (next.phase === 'defeat') {
-      messageRef.current = '葬仪舰失去回应'
-      void submitRecord('lose', next.score)
+  const dealDamage = useCallback(
+    (amount: number) => {
+      const player = playerRef.current
+      if (player.invulnerable > 0) return
+      if (hasModule('reliquary') && player.shieldCooldown <= 0) {
+        player.shieldCooldown = 12
+        player.invulnerable = 0.45
+        messageRef.current = '遗骸圣匣吞没了撞击'
+        emitParticles(player.x, player.y, '#f4d38a', 18)
+        return
+      }
+      const effectiveAmount = selectedShip === 'echo-barge' ? amount * 0.65 : amount
+      const next = applyRunEvent(runRef.current, { type: 'damage', amount: effectiveAmount })
+      runRef.current = next
+      player.invulnerable = 0.9
+      emitParticles(player.x, player.y, '#d4585c', 18)
+      if (next.phase === 'defeat') {
+        messageRef.current = '葬仪舰失去回应'
+        void submitRecord('lose', next.score)
+        syncHud()
+      }
+    },
+    [emitParticles, hasModule, selectedShip, submitRecord, syncHud],
+  )
+
+  const addRitual = useCallback(
+    (ritual: number, score: number, savedLives: number, message: string) => {
+      if (runRef.current.phase !== 'active') return
+      const previousPhase = runRef.current.phase
+      const next = applyRunEvent(runRef.current, { type: 'stabilized', ritual, score, savedLives })
+      runRef.current = next
+      messageRef.current = message
+      if (previousPhase !== next.phase) {
+        anchorsRef.current = []
+        if (next.phase === 'ending') messageRef.current = ACT_COPY[3].transmission
+        syncHud()
+      }
+    },
+    [syncHud],
+  )
+
+  const chooseModule = useCallback(
+    (moduleId: string) => {
+      const next = applyRunEvent(runRef.current, { type: 'choose-module', moduleId })
+      runRef.current = next
+      if (next.phase === 'active') prepareAct(next.act)
+      else messageRef.current = ACT_COPY[3].transmission
       syncHud()
-    }
-  }, [emitParticles, hasModule, selectedShip, submitRecord, syncHud])
+    },
+    [prepareAct, syncHud],
+  )
 
-  const addRitual = useCallback((ritual: number, score: number, savedLives: number, message: string) => {
-    if (runRef.current.phase !== 'active') return
-    const previousPhase = runRef.current.phase
-    const next = applyRunEvent(runRef.current, { type: 'stabilized', ritual, score, savedLives })
-    runRef.current = next
-    messageRef.current = message
-    if (previousPhase !== next.phase) {
-      anchorsRef.current = []
-      if (next.phase === 'ending') messageRef.current = ACT_COPY[3].transmission
+  const finishEnding = useCallback(
+    (choice: 'burial' | 'release' | 'concord') => {
+      const endingScore = choice === 'concord' ? 3400 : choice === 'release' ? 1900 : 2300
+      const next = applyRunEvent(
+        applyRunEvent(runRef.current, { type: 'score', amount: endingScore }),
+        { type: 'finish-ending' },
+      )
+      runRef.current = next
+      setEndingChoice(choice)
+      const nextLiturgy = MODULES.find((module) => !progression.liturgies.includes(module.id))
+      const nextTool = TOOLS.find((tool) => !progression.tools.includes(tool.id))
+      const nextShip = SHIPS.find((ship) => !progression.ships.includes(ship.id))
+      const upgraded: GameProgression = {
+        liturgies: nextLiturgy ? [...progression.liturgies, nextLiturgy.id] : progression.liturgies,
+        tools: nextTool ? [...progression.tools, nextTool.id] : progression.tools,
+        ships: nextShip ? [...progression.ships, nextShip.id] : progression.ships,
+      }
+      const discoveries = [nextLiturgy, nextTool, nextShip].filter(
+        (item): item is ModuleDefinition | LoadoutDefinition => Boolean(item),
+      )
+      if (discoveries.length > 0) {
+        saveGameProgression(gameId, upgraded)
+        setProgression(upgraded)
+        messageRef.current = `新档案解锁：${discoveries.map((item) => item.name).join(' · ')}`
+      }
       syncHud()
-    }
-  }, [syncHud])
+      void submitRecord('win', next.score)
+    },
+    [gameId, progression, submitRecord, syncHud],
+  )
 
-  const chooseModule = useCallback((moduleId: string) => {
-    const next = applyRunEvent(runRef.current, { type: 'choose-module', moduleId })
-    runRef.current = next
-    if (next.phase === 'active') prepareAct(next.act)
-    else messageRef.current = ACT_COPY[3].transmission
-    syncHud()
-  }, [prepareAct, syncHud])
-
-  const finishEnding = useCallback((choice: 'burial' | 'release' | 'concord') => {
-    const endingScore = choice === 'concord' ? 3400 : choice === 'release' ? 1900 : 2300
-    const next = applyRunEvent(
-      applyRunEvent(runRef.current, { type: 'score', amount: endingScore }),
-      { type: 'finish-ending' },
-    )
-    runRef.current = next
-    setEndingChoice(choice)
-    const nextLiturgy = MODULES.find(module => !progression.liturgies.includes(module.id))
-    const nextTool = TOOLS.find(tool => !progression.tools.includes(tool.id))
-    const nextShip = SHIPS.find(ship => !progression.ships.includes(ship.id))
-    const upgraded: GameProgression = {
-      liturgies: nextLiturgy ? [...progression.liturgies, nextLiturgy.id] : progression.liturgies,
-      tools: nextTool ? [...progression.tools, nextTool.id] : progression.tools,
-      ships: nextShip ? [...progression.ships, nextShip.id] : progression.ships,
-    }
-    const discoveries = [nextLiturgy, nextTool, nextShip].filter((item): item is ModuleDefinition | LoadoutDefinition => Boolean(item))
-    if (discoveries.length > 0) {
-      saveGameProgression(gameId, upgraded)
-      setProgression(upgraded)
-      messageRef.current = `新档案解锁：${discoveries.map(item => item.name).join(' · ')}`
-    }
-    syncHud()
-    void submitRecord('win', next.score)
-  }, [gameId, progression, submitRecord, syncHud])
-
-  const placeAnchor = useCallback((mode: 'pull' | 'repel', point: Vec2) => {
-    if (runRef.current.phase !== 'active') return
-    const limit = runRef.current.modules.includes('twin-choir') ? 2 : 1
-    const baseStrength = selectedTool === 'orbit-needle' ? 470000 : 560000
-    const strength = runRef.current.modules.includes('choir-lens') ? baseStrength * 1.35 : baseStrength
-    const anchors = anchorsRef.current
-    if (anchors.length >= limit) anchors.shift()
-    anchors.push({
-      id: `anchor-${Date.now()}-${anchors.length}`,
-      x: clamp(point.x, 30, W - 30),
-      y: clamp(point.y, 30, H - 30),
-      mode,
-      strength,
-    })
-    messageRef.current = mode === 'pull' ? '牵引圣印已落下' : '斥力圣印已落下'
-    syncHud()
-  }, [selectedTool, syncHud])
+  const placeAnchor = useCallback(
+    (mode: 'pull' | 'repel', point: Vec2) => {
+      if (runRef.current.phase !== 'active') return
+      const limit = runRef.current.modules.includes('twin-choir') ? 2 : 1
+      const baseStrength = selectedTool === 'orbit-needle' ? 470000 : 560000
+      const strength = runRef.current.modules.includes('choir-lens')
+        ? baseStrength * 1.35
+        : baseStrength
+      const anchors = anchorsRef.current
+      if (anchors.length >= limit) anchors.shift()
+      anchors.push({
+        id: `anchor-${Date.now()}-${anchors.length}`,
+        x: clamp(point.x, 30, W - 30),
+        y: clamp(point.y, 30, H - 30),
+        mode,
+        strength,
+      })
+      messageRef.current = mode === 'pull' ? '牵引圣印已落下' : '斥力圣印已落下'
+      syncHud()
+    },
+    [selectedTool, syncHud],
+  )
 
   const pointerPosition = useCallback((event: React.PointerEvent<HTMLCanvasElement>): Vec2 => {
     const rect = event.currentTarget.getBoundingClientRect()
@@ -501,23 +599,33 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     }
   }, [])
 
-  const onPointerMove = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
-    pointerRef.current = pointerPosition(event)
-  }, [pointerPosition])
+  const onPointerMove = useCallback(
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
+      pointerRef.current = pointerPosition(event)
+    },
+    [pointerPosition],
+  )
 
-  const onPointerDown = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
-    const point = pointerPosition(event)
-    pointerRef.current = point
-    placeAnchor(event.button === 2 ? 'repel' : 'pull', point)
-  }, [placeAnchor, pointerPosition])
+  const onPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLCanvasElement>) => {
+      const point = pointerPosition(event)
+      pointerRef.current = point
+      placeAnchor(event.button === 2 ? 'repel' : 'pull', point)
+    },
+    [placeAnchor, pointerPosition],
+  )
 
   const performDash = useCallback(() => {
     if (runRef.current.phase !== 'active') return
     const player = playerRef.current
     const dashCost = hasModule('black-vespers') ? 22 : 32
     if (player.dashCooldown > 0 || energyRef.current < dashCost) return
-    let dx = Number(keysRef.current.has('d') || keysRef.current.has('arrowright')) - Number(keysRef.current.has('a') || keysRef.current.has('arrowleft'))
-    let dy = Number(keysRef.current.has('s') || keysRef.current.has('arrowdown')) - Number(keysRef.current.has('w') || keysRef.current.has('arrowup'))
+    let dx =
+      Number(keysRef.current.has('d') || keysRef.current.has('arrowright')) -
+      Number(keysRef.current.has('a') || keysRef.current.has('arrowleft'))
+    let dy =
+      Number(keysRef.current.has('s') || keysRef.current.has('arrowdown')) -
+      Number(keysRef.current.has('w') || keysRef.current.has('arrowup'))
     if (dx === 0 && dy === 0) {
       dx = Math.cos(player.angle)
       dy = Math.sin(player.angle)
@@ -530,7 +638,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     energyRef.current -= dashCost
     emitParticles(player.x, player.y, '#e6d093', 22)
     if (hasModule('last-prayer')) {
-      bodiesRef.current = bodiesRef.current.map(body => {
+      bodiesRef.current = bodiesRef.current.map((body) => {
         const dxBody = body.x - player.x
         const dyBody = body.y - player.y
         const dist = Math.hypot(dxBody, dyBody)
@@ -543,7 +651,11 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase()
-      if (['w', 'a', 's', 'd', 'q', ' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+      if (
+        ['w', 'a', 's', 'd', 'q', ' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(
+          key,
+        )
+      ) {
         event.preventDefault()
       }
       keysRef.current.add(key)
@@ -552,7 +664,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       if (key === 'q' && runRef.current.phase === 'active') {
         const recovered = anchorsRef.current.pop()
         if (recovered && selectedTool === 'severance-bell') {
-          bodiesRef.current = bodiesRef.current.map(body => {
+          bodiesRef.current = bodiesRef.current.map((body) => {
             const dx = body.x - recovered.x
             const dy = body.y - recovered.y
             const dist = Math.hypot(dx, dy)
@@ -576,184 +688,224 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     }
   }, [emitParticles, performDash, selectedTool, syncHud])
 
-  const update = useCallback((dt: number) => {
-    const currentRun = runRef.current
-    if (currentRun.phase !== 'active') return
-    runRef.current = applyRunEvent(currentRun, { type: 'tick', seconds: dt })
+  const update = useCallback(
+    (dt: number) => {
+      const currentRun = runRef.current
+      if (currentRun.phase !== 'active') return
+      runRef.current = applyRunEvent(currentRun, { type: 'tick', seconds: dt })
 
-    const player = playerRef.current
-    const keys = keysRef.current
-    const inputX = Number(keys.has('d') || keys.has('arrowright')) - Number(keys.has('a') || keys.has('arrowleft'))
-    const inputY = Number(keys.has('s') || keys.has('arrowdown')) - Number(keys.has('w') || keys.has('arrowup'))
-    const inputLength = Math.hypot(inputX, inputY) || 1
-    const shipMotion = selectedShip === 'pilgrim-wing'
-      ? { thrust: 290, maxSpeed: 410, drag: 0.989 }
-      : selectedShip === 'echo-barge'
-        ? { thrust: 195, maxSpeed: 300, drag: 0.979 }
-        : { thrust: 240, maxSpeed: 360, drag: 0.985 }
-    if (inputX || inputY) {
-      player.vx += (inputX / inputLength) * shipMotion.thrust * dt
-      player.vy += (inputY / inputLength) * shipMotion.thrust * dt
-    }
-    const gravityPlayer = integrateBody(player, anchorsRef.current, dt, shipMotion.maxSpeed)
-    player.x = clamp(gravityPlayer.x, 18, W - 18)
-    player.y = clamp(gravityPlayer.y, 18, H - 18)
-    player.vx = gravityPlayer.vx * Math.pow(shipMotion.drag, dt * 60)
-    player.vy = gravityPlayer.vy * Math.pow(shipMotion.drag, dt * 60)
-    player.angle = Math.atan2(pointerRef.current.y - player.y, pointerRef.current.x - player.x)
-    player.invulnerable = Math.max(0, player.invulnerable - dt)
-    player.dashCooldown = Math.max(0, player.dashCooldown - dt)
-    player.shieldCooldown = Math.max(0, player.shieldCooldown - dt)
-    energyRef.current = Math.min(100, energyRef.current + 14 * dt)
-
-    spawnTimerRef.current -= dt
-    const wrecks = bodiesRef.current.filter(body => body.kind === 'wreck').length
-    if (spawnTimerRef.current <= 0 && wrecks < 7) {
-      bodiesRef.current.push(makeBody(Math.random() < 0.22 ? 'asteroid' : 'wreck', currentRun.act))
-      spawnTimerRef.current = currentRun.act === 1 ? 3.7 : 3.1
-    }
-
-    shotTimerRef.current -= dt
-    const shooters = bodiesRef.current.filter(body => body.kind === 'heretic' || body.kind === 'cathedral')
-    if (shotTimerRef.current <= 0 && shooters.length > 0) {
-      shooters.forEach(shooter => {
-        const dx = player.x - shooter.x
-        const dy = player.y - shooter.y
-        const length = Math.hypot(dx, dy) || 1
-        const speed = shooter.kind === 'cathedral' ? 155 : 135
-        bodiesRef.current.push(makeBody('projectile', currentRun.act, {
-          x: shooter.x + (dx / length) * (shooter.radius + 8),
-          y: shooter.y + (dy / length) * (shooter.radius + 8),
-          vx: (dx / length) * speed,
-          vy: (dy / length) * speed,
-          radius: shooter.kind === 'cathedral' ? 7 : 5,
-        }))
-      })
-      shotTimerRef.current = currentRun.act === 3 ? 1.35 : 2.15
-    }
-
-    const removed = new Set<number>()
-    const damageScale = hasModule('mass-offering') ? 1.55 : 1
-    bodiesRef.current = bodiesRef.current.map(body => {
-      if (body.kind === 'cathedral') {
-        return { ...body, rotation: body.rotation + body.spin * dt, age: body.age + dt }
+      const player = playerRef.current
+      const keys = keysRef.current
+      const inputX =
+        Number(keys.has('d') || keys.has('arrowright')) -
+        Number(keys.has('a') || keys.has('arrowleft'))
+      const inputY =
+        Number(keys.has('s') || keys.has('arrowdown')) -
+        Number(keys.has('w') || keys.has('arrowup'))
+      const inputLength = Math.hypot(inputX, inputY) || 1
+      const shipMotion =
+        selectedShip === 'pilgrim-wing'
+          ? { thrust: 290, maxSpeed: 410, drag: 0.989 }
+          : selectedShip === 'echo-barge'
+            ? { thrust: 195, maxSpeed: 300, drag: 0.979 }
+            : { thrust: 240, maxSpeed: 360, drag: 0.985 }
+      if (inputX || inputY) {
+        player.vx += (inputX / inputLength) * shipMotion.thrust * dt
+        player.vy += (inputY / inputLength) * shipMotion.thrust * dt
       }
-      const next = integrateBody(body, anchorsRef.current, dt, body.kind === 'projectile' ? 520 : 330)
-      next.rotation += next.spin * dt
-      next.age += dt
-      if (next.kind !== 'projectile') {
-        if (next.x < next.radius && next.vx < 0) next.vx *= -0.72
-        if (next.x > W - next.radius && next.vx > 0) next.vx *= -0.72
-        if (next.y < next.radius && next.vy < 0) next.vy *= -0.72
-        if (next.y > H - next.radius && next.vy > 0) next.vy *= -0.72
-        next.x = clamp(next.x, next.radius, W - next.radius)
-        next.y = clamp(next.y, next.radius, H - next.radius)
-      }
-      if (next.kind === 'projectile' && (next.age > 11 || next.x < -60 || next.x > W + 60 || next.y < -60 || next.y > H + 60)) {
-        removed.add(next.id)
-      }
-      return next
-    })
+      const gravityPlayer = integrateBody(player, anchorsRef.current, dt, shipMotion.maxSpeed)
+      player.x = clamp(gravityPlayer.x, 18, W - 18)
+      player.y = clamp(gravityPlayer.y, 18, H - 18)
+      player.vx = gravityPlayer.vx * Math.pow(shipMotion.drag, dt * 60)
+      player.vy = gravityPlayer.vy * Math.pow(shipMotion.drag, dt * 60)
+      player.angle = Math.atan2(pointerRef.current.y - player.y, pointerRef.current.x - player.x)
+      player.invulnerable = Math.max(0, player.invulnerable - dt)
+      player.dashCooldown = Math.max(0, player.dashCooldown - dt)
+      player.shieldCooldown = Math.max(0, player.shieldCooldown - dt)
+      energyRef.current = Math.min(100, energyRef.current + 14 * dt)
 
-    const targets = bodiesRef.current.filter(body => body.kind === 'heretic' || body.kind === 'cathedral')
-    for (const body of bodiesRef.current) {
-      if (removed.has(body.id)) continue
-      if (body.kind === 'wreck' && !body.consecrated && currentRun.act < 3) {
-        const speed = Math.hypot(body.vx, body.vy)
-        if (distance(body, BURIAL_ZONE) < BURIAL_ZONE.radius - body.radius && speed < 112) {
-          body.stable += dt
-          if (body.stable >= 1.15) {
-            body.consecrated = true
-            body.stable = 1.15
-            emitParticles(body.x, body.y, '#e4c67d', 24)
-            if (hasModule('merciful-orbit')) {
-              runRef.current = applyRunEvent(runRef.current, { type: 'repair', amount: 8 })
-            }
-            addRitual(currentRun.act === 1 ? 24 : 20, 520 + Math.round(body.mass * 100), currentRun.act === 1 ? 36 : 54, '星骸已进入安息轨道')
-          }
-        } else {
-          body.stable = Math.max(0, body.stable - dt * 0.8)
-        }
-      }
-
-      if (body.kind === 'projectile') {
-        const blocker = bodiesRef.current.find(candidate =>
-          candidate.id !== body.id
-          && !removed.has(candidate.id)
-          && (candidate.kind === 'wreck' || candidate.kind === 'asteroid')
-          && distance(body, candidate) <= body.radius + candidate.radius
+      spawnTimerRef.current -= dt
+      const wrecks = bodiesRef.current.filter((body) => body.kind === 'wreck').length
+      if (spawnTimerRef.current <= 0 && wrecks < 7) {
+        bodiesRef.current.push(
+          makeBody(Math.random() < 0.22 ? 'asteroid' : 'wreck', currentRun.act),
         )
-        if (blocker) {
-          removed.add(body.id)
-          blocker.vx += body.vx * 0.11
-          blocker.vy += body.vy * 0.11
-          emitParticles(body.x, body.y, blocker.consecrated ? '#e7ca80' : '#a99b86', 10)
-          messageRef.current = blocker.consecrated ? '安息轨道挡下了敌火' : '星骸构成临时护盾'
-          continue
-        }
+        spawnTimerRef.current = currentRun.act === 1 ? 3.7 : 3.1
       }
 
-      if (body.kind === 'projectile' || body.kind === 'wreck' || body.kind === 'asteroid') {
-        const speed = Math.hypot(body.vx, body.vy)
-        for (const target of targets) {
-          if (target.id === body.id || removed.has(target.id)) continue
-          if (distance(body, target) > body.radius + target.radius) continue
-          if (speed < (body.kind === 'projectile' ? 70 : 105)) continue
-          const impactDamage = body.kind === 'projectile' ? (hasModule('mirror-rite') ? 30 : 18) : (22 + body.mass * 12)
-          const consecrationScale = body.consecrated ? 1.85 : 1
-          const baseDamage = impactDamage * damageScale * consecrationScale
-          target.hp -= baseDamage
-          removed.add(body.id)
-          emitParticles(body.x, body.y, target.kind === 'cathedral' ? '#f0cb70' : '#b45b62', 20)
-          if (target.kind === 'cathedral') {
-            bossHpRef.current = Math.max(0, target.hp)
-            addRitual((baseDamage / 180) * 100, Math.round(baseDamage * 24), 0, '圣堂核心轨道正在崩解')
-            if (target.hp <= 0) removed.add(target.id)
-          } else if (target.hp <= 0) {
-            removed.add(target.id)
-            addRitual(16, 780, 0, '异端舰失去武装，逃生信标仍在闪烁')
-          }
-          break
-        }
-      }
-
-      if (body.kind !== 'cathedral' && distance(body, player) < body.radius + player.radius) {
-        const hostileImpact = body.kind === 'projectile' || body.kind === 'heretic'
-        const speed = Math.hypot(body.vx - player.vx, body.vy - player.vy)
-        if (hostileImpact || speed > 135) {
-          dealDamage(body.kind === 'projectile' ? 14 : body.kind === 'heretic' ? 22 : 6)
-          if (body.kind === 'projectile') removed.add(body.id)
-          const dx = player.x - body.x
-          const dy = player.y - body.y
+      shotTimerRef.current -= dt
+      const shooters = bodiesRef.current.filter(
+        (body) => body.kind === 'heretic' || body.kind === 'cathedral',
+      )
+      if (shotTimerRef.current <= 0 && shooters.length > 0) {
+        shooters.forEach((shooter) => {
+          const dx = player.x - shooter.x
+          const dy = player.y - shooter.y
           const length = Math.hypot(dx, dy) || 1
-          player.vx += (dx / length) * 95
-          player.vy += (dy / length) * 95
-          if (body.kind === 'wreck' || body.kind === 'asteroid') {
-            body.vx -= (dx / length) * 70
-            body.vy -= (dy / length) * 70
+          const speed = shooter.kind === 'cathedral' ? 155 : 135
+          bodiesRef.current.push(
+            makeBody('projectile', currentRun.act, {
+              x: shooter.x + (dx / length) * (shooter.radius + 8),
+              y: shooter.y + (dy / length) * (shooter.radius + 8),
+              vx: (dx / length) * speed,
+              vy: (dy / length) * speed,
+              radius: shooter.kind === 'cathedral' ? 7 : 5,
+            }),
+          )
+        })
+        shotTimerRef.current = currentRun.act === 3 ? 1.35 : 2.15
+      }
+
+      const removed = new Set<number>()
+      const damageScale = hasModule('mass-offering') ? 1.55 : 1
+      bodiesRef.current = bodiesRef.current.map((body) => {
+        if (body.kind === 'cathedral') {
+          return { ...body, rotation: body.rotation + body.spin * dt, age: body.age + dt }
+        }
+        const next = integrateBody(
+          body,
+          anchorsRef.current,
+          dt,
+          body.kind === 'projectile' ? 520 : 330,
+        )
+        next.rotation += next.spin * dt
+        next.age += dt
+        if (next.kind !== 'projectile') {
+          if (next.x < next.radius && next.vx < 0) next.vx *= -0.72
+          if (next.x > W - next.radius && next.vx > 0) next.vx *= -0.72
+          if (next.y < next.radius && next.vy < 0) next.vy *= -0.72
+          if (next.y > H - next.radius && next.vy > 0) next.vy *= -0.72
+          next.x = clamp(next.x, next.radius, W - next.radius)
+          next.y = clamp(next.y, next.radius, H - next.radius)
+        }
+        if (
+          next.kind === 'projectile' &&
+          (next.age > 11 || next.x < -60 || next.x > W + 60 || next.y < -60 || next.y > H + 60)
+        ) {
+          removed.add(next.id)
+        }
+        return next
+      })
+
+      const targets = bodiesRef.current.filter(
+        (body) => body.kind === 'heretic' || body.kind === 'cathedral',
+      )
+      for (const body of bodiesRef.current) {
+        if (removed.has(body.id)) continue
+        if (body.kind === 'wreck' && !body.consecrated && currentRun.act < 3) {
+          const speed = Math.hypot(body.vx, body.vy)
+          if (distance(body, BURIAL_ZONE) < BURIAL_ZONE.radius - body.radius && speed < 112) {
+            body.stable += dt
+            if (body.stable >= 1.15) {
+              body.consecrated = true
+              body.stable = 1.15
+              emitParticles(body.x, body.y, '#e4c67d', 24)
+              if (hasModule('merciful-orbit')) {
+                runRef.current = applyRunEvent(runRef.current, { type: 'repair', amount: 8 })
+              }
+              addRitual(
+                currentRun.act === 1 ? 24 : 20,
+                520 + Math.round(body.mass * 100),
+                currentRun.act === 1 ? 36 : 54,
+                '星骸已进入安息轨道',
+              )
+            }
+          } else {
+            body.stable = Math.max(0, body.stable - dt * 0.8)
+          }
+        }
+
+        if (body.kind === 'projectile') {
+          const blocker = bodiesRef.current.find(
+            (candidate) =>
+              candidate.id !== body.id &&
+              !removed.has(candidate.id) &&
+              (candidate.kind === 'wreck' || candidate.kind === 'asteroid') &&
+              distance(body, candidate) <= body.radius + candidate.radius,
+          )
+          if (blocker) {
+            removed.add(body.id)
+            blocker.vx += body.vx * 0.11
+            blocker.vy += body.vy * 0.11
+            emitParticles(body.x, body.y, blocker.consecrated ? '#e7ca80' : '#a99b86', 10)
+            messageRef.current = blocker.consecrated ? '安息轨道挡下了敌火' : '星骸构成临时护盾'
+            continue
+          }
+        }
+
+        if (body.kind === 'projectile' || body.kind === 'wreck' || body.kind === 'asteroid') {
+          const speed = Math.hypot(body.vx, body.vy)
+          for (const target of targets) {
+            if (target.id === body.id || removed.has(target.id)) continue
+            if (distance(body, target) > body.radius + target.radius) continue
+            if (speed < (body.kind === 'projectile' ? 70 : 105)) continue
+            const impactDamage =
+              body.kind === 'projectile'
+                ? hasModule('mirror-rite')
+                  ? 30
+                  : 18
+                : 22 + body.mass * 12
+            const consecrationScale = body.consecrated ? 1.85 : 1
+            const baseDamage = impactDamage * damageScale * consecrationScale
+            target.hp -= baseDamage
+            removed.add(body.id)
+            emitParticles(body.x, body.y, target.kind === 'cathedral' ? '#f0cb70' : '#b45b62', 20)
+            if (target.kind === 'cathedral') {
+              bossHpRef.current = Math.max(0, target.hp)
+              addRitual(
+                (baseDamage / 180) * 100,
+                Math.round(baseDamage * 24),
+                0,
+                '圣堂核心轨道正在崩解',
+              )
+              if (target.hp <= 0) removed.add(target.id)
+            } else if (target.hp <= 0) {
+              removed.add(target.id)
+              addRitual(16, 780, 0, '异端舰失去武装，逃生信标仍在闪烁')
+            }
+            break
+          }
+        }
+
+        if (body.kind !== 'cathedral' && distance(body, player) < body.radius + player.radius) {
+          const hostileImpact = body.kind === 'projectile' || body.kind === 'heretic'
+          const speed = Math.hypot(body.vx - player.vx, body.vy - player.vy)
+          if (hostileImpact || speed > 135) {
+            dealDamage(body.kind === 'projectile' ? 14 : body.kind === 'heretic' ? 22 : 6)
+            if (body.kind === 'projectile') removed.add(body.id)
+            const dx = player.x - body.x
+            const dy = player.y - body.y
+            const length = Math.hypot(dx, dy) || 1
+            player.vx += (dx / length) * 95
+            player.vy += (dy / length) * 95
+            if (body.kind === 'wreck' || body.kind === 'asteroid') {
+              body.vx -= (dx / length) * 70
+              body.vy -= (dy / length) * 70
+            }
           }
         }
       }
-    }
-    bodiesRef.current = bodiesRef.current.filter(body => !removed.has(body.id))
+      bodiesRef.current = bodiesRef.current.filter((body) => !removed.has(body.id))
 
-    particlesRef.current = particlesRef.current
-      .map(particle => ({
-        ...particle,
-        x: particle.x + particle.vx * dt,
-        y: particle.y + particle.vy * dt,
-        vx: particle.vx * 0.98,
-        vy: particle.vy * 0.98,
-        life: particle.life - dt,
-      }))
-      .filter(particle => particle.life > 0)
+      particlesRef.current = particlesRef.current
+        .map((particle) => ({
+          ...particle,
+          x: particle.x + particle.vx * dt,
+          y: particle.y + particle.vy * dt,
+          vx: particle.vx * 0.98,
+          vy: particle.vy * 0.98,
+          life: particle.life - dt,
+        }))
+        .filter((particle) => particle.life > 0)
 
-    hudTimerRef.current += dt
-    if (hudTimerRef.current > 0.12) {
-      hudTimerRef.current = 0
-      syncHud()
-    }
-  }, [addRitual, dealDamage, emitParticles, hasModule, makeBody, selectedShip, syncHud])
+      hudTimerRef.current += dt
+      if (hudTimerRef.current > 0.12) {
+        hudTimerRef.current = 0
+        syncHud()
+      }
+    },
+    [addRitual, dealDamage, emitParticles, hasModule, makeBody, selectedShip, syncHud],
+  )
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current
@@ -785,7 +937,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     }
     ctx.restore()
 
-    stars.forEach(star => {
+    stars.forEach((star) => {
       ctx.fillStyle = `rgba(237, 215, 166, ${0.25 + star.size * 0.18})`
       ctx.fillRect(star.x, star.y, star.size, star.size)
     })
@@ -843,22 +995,27 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       ctx.restore()
     })
 
-    const previewBody = bodiesRef.current.find(body => body.kind === 'wreck')
+    const previewBody = bodiesRef.current.find((body) => body.kind === 'wreck')
     if (previewBody && anchorsRef.current.length > 0) {
       const longPreview = hasModule('frozen-psalm') || selectedTool === 'orbit-needle'
-      const points = predictTrajectory(previewBody, anchorsRef.current, longPreview ? 54 : 30, 0.075)
+      const points = predictTrajectory(
+        previewBody,
+        anchorsRef.current,
+        longPreview ? 54 : 30,
+        0.075,
+      )
       ctx.save()
       ctx.strokeStyle = 'rgba(236, 211, 153, .34)'
       ctx.lineWidth = 1
       ctx.setLineDash([3, 6])
       ctx.beginPath()
       ctx.moveTo(previewBody.x, previewBody.y)
-      points.forEach(point => ctx.lineTo(point.x, point.y))
+      points.forEach((point) => ctx.lineTo(point.x, point.y))
       ctx.stroke()
       ctx.restore()
     }
 
-    bodiesRef.current.forEach(body => {
+    bodiesRef.current.forEach((body) => {
       ctx.save()
       ctx.translate(body.x, body.y)
       ctx.rotate(body.rotation)
@@ -961,7 +1118,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       ctx.restore()
     })
 
-    particlesRef.current.forEach(particle => {
+    particlesRef.current.forEach((particle) => {
       ctx.globalAlpha = clamp(particle.life * 1.8, 0, 1)
       ctx.fillStyle = particle.color
       ctx.fillRect(particle.x - 1.5, particle.y - 1.5, 3, 3)
@@ -972,7 +1129,8 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     ctx.save()
     ctx.translate(player.x, player.y)
     ctx.rotate(player.angle)
-    if (player.invulnerable > 0 && Math.floor(performance.now() / 70) % 2 === 0) ctx.globalAlpha = 0.35
+    if (player.invulnerable > 0 && Math.floor(performance.now() / 70) % 2 === 0)
+      ctx.globalAlpha = 0.35
     ctx.shadowColor = '#f1d58f'
     ctx.shadowBlur = 12
     ctx.fillStyle = '#eee8d9'
@@ -1013,19 +1171,21 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
   }, [draw, stopChoir, update])
 
   const moduleOptions = useMemo(() => {
-    return MODULES
-      .filter(module => progression.liturgies.includes(module.id) && !run.modules.includes(module.id))
-      .slice(0, 3)
+    return MODULES.filter(
+      (module) => progression.liturgies.includes(module.id) && !run.modules.includes(module.id),
+    ).slice(0, 3)
   }, [progression.liturgies, run.modules])
 
-  const archiveCount = progression.liturgies.length + progression.tools.length + progression.ships.length
+  const archiveCount =
+    progression.liturgies.length + progression.tools.length + progression.ships.length
 
   const concordUnlocked = run.hull >= 55 && run.savedLives >= 140
-  const endingCopy = endingChoice === 'burial'
-    ? '你完成了葬仪。殖民地灯火没有熄灭，三百万个名字却永远沉默。'
-    : endingChoice === 'release'
-      ? '你打破圣轨。旗舰载着亡者驶入黑暗，航道警报在身后逐一亮起。'
-      : '你献出葬仪舰作为第三枚引力锚。圣轨与旗舰同时稳定，而你的名字进入了最后一份记录。'
+  const endingCopy =
+    endingChoice === 'burial'
+      ? '你完成了葬仪。殖民地灯火没有熄灭，三百万个名字却永远沉默。'
+      : endingChoice === 'release'
+        ? '你打破圣轨。旗舰载着亡者驶入黑暗，航道警报在身后逐一亮起。'
+        : '你献出葬仪舰作为第三枚引力锚。圣轨与旗舰同时稳定，而你的名字进入了最后一份记录。'
 
   return (
     <section className="relative overflow-hidden rounded-[26px] border border-[#80613b]/50 bg-[#070608] text-[#eee7d8] shadow-[0_28px_80px_rgba(0,0,0,.55)]">
@@ -1036,7 +1196,9 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
             <div className="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.34em] text-[#c9a967]">
               <span className="h-px w-7 bg-[#c9a967]" /> Holy Orbit Funeral Office
             </div>
-            <h2 className="font-serif text-2xl font-semibold tracking-[.12em] text-[#f5eddd] sm:text-3xl">引力墓场</h2>
+            <h2 className="font-serif text-2xl font-semibold tracking-[.12em] text-[#f5eddd] sm:text-3xl">
+              引力墓场
+            </h2>
           </div>
           <div className="flex items-center gap-2 text-xs">
             <button
@@ -1046,7 +1208,9 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
             >
               {choirOn ? '关闭圣咏' : '开启圣咏'}
             </button>
-            <span className="rounded-full border border-[#6e2632] bg-[#2a0d13] px-3 py-2 text-[#d99aa2]">葬仪档案 {archiveCount}/15</span>
+            <span className="rounded-full border border-[#6e2632] bg-[#2a0d13] px-3 py-2 text-[#d99aa2]">
+              葬仪档案 {archiveCount}/15
+            </span>
           </div>
         </div>
       </div>
@@ -1058,7 +1222,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
           height={H}
           onPointerMove={onPointerMove}
           onPointerDown={onPointerDown}
-          onContextMenu={event => event.preventDefault()}
+          onContextMenu={(event) => event.preventDefault()}
           aria-label="引力墓场游戏区域"
           className="block aspect-[12/7] w-full cursor-crosshair bg-black outline-none"
         />
@@ -1066,57 +1230,131 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
         {run.phase === 'active' && (
           <>
             <div className="pointer-events-none absolute left-4 top-4 max-w-[52%] rounded-xl border border-[#8c6a40]/45 bg-[#080609]/80 px-4 py-3 backdrop-blur-md sm:left-6 sm:top-6">
-              <div className="text-[10px] font-bold uppercase tracking-[.24em] text-[#c6a35c]">{ACT_COPY[hud.run.act].title}</div>
+              <div className="text-[10px] font-bold uppercase tracking-[.24em] text-[#c6a35c]">
+                {ACT_COPY[hud.run.act].title}
+              </div>
               <div className="mt-1 text-sm text-[#e5dcc9]">{ACT_COPY[hud.run.act].objective}</div>
-              <div className="mt-2 line-clamp-1 text-[11px] italic text-[#a99c8a]">{hud.message}</div>
+              <div className="mt-2 line-clamp-1 text-[11px] italic text-[#a99c8a]">
+                {hud.message}
+              </div>
             </div>
             <div className="pointer-events-none absolute right-4 top-4 w-44 rounded-xl border border-[#8c6a40]/45 bg-[#080609]/80 p-3 text-[10px] backdrop-blur-md sm:right-6 sm:top-6 sm:w-52">
-              <div className="mb-1 flex justify-between tracking-[.16em] text-[#c7b794]"><span>葬仪进度</span><span>{Math.round(hud.run.ritual)}%</span></div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-[#342b26]"><div className="h-full bg-gradient-to-r from-[#9d3140] to-[#d2ae62] transition-all" style={{ width: `${hud.run.ritual}%` }} /></div>
-              <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[#aea18e]">
-                <span>舰体 <b className="text-[#eee1c7]">{Math.round(hud.run.hull)}</b></span>
-                <span>相位 <b className="text-[#eee1c7]">{Math.round(hud.energy)}</b></span>
-                <span>存档生命 <b className="text-[#eee1c7]">{hud.run.savedLives}</b></span>
-                <span>得分 <b className="text-[#eee1c7]">{hud.run.score}</b></span>
+              <div className="mb-1 flex justify-between tracking-[.16em] text-[#c7b794]">
+                <span>葬仪进度</span>
+                <span>{Math.round(hud.run.ritual)}%</span>
               </div>
-              {hud.run.act === 3 && <div className="mt-2 border-t border-[#6e2632]/55 pt-2 text-[#dc8690]">圣堂核心 {Math.ceil(hud.bossHp)} / 180</div>}
+              <div className="h-1.5 overflow-hidden rounded-full bg-[#342b26]">
+                <div
+                  className="h-full bg-gradient-to-r from-[#9d3140] to-[#d2ae62] transition-all"
+                  style={{ width: `${hud.run.ritual}%` }}
+                />
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[#aea18e]">
+                <span>
+                  舰体 <b className="text-[#eee1c7]">{Math.round(hud.run.hull)}</b>
+                </span>
+                <span>
+                  相位 <b className="text-[#eee1c7]">{Math.round(hud.energy)}</b>
+                </span>
+                <span>
+                  存档生命 <b className="text-[#eee1c7]">{hud.run.savedLives}</b>
+                </span>
+                <span>
+                  得分 <b className="text-[#eee1c7]">{hud.run.score}</b>
+                </span>
+              </div>
+              {hud.run.act === 3 && (
+                <div className="mt-2 border-t border-[#6e2632]/55 pt-2 text-[#dc8690]">
+                  圣堂核心 {Math.ceil(hud.bossHp)} / 180
+                </div>
+              )}
             </div>
             <div className="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#8c6a40]/35 bg-[#080609]/75 px-4 py-2 text-[9px] uppercase tracking-[.14em] text-[#b7aa94] backdrop-blur-md sm:text-[10px]">
-              <span><b className="text-[#e5c87d]">WASD</b> 惯性航行</span><span className="text-[#5c4a35]">/</span>
-              <span><b className="text-[#e5c87d]">左键</b> 牵引</span><span className="text-[#5c4a35]">/</span>
-              <span><b className="text-[#c96670]">右键</b> 斥力</span><span className="text-[#5c4a35]">/</span>
-              <span><b className="text-[#e5c87d]">空格</b> 相位</span><span className="text-[#5c4a35]">/</span>
-              <span><b className="text-[#e5c87d]">Q</b> 回收</span>
+              <span>
+                <b className="text-[#e5c87d]">WASD</b> 惯性航行
+              </span>
+              <span className="text-[#5c4a35]">/</span>
+              <span>
+                <b className="text-[#e5c87d]">左键</b> 牵引
+              </span>
+              <span className="text-[#5c4a35]">/</span>
+              <span>
+                <b className="text-[#c96670]">右键</b> 斥力
+              </span>
+              <span className="text-[#5c4a35]">/</span>
+              <span>
+                <b className="text-[#e5c87d]">空格</b> 相位
+              </span>
+              <span className="text-[#5c4a35]">/</span>
+              <span>
+                <b className="text-[#e5c87d]">Q</b> 回收
+              </span>
             </div>
           </>
         )}
 
         {run.phase === 'briefing' && (
           <div className="absolute inset-0 flex items-end bg-[#030304]/35">
-            <img src="/covers/gravity-graveyard.png" alt="教堂星舰构成的引力墓场" className="absolute inset-0 h-full w-full object-cover opacity-75" />
+            <img
+              src="/covers/gravity-graveyard.png"
+              alt="教堂星舰构成的引力墓场"
+              className="absolute inset-0 h-full w-full object-cover opacity-75"
+            />
             <div className="absolute inset-0 bg-gradient-to-r from-[#070608] via-[#070608]/75 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#070608] via-transparent to-[#070608]/25" />
             <div className="relative max-w-xl px-7 pb-8 sm:px-10 sm:pb-11">
-              <div className="mb-3 text-[10px] font-bold uppercase tracking-[.36em] text-[#d2ae62]">Burial order 7193</div>
-              <h3 className="font-serif text-3xl leading-tight text-[#fff8e9] sm:text-5xl">给死者轨道，<br />给生者真相。</h3>
-              <p className="mt-4 max-w-md text-sm leading-6 text-[#c7baa5]">你是圣轨教会的星骸葬仪师。教会说，不稳定核心一旦脱轨就会摧毁殖民航道，葬仪是唯一的封存方式。但这片“死寂”墓场，正在向你发送生命信号。</p>
+              <div className="mb-3 text-[10px] font-bold uppercase tracking-[.36em] text-[#d2ae62]">
+                Burial order 7193
+              </div>
+              <h3 className="font-serif text-3xl leading-tight text-[#fff8e9] sm:text-5xl">
+                给死者轨道，
+                <br />
+                给生者真相。
+              </h3>
+              <p className="mt-4 max-w-md text-sm leading-6 text-[#c7baa5]">
+                你是圣轨教会的星骸葬仪师。教会说，不稳定核心一旦脱轨就会摧毁殖民航道，葬仪是唯一的封存方式。但这片“死寂”墓场，正在向你发送生命信号。
+              </p>
               <div className="mt-4 grid max-w-md grid-cols-2 gap-2 text-[10px] text-[#a99b86]">
                 <label className="rounded-lg border border-[#79603c]/55 bg-black/35 px-3 py-2">
                   葬仪舰
-                  <select value={selectedShip} onChange={event => setSelectedShip(event.target.value)} className="mt-1 block w-full bg-transparent text-xs text-[#ead9b6] outline-none">
-                    {SHIPS.filter(ship => progression.ships.includes(ship.id)).map(ship => <option key={ship.id} value={ship.id} className="bg-[#120d0e]">{ship.name} · {ship.description}</option>)}
+                  <select
+                    value={selectedShip}
+                    onChange={(event) => setSelectedShip(event.target.value)}
+                    className="mt-1 block w-full bg-transparent text-xs text-[#ead9b6] outline-none"
+                  >
+                    {SHIPS.filter((ship) => progression.ships.includes(ship.id)).map((ship) => (
+                      <option key={ship.id} value={ship.id} className="bg-[#120d0e]">
+                        {ship.name} · {ship.description}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <label className="rounded-lg border border-[#79603c]/55 bg-black/35 px-3 py-2">
                   引力工具
-                  <select value={selectedTool} onChange={event => setSelectedTool(event.target.value)} className="mt-1 block w-full bg-transparent text-xs text-[#ead9b6] outline-none">
-                    {TOOLS.filter(tool => progression.tools.includes(tool.id)).map(tool => <option key={tool.id} value={tool.id} className="bg-[#120d0e]">{tool.name} · {tool.description}</option>)}
+                  <select
+                    value={selectedTool}
+                    onChange={(event) => setSelectedTool(event.target.value)}
+                    className="mt-1 block w-full bg-transparent text-xs text-[#ead9b6] outline-none"
+                  >
+                    {TOOLS.filter((tool) => progression.tools.includes(tool.id)).map((tool) => (
+                      <option key={tool.id} value={tool.id} className="bg-[#120d0e]">
+                        {tool.name} · {tool.description}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>
               <div className="mt-6 flex flex-wrap items-center gap-3">
-                <button type="button" onClick={startRun} className="rounded-full border border-[#e1c176] bg-[#d2ae62] px-6 py-3 text-xs font-black tracking-[.2em] text-[#17100a] shadow-[0_0_30px_rgba(210,174,98,.28)] transition hover:bg-[#ead18d]">接受葬仪</button>
-                <span className="text-[11px] text-[#9f927e]">桌面端 · 键鼠 · 单局约 10–15 分钟</span>
+                <button
+                  type="button"
+                  onClick={startRun}
+                  className="rounded-full border border-[#e1c176] bg-[#d2ae62] px-6 py-3 text-xs font-black tracking-[.2em] text-[#17100a] shadow-[0_0_30px_rgba(210,174,98,.28)] transition hover:bg-[#ead18d]"
+                >
+                  接受葬仪
+                </button>
+                <span className="text-[11px] text-[#9f927e]">
+                  桌面端 · 键鼠 · 单局约 10–15 分钟
+                </span>
               </div>
             </div>
           </div>
@@ -1126,16 +1364,31 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
           <div className="absolute inset-0 flex items-center justify-center bg-[#050406]/90 p-5 backdrop-blur-sm">
             <div className="w-full max-w-3xl">
               <div className="text-center">
-                <div className="text-[10px] font-bold uppercase tracking-[.3em] text-[#c6a35c]">Act {run.act} completed</div>
-                <h3 className="mt-2 font-serif text-3xl text-[#f3e8d1]">{run.act === 3 ? '为最终裁决选择一件礼器' : '从遗言中取一件礼器'}</h3>
+                <div className="text-[10px] font-bold uppercase tracking-[.3em] text-[#c6a35c]">
+                  Act {run.act} completed
+                </div>
+                <h3 className="mt-2 font-serif text-3xl text-[#f3e8d1]">
+                  {run.act === 3 ? '为最终裁决选择一件礼器' : '从遗言中取一件礼器'}
+                </h3>
                 <p className="mt-2 text-sm text-[#998e7b]">数值不会带入下一局。新的规则，会。</p>
               </div>
               <div className="mt-7 grid gap-3 md:grid-cols-3">
-                {moduleOptions.map(module => (
-                  <button key={module.id} type="button" onClick={() => chooseModule(module.id)} className="group min-h-44 rounded-2xl border border-[#735c3c] bg-[#130d0e] p-5 text-left transition hover:-translate-y-1 hover:border-[#d2ae62] hover:bg-[#1c1113]">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#7d633e] font-serif text-xl text-[#e2c478] group-hover:shadow-[0_0_20px_rgba(210,174,98,.25)]">{module.glyph}</span>
-                    <strong className="mt-5 block font-serif text-lg text-[#eee2ca]">{module.name}</strong>
-                    <span className="mt-2 block text-xs leading-5 text-[#9f9482]">{module.description}</span>
+                {moduleOptions.map((module) => (
+                  <button
+                    key={module.id}
+                    type="button"
+                    onClick={() => chooseModule(module.id)}
+                    className="group min-h-44 rounded-2xl border border-[#735c3c] bg-[#130d0e] p-5 text-left transition hover:-translate-y-1 hover:border-[#d2ae62] hover:bg-[#1c1113]"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#7d633e] font-serif text-xl text-[#e2c478] group-hover:shadow-[0_0_20px_rgba(210,174,98,.25)]">
+                      {module.glyph}
+                    </span>
+                    <strong className="mt-5 block font-serif text-lg text-[#eee2ca]">
+                      {module.name}
+                    </strong>
+                    <span className="mt-2 block text-xs leading-5 text-[#9f9482]">
+                      {module.description}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -1146,18 +1399,57 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
         {run.phase === 'ending' && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#050406]/94 p-5 backdrop-blur-md">
             <div className="w-full max-w-4xl text-center">
-              <div className="text-[10px] font-bold uppercase tracking-[.34em] text-[#bc8d45]">Final liturgy</div>
-              <h3 className="mt-3 font-serif text-3xl text-[#f3e8d1] sm:text-4xl">你要埋葬什么？</h3>
-              <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[#a99c89]">圣堂核心已经安静。殖民地航道、旗舰里的意识，以及你的葬仪舰，只有两者能保持稳定。</p>
+              <div className="text-[10px] font-bold uppercase tracking-[.34em] text-[#bc8d45]">
+                Final liturgy
+              </div>
+              <h3 className="mt-3 font-serif text-3xl text-[#f3e8d1] sm:text-4xl">
+                你要埋葬什么？
+              </h3>
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[#a99c89]">
+                圣堂核心已经安静。殖民地航道、旗舰里的意识，以及你的葬仪舰，只有两者能保持稳定。
+              </p>
               <div className="mt-7 grid gap-3 md:grid-cols-3">
-                <button type="button" onClick={() => finishEnding('burial')} className="rounded-2xl border border-[#80633c] bg-[#17100e] p-5 text-left transition hover:border-[#dfbd72]">
-                  <span className="text-[10px] uppercase tracking-[.18em] text-[#c4a15c]">教会结局</span><strong className="mt-2 block font-serif text-xl">完成葬仪</strong><span className="mt-3 block text-xs leading-5 text-[#a69a87]">埋葬旗舰，确保殖民地航道绝对安全。</span>
+                <button
+                  type="button"
+                  onClick={() => finishEnding('burial')}
+                  className="rounded-2xl border border-[#80633c] bg-[#17100e] p-5 text-left transition hover:border-[#dfbd72]"
+                >
+                  <span className="text-[10px] uppercase tracking-[.18em] text-[#c4a15c]">
+                    教会结局
+                  </span>
+                  <strong className="mt-2 block font-serif text-xl">完成葬仪</strong>
+                  <span className="mt-3 block text-xs leading-5 text-[#a69a87]">
+                    埋葬旗舰，确保殖民地航道绝对安全。
+                  </span>
                 </button>
-                <button type="button" onClick={() => finishEnding('release')} className="rounded-2xl border border-[#6d2834] bg-[#190d11] p-5 text-left transition hover:border-[#c95160]">
-                  <span className="text-[10px] uppercase tracking-[.18em] text-[#c96d77]">异端结局</span><strong className="mt-2 block font-serif text-xl">打破圣轨</strong><span className="mt-3 block text-xs leading-5 text-[#a69a87]">释放旗舰，让所有名字自己选择终点。</span>
+                <button
+                  type="button"
+                  onClick={() => finishEnding('release')}
+                  className="rounded-2xl border border-[#6d2834] bg-[#190d11] p-5 text-left transition hover:border-[#c95160]"
+                >
+                  <span className="text-[10px] uppercase tracking-[.18em] text-[#c96d77]">
+                    异端结局
+                  </span>
+                  <strong className="mt-2 block font-serif text-xl">打破圣轨</strong>
+                  <span className="mt-3 block text-xs leading-5 text-[#a69a87]">
+                    释放旗舰，让所有名字自己选择终点。
+                  </span>
                 </button>
-                <button type="button" disabled={!concordUnlocked} onClick={() => finishEnding('concord')} className="rounded-2xl border border-[#7e744e] bg-[#121312] p-5 text-left transition enabled:hover:border-[#d7d09b] disabled:cursor-not-allowed disabled:opacity-35">
-                  <span className="text-[10px] uppercase tracking-[.18em] text-[#d0c98f]">隐秘结局</span><strong className="mt-2 block font-serif text-xl">成为第三枚锚</strong><span className="mt-3 block text-xs leading-5 text-[#a69a87]">{concordUnlocked ? '献出葬仪舰，同时稳定圣轨与旗舰。' : '需要舰体 ≥ 55、存档生命 ≥ 140。'}</span>
+                <button
+                  type="button"
+                  disabled={!concordUnlocked}
+                  onClick={() => finishEnding('concord')}
+                  className="rounded-2xl border border-[#7e744e] bg-[#121312] p-5 text-left transition enabled:hover:border-[#d7d09b] disabled:cursor-not-allowed disabled:opacity-35"
+                >
+                  <span className="text-[10px] uppercase tracking-[.18em] text-[#d0c98f]">
+                    隐秘结局
+                  </span>
+                  <strong className="mt-2 block font-serif text-xl">成为第三枚锚</strong>
+                  <span className="mt-3 block text-xs leading-5 text-[#a69a87]">
+                    {concordUnlocked
+                      ? '献出葬仪舰，同时稳定圣轨与旗舰。'
+                      : '需要舰体 ≥ 55、存档生命 ≥ 140。'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -1167,23 +1459,55 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
         {(run.phase === 'victory' || run.phase === 'defeat') && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#050406]/94 p-6 backdrop-blur-md">
             <div className="max-w-xl text-center">
-              <div className={`text-[10px] font-bold uppercase tracking-[.34em] ${run.phase === 'victory' ? 'text-[#c6a35c]' : 'text-[#bd5360]'}`}>{run.phase === 'victory' ? 'Funeral completed' : 'Vessel lost'}</div>
-              <h3 className="mt-3 font-serif text-4xl text-[#f3e8d1]">{run.phase === 'victory' ? '葬仪结束' : '墓场没有回应'}</h3>
-              <p className="mx-auto mt-4 text-sm leading-6 text-[#aaa08e]">{run.phase === 'victory' ? endingCopy : '你的舰体成为了下一具星骸。但所有已记录的名字，仍留在航道里。'}</p>
-              <div className="mx-auto mt-6 grid max-w-sm grid-cols-3 divide-x divide-[#5e4a31] rounded-2xl border border-[#654e32] bg-[#100c0c] py-4 text-xs">
-                <div><span className="block text-[#8f8474]">得分</span><strong className="mt-1 block text-lg text-[#e5c87d]">{run.score}</strong></div>
-                <div><span className="block text-[#8f8474]">存档生命</span><strong className="mt-1 block text-lg text-[#e5c87d]">{run.savedLives}</strong></div>
-                <div><span className="block text-[#8f8474]">用时</span><strong className="mt-1 block text-lg text-[#e5c87d]">{Math.max(1, Math.round(run.elapsed / 60))}′</strong></div>
+              <div
+                className={`text-[10px] font-bold uppercase tracking-[.34em] ${run.phase === 'victory' ? 'text-[#c6a35c]' : 'text-[#bd5360]'}`}
+              >
+                {run.phase === 'victory' ? 'Funeral completed' : 'Vessel lost'}
               </div>
-              <button type="button" onClick={restartRun} className="mt-7 rounded-full border border-[#d2ae62] px-6 py-3 text-xs font-bold tracking-[.18em] text-[#e9d59d] transition hover:bg-[#d2ae62] hover:text-[#161008]">重新校准轨道</button>
+              <h3 className="mt-3 font-serif text-4xl text-[#f3e8d1]">
+                {run.phase === 'victory' ? '葬仪结束' : '墓场没有回应'}
+              </h3>
+              <p className="mx-auto mt-4 text-sm leading-6 text-[#aaa08e]">
+                {run.phase === 'victory'
+                  ? endingCopy
+                  : '你的舰体成为了下一具星骸。但所有已记录的名字，仍留在航道里。'}
+              </p>
+              <div className="mx-auto mt-6 grid max-w-sm grid-cols-3 divide-x divide-[#5e4a31] rounded-2xl border border-[#654e32] bg-[#100c0c] py-4 text-xs">
+                <div>
+                  <span className="block text-[#8f8474]">得分</span>
+                  <strong className="mt-1 block text-lg text-[#e5c87d]">{run.score}</strong>
+                </div>
+                <div>
+                  <span className="block text-[#8f8474]">存档生命</span>
+                  <strong className="mt-1 block text-lg text-[#e5c87d]">{run.savedLives}</strong>
+                </div>
+                <div>
+                  <span className="block text-[#8f8474]">用时</span>
+                  <strong className="mt-1 block text-lg text-[#e5c87d]">
+                    {Math.max(1, Math.round(run.elapsed / 60))}′
+                  </strong>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={restartRun}
+                className="mt-7 rounded-full border border-[#d2ae62] px-6 py-3 text-xs font-bold tracking-[.18em] text-[#e9d59d] transition hover:bg-[#d2ae62] hover:text-[#161008]"
+              >
+                重新校准轨道
+              </button>
             </div>
           </div>
         )}
       </div>
 
       <div className="grid gap-3 border-t border-[#80613b]/30 bg-[#0b0809] px-5 py-4 text-xs text-[#9d9280] sm:grid-cols-[1fr_auto] sm:px-7">
-        <p><span className="mr-2 text-[#c5a25d]">葬仪原则</span>{actCopy.subtitle}</p>
-        <p className="font-mono text-[10px] uppercase tracking-[.14em]">anchors {hud.anchors}/{hud.maxAnchors} · no direct weapons</p>
+        <p>
+          <span className="mr-2 text-[#c5a25d]">葬仪原则</span>
+          {actCopy.subtitle}
+        </p>
+        <p className="font-mono text-[10px] uppercase tracking-[.14em]">
+          anchors {hud.anchors}/{hud.maxAnchors} · no direct weapons
+        </p>
       </div>
     </section>
   )

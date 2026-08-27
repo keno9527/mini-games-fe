@@ -67,4 +67,4 @@ export const COLORS = {
   TEXT_PRIMARY: '#ffffff',
   TEXT_DIM: '#000000',
   TEXT_HIGHLIGHT: '#f0d040',
-} as const;
+} as const

@@ -30,25 +30,25 @@ const TANK_UP: readonly string[] = [
   ' 222  1111  222 ',
   ' 222        222 ',
   '                ',
-];
+]
 
 /** 顺时针旋转 90°：dst[r][c] = src[size-1-c][r] */
 function rotateClockwise(matrix: readonly string[]): readonly string[] {
-  const size = matrix.length;
-  const result: string[] = [];
+  const size = matrix.length
+  const result: string[] = []
   for (let row = 0; row < size; row += 1) {
-    let line = '';
+    let line = ''
     for (let col = 0; col < size; col += 1) {
-      line += matrix[size - 1 - col][row];
+      line += matrix[size - 1 - col][row]
     }
-    result.push(line);
+    result.push(line)
   }
-  return result;
+  return result
 }
 
-const TANK_RIGHT = rotateClockwise(TANK_UP);
-const TANK_DOWN = rotateClockwise(TANK_RIGHT);
-const TANK_LEFT = rotateClockwise(TANK_DOWN);
+const TANK_RIGHT = rotateClockwise(TANK_UP)
+const TANK_DOWN = rotateClockwise(TANK_RIGHT)
+const TANK_LEFT = rotateClockwise(TANK_DOWN)
 
 /** 按 Direction 枚举顺序（上 / 右 / 下 / 左）排列的坦克精灵 */
 export const TANK_SPRITES: readonly (readonly string[])[] = [
@@ -56,7 +56,7 @@ export const TANK_SPRITES: readonly (readonly string[])[] = [
   TANK_RIGHT,
   TANK_DOWN,
   TANK_LEFT,
-];
+]
 
 /** 老鹰基地（完好） */
 export const BASE_SPRITE: readonly string[] = [
@@ -76,7 +76,7 @@ export const BASE_SPRITE: readonly string[] = [
   '      1111      ',
   '                ',
   '                ',
-];
+]
 
 /** 老鹰基地（已被击毁，残骸） */
 export const BASE_DESTROYED_SPRITE: readonly string[] = [
@@ -96,10 +96,10 @@ export const BASE_DESTROYED_SPRITE: readonly string[] = [
   '  111111111111  ',
   '                ',
   '                ',
-];
+]
 
 /** 道具图标尺寸（居中绘制在 16x16 的道具框内） */
-export const POWERUP_ICON_SIZE = 12;
+export const POWERUP_ICON_SIZE = 12
 
 /** 星星：火力升级 */
 export const ICON_STAR: readonly string[] = [
@@ -115,7 +115,7 @@ export const ICON_STAR: readonly string[] = [
   ' 11      11 ',
   '11        11',
   '            ',
-];
+]
 
 /** 头盔：临时无敌 */
 export const ICON_HELMET: readonly string[] = [
@@ -131,7 +131,7 @@ export const ICON_HELMET: readonly string[] = [
   '111111111111',
   '            ',
   '            ',
-];
+]
 
 /** 铲子：基地围墙变钢墙 */
 export const ICON_SHOVEL: readonly string[] = [
@@ -147,7 +147,7 @@ export const ICON_SHOVEL: readonly string[] = [
   '    1111    ',
   '   111111   ',
   '            ',
-];
+]
 
 /** 坦克：生命 +1 */
 export const ICON_TANK: readonly string[] = [
@@ -163,7 +163,7 @@ export const ICON_TANK: readonly string[] = [
   '            ',
   '            ',
   '            ',
-];
+]
 
 /** 计时器：冻结敌方 */
 export const ICON_TIMER: readonly string[] = [
@@ -179,7 +179,7 @@ export const ICON_TIMER: readonly string[] = [
   '  11111111  ',
   '    1111    ',
   '            ',
-];
+]
 
 /** 手雷：清屏 */
 export const ICON_GRENADE: readonly string[] = [
@@ -195,13 +195,13 @@ export const ICON_GRENADE: readonly string[] = [
   '   111111   ',
   '    1111    ',
   '            ',
-];
+]
 
 /** 3x5 像素字模的字形宽度 */
-export const FONT_GLYPH_WIDTH = 3;
+export const FONT_GLYPH_WIDTH = 3
 
 /** 3x5 像素字模的字形高度 */
-export const FONT_GLYPH_HEIGHT = 5;
+export const FONT_GLYPH_HEIGHT = 5
 
 /**
  * 3x5 像素字模。`1` 为实心点，`0` 为空。
@@ -249,4 +249,4 @@ export const FONT_GLYPHS: Readonly<Record<string, readonly string[]>> = {
   ':': ['000', '010', '000', '010', '000'],
   '!': ['010', '010', '010', '000', '010'],
   ' ': ['000', '000', '000', '000', '000'],
-};
+}

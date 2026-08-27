@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createRecord } from '../../api'
+import { createRecord } from '@/api'
 
 interface Props {
   userId?: string
@@ -71,7 +71,9 @@ const WORDS_6 = (
   'MOSTLY,MOTHER,MOTION,MOVING,MURDER,MUTUAL,MYSELF,NARROW,NATION,NATIVE,NATURE,NEARBY,NEARLY,NICELY,NOBODY,NORMAL,NOTICE,NOTION,NUMBER,OBJECT,' +
   'OBTAIN,OFFICE,OFFSET,ONLINE,OPTION,ORANGE,ORIGIN,OTHERS,OUTPUT,PACKED,PARENT,PARTLY,PEOPLE,PERIOD,PERMIT,PERSON,PHRASE,PLANET,PLAYER,PLEASE,' +
   'POLICE,POLICY,PRAYER,PREFER,PRETTY,PRINCE,PRISON,PROFIT,PROPER,PUBLIC,PURELY,PURPLE,PURSUE,PUSHED,PUTTING,QUIET,QUOTED,RAISED,RANDOM,RARELY'
-).split(',').filter(w => w.length === 6)
+)
+  .split(',')
+  .filter((w) => w.length === 6)
 
 function getWords(len: number): string[] {
   if (len === 4) return WORDS_4
@@ -142,7 +144,7 @@ export default function Wordle({ userId, gameId }: Props) {
         await createRecord(userId, { gameId, score, duration: dur, result })
       } catch {}
     },
-    [userId, gameId]
+    [userId, gameId],
   )
 
   const reset = useCallback(() => {
@@ -204,12 +206,12 @@ export default function Wordle({ userId, gameId }: Props) {
       if (key === 'ENTER') {
         submitGuess()
       } else if (key === 'BACK') {
-        setCurrent(c => c.slice(0, -1))
+        setCurrent((c) => c.slice(0, -1))
       } else if (/^[A-Z]$/.test(key)) {
-        setCurrent(c => (c.length < cfg.len ? c + key : c))
+        setCurrent((c) => (c.length < cfg.len ? c + key : c))
       }
     },
-    [cfg.len, submitGuess]
+    [cfg.len, submitGuess],
   )
 
   useEffect(() => {
@@ -268,7 +270,7 @@ export default function Wordle({ userId, gameId }: Props) {
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="flex flex-wrap gap-2 justify-center">
-        {(['简单', '中等', '复杂'] as const).map(lv => (
+        {(['简单', '中等', '复杂'] as const).map((lv) => (
           <button
             key={lv}
             type="button"
@@ -323,7 +325,7 @@ export default function Wordle({ userId, gameId }: Props) {
       <div className="flex flex-col gap-1.5 mt-1">
         {KEY_ROWS.map((row, r) => (
           <div key={r} className="flex gap-1 justify-center">
-            {row.map(k => {
+            {row.map((k) => {
               const isSpecial = k === 'ENTER' || k === 'BACK'
               const label = k === 'BACK' ? '⌫' : k === 'ENTER' ? '↵' : k
               const state = keyState[k] ?? 'empty'
@@ -333,7 +335,9 @@ export default function Wordle({ userId, gameId }: Props) {
                   type="button"
                   onClick={() => onKeyPress(k)}
                   className={`h-10 rounded-lg font-black text-sm border-2 shadow-btn transition-all active:scale-95 ${
-                    isSpecial ? 'w-12 bg-fun-bg border-fun-border text-fun-text' : `w-8 ${STATE_BG[state]}`
+                    isSpecial
+                      ? 'w-12 bg-fun-bg border-fun-border text-fun-text'
+                      : `w-8 ${STATE_BG[state]}`
                   }`}
                 >
                   {label}

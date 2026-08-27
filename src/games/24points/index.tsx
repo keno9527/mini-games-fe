@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { createRecord } from '../../api'
+import { createRecord } from '@/api'
 
 interface Props {
   userId?: string
@@ -37,7 +37,8 @@ function hasSolution(nums: number[]): boolean {
     for (let j = 0; j < nums.length; j++) {
       if (i === j) continue
       const rest = nums.filter((_, k) => k !== i && k !== j)
-      const a = nums[i], b = nums[j]
+      const a = nums[i],
+        b = nums[j]
       const candidates = [a + b, a - b, a * b]
       if (Math.abs(b) > 1e-9) candidates.push(a / b)
       for (const c of candidates) {
@@ -85,21 +86,22 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
   const [streak, setStreak] = useState(0)
   const [timeLeft, setTimeLeft] = useState(LEVEL_SECONDS['中等'])
   const [status, setStatus] = useState<'idle' | 'playing' | 'over'>('idle')
-  const [submitted, setSubmitted] = useState(false)
   const timerHandle = useRef<ReturnType<typeof setInterval> | null>(null)
   const scoreRef = useRef(0)
   const submittedRef = useRef(false)
   const roundSecondsRef = useRef(LEVEL_SECONDS['中等'])
   scoreRef.current = score
 
-  const submitRecord = useCallback(async (s: number, duration: number) => {
-    if (!userId || submittedRef.current) return
-    submittedRef.current = true
-    setSubmitted(true)
-    try {
-      await createRecord(userId, { gameId, score: s, duration, result: 'complete' })
-    } catch {}
-  }, [userId, gameId])
+  const submitRecord = useCallback(
+    async (s: number, duration: number) => {
+      if (!userId || submittedRef.current) return
+      submittedRef.current = true
+      try {
+        await createRecord(userId, { gameId, score: s, duration, result: 'complete' })
+      } catch {}
+    },
+    [userId, gameId],
+  )
 
   useEffect(() => {
     if (status === 'over') {
@@ -122,11 +124,10 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
     setExpr('')
     setFeedback(null)
     setStatus('playing')
-    setSubmitted(false)
     submittedRef.current = false
 
     const t = setInterval(() => {
-      setTimeLeft(prev => {
+      setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(t)
           setStatus('over')
@@ -152,8 +153,13 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
 
   const handleSubmit = () => {
     if (status !== 'playing') return
-    const userNums = expr.replace(/[^0-9.]/g, ' ').trim().split(/\s+/).map(Number).filter(n => !isNaN(n))
-    const cardVals = [...cards.map(c => c.value)].sort((a, b) => a - b)
+    const userNums = expr
+      .replace(/[^0-9.]/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .map(Number)
+      .filter((n) => !isNaN(n))
+    const cardVals = [...cards.map((c) => c.value)].sort((a, b) => a - b)
     const inputVals = [...userNums].sort((a, b) => a - b)
 
     if (userNums.length !== 4) {
@@ -161,7 +167,7 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
       return
     }
     if (JSON.stringify(cardVals) !== JSON.stringify(inputVals)) {
-      setFeedback({ msg: `请使用这四个数：${cards.map(c => c.value).join(', ')}`, ok: false })
+      setFeedback({ msg: `请使用这四个数：${cards.map((c) => c.value).join(', ')}`, ok: false })
       return
     }
 
@@ -176,7 +182,10 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
       const newStreak = streak + 1
       setScore(newScore)
       setStreak(newStreak)
-      setFeedback({ msg: `🎉 正确！+${bonus}分${newStreak >= 2 ? ` 🔥×${newStreak}` : ''}`, ok: true })
+      setFeedback({
+        msg: `🎉 正确！+${bonus}分${newStreak >= 2 ? ` 🔥×${newStreak}` : ''}`,
+        ok: true,
+      })
       setTimeout(() => nextCard(newStreak), 900)
     } else {
       setStreak(0)
@@ -185,10 +194,10 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
   }
 
   const insertNum = (v: number) => {
-    setExpr(e => e + String(v))
+    setExpr((e) => e + String(v))
   }
 
-  const values = cards.map(c => c.value)
+  const values = cards.map((c) => c.value)
   const solvable = hasSolution(values)
 
   const picking = status === 'idle' || status === 'over'
@@ -196,7 +205,7 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="flex flex-wrap gap-2 justify-center">
-        {(Object.keys(LEVEL_SECONDS) as Level[]).map(lv => (
+        {(Object.keys(LEVEL_SECONDS) as Level[]).map((lv) => (
           <button
             key={lv}
             type="button"
@@ -221,8 +230,12 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
         </div>
         {status === 'playing' && (
           <>
-            <div className={`border-2 rounded-2xl px-5 py-3 text-center shadow-card ${timeLeft <= 10 ? 'bg-red-50 border-red-300 animate-pulse' : 'bg-sky-50 border-sky-200'}`}>
-              <p className={`text-3xl font-black ${timeLeft <= 10 ? 'text-red-500' : 'text-fun-sky'}`}>
+            <div
+              className={`border-2 rounded-2xl px-5 py-3 text-center shadow-card ${timeLeft <= 10 ? 'bg-red-50 border-red-300 animate-pulse' : 'bg-sky-50 border-sky-200'}`}
+            >
+              <p
+                className={`text-3xl font-black ${timeLeft <= 10 ? 'text-red-500' : 'text-fun-sky'}`}
+              >
                 ⏰ {timeLeft}
               </p>
               <p className="text-xs text-fun-muted font-semibold">剩余秒数</p>
@@ -270,13 +283,13 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
             <input
               type="text"
               value={expr}
-              onChange={e => setExpr(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              onChange={(e) => setExpr(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               placeholder="例：(1+3)×(8-2)"
               className="flex-1 bg-fun-bg border-2 border-fun-border rounded-2xl px-4 py-2.5 text-sm text-fun-text placeholder-fun-muted focus:outline-none focus:border-fun-accent transition-colors font-mono font-semibold"
             />
             <button
-              onClick={() => setExpr(e => e.slice(0, -1))}
+              onClick={() => setExpr((e) => e.slice(0, -1))}
               className="px-3 py-2 rounded-2xl border-2 border-fun-border text-fun-muted hover:text-fun-text hover:border-fun-accent/50 bg-fun-bg transition-all text-sm font-bold shadow-btn hover:shadow-btn-hover"
             >
               ⌫
@@ -285,10 +298,10 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
 
           {/* Operator shortcuts */}
           <div className="flex gap-2">
-            {['+', '-', '*', '/', '(', ')'].map(op => (
+            {['+', '-', '*', '/', '(', ')'].map((op) => (
               <button
                 key={op}
-                onClick={() => setExpr(e => e + op)}
+                onClick={() => setExpr((e) => e + op)}
                 className={`w-11 h-11 rounded-2xl border-2 font-black transition-all shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 active:scale-95 text-sm ${opColors[op] ?? ''}`}
               >
                 {op}
@@ -312,11 +325,13 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
           </div>
 
           {feedback && (
-            <div className={`px-5 py-2.5 rounded-2xl border-2 font-bold text-sm ${
-              feedback.ok
-                ? 'bg-green-50 border-green-200 text-green-700'
-                : 'bg-red-50 border-red-200 text-red-600'
-            }`}>
+            <div
+              className={`px-5 py-2.5 rounded-2xl border-2 font-bold text-sm ${
+                feedback.ok
+                  ? 'bg-green-50 border-green-200 text-green-700'
+                  : 'bg-red-50 border-red-200 text-red-600'
+              }`}
+            >
               {feedback.msg}
             </div>
           )}
@@ -325,7 +340,10 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
 
       {status === 'idle' && (
         <div className="text-center">
-          <p className="text-fun-muted font-semibold text-sm mb-5">用4个数字加减乘除（可加括号）凑出 <span className="text-fun-accent font-black text-lg">24</span></p>
+          <p className="text-fun-muted font-semibold text-sm mb-5">
+            用4个数字加减乘除（可加括号）凑出{' '}
+            <span className="text-fun-accent font-black text-lg">24</span>
+          </p>
           <button
             onClick={startGame}
             className="px-10 py-4 rounded-full bg-fun-accent text-white font-black text-xl shadow-btn hover:shadow-btn-hover hover:-translate-y-1 transition-all"
@@ -339,7 +357,9 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
         <div className="text-center space-y-4 bg-fun-card border-2 border-fun-border rounded-3xl p-8 shadow-card">
           <div className="text-5xl">🎊</div>
           <p className="text-2xl font-black text-fun-text">时间到啦！</p>
-          <p className="text-fun-muted font-semibold">最终得分：<span className="text-fun-accent text-3xl font-black">{score}</span> 分</p>
+          <p className="text-fun-muted font-semibold">
+            最终得分：<span className="text-fun-accent text-3xl font-black">{score}</span> 分
+          </p>
           <button
             onClick={startGame}
             className="px-10 py-4 rounded-full bg-fun-accent text-white font-black text-lg shadow-btn hover:shadow-btn-hover hover:-translate-y-1 transition-all"

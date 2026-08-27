@@ -14,7 +14,7 @@ const emptyProgression = (): GameProgression => ({
 
 function uniqueStrings(value: unknown): string[] {
   if (!Array.isArray(value)) return []
-  return Array.from(new Set(value.filter(item => typeof item === 'string' && item.length > 0)))
+  return Array.from(new Set(value.filter((item) => typeof item === 'string' && item.length > 0)))
 }
 
 export function getGameProgression(gameId: string): GameProgression {

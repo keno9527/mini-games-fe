@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
-import { createRecord, getUserStats } from '../../api'
-import type { GameComponentProps } from '../manifest'
-import { mountTankBattle, type TankBattleHandle } from './runtime.ts'
+import { createRecord, getUserStats } from '@/api'
+import type { GameComponentProps } from '@/games/manifest'
+import { mountTankBattle, type TankBattleHandle } from '@/games/tank-battle/runtime.ts'
 
 export default function TankBattle({ userId, gameId }: GameComponentProps) {
   const stageRef = useRef<HTMLDivElement>(null)
@@ -20,7 +20,7 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
       if (userId) {
         try {
           const stats = await getUserStats(userId)
-          initialHighScore = stats.gameStats.find(stat => stat.gameId === gameId)?.bestScore ?? 0
+          initialHighScore = stats.gameStats.find((stat) => stat.gameId === gameId)?.bestScore ?? 0
         } catch {
           // 战绩读取失败时从 0 开始，不影响游戏本体。
         }
@@ -29,7 +29,7 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
       if (cancelled) return
       game = mountTankBattle(canvas, stage, {
         initialHighScore,
-        onGameOver: result => {
+        onGameOver: (result) => {
           if (!userId) return
           createRecord(userId, {
             gameId,
@@ -63,7 +63,7 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
       </div>
       <div className="grid gap-2 border-t-2 border-[#343434] bg-[#111] px-4 py-3 font-mono-crt text-sm tracking-wide text-[#d8d8d8] md:grid-cols-2">
         <p>移动：方向键 / WASD</p>
-        <p>开火：空格 / J　暂停：P / Esc</p>
+        <p>开火：空格 / J 暂停：P / Esc</p>
       </div>
     </section>
   )

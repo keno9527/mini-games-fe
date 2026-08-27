@@ -3,8 +3,8 @@
 declare global {
   interface Window {
     /** Safari 旧版前缀实现 */
-    webkitAudioContext?: typeof AudioContext;
+    webkitAudioContext?: typeof AudioContext
   }
 }
 
-export {};
+export {}

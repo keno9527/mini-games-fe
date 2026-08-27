@@ -1,11 +1,10 @@
-import type { GameManifest } from '../manifest.ts'
+import type { GameManifest } from '@/games/manifest.ts'
 
 export default {
   game: {
     id: 'whack-a-mole',
     name: '打地鼠',
     description: '限时点击地鼠。三档难度对应洞数、时长与出现速度。',
-    coverImage: '/covers/whack-a-mole.svg',
     tags: ['反应', '休闲'],
     difficulties: ['简单', '中等', '复杂'],
   },

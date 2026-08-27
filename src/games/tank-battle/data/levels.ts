@@ -1,4 +1,4 @@
-import { EnemyKind, type LevelData } from '../types.ts';
+import { EnemyKind, type LevelData } from '@/games/tank-battle/types.ts'
 
 /**
  * 关卡数据。
@@ -19,13 +19,13 @@ export const ENEMY_SPAWN_CELLS: readonly (readonly [number, number])[] = [
   [0, 0],
   [6, 0],
   [12, 0],
-];
+]
 
 /** 玩家出生点（格坐标） */
-export const PLAYER_SPAWN_CELL: readonly [number, number] = [4, 12];
+export const PLAYER_SPAWN_CELL: readonly [number, number] = [4, 12]
 
 /** 老鹰基地所在格坐标 */
-export const BASE_CELL: readonly [number, number] = [6, 12];
+export const BASE_CELL: readonly [number, number] = [6, 12]
 
 /** 基地围墙的格坐标：默认砖墙，铲子道具期间临时变钢墙 */
 export const BASE_WALL_CELLS: readonly (readonly [number, number])[] = [
@@ -34,24 +34,24 @@ export const BASE_WALL_CELLS: readonly (readonly [number, number])[] = [
   [7, 11],
   [5, 12],
   [7, 12],
-];
+]
 
 /** 构造一关的敌方队列：按类型数量依次排开 */
 function buildQueue(basic: number, fast: number, power: number, armor: number): EnemyKind[] {
-  const queue: EnemyKind[] = [];
+  const queue: EnemyKind[] = []
   for (let i = 0; i < basic; i += 1) {
-    queue.push(EnemyKind.BASIC);
+    queue.push(EnemyKind.BASIC)
   }
   for (let i = 0; i < fast; i += 1) {
-    queue.push(EnemyKind.FAST);
+    queue.push(EnemyKind.FAST)
   }
   for (let i = 0; i < power; i += 1) {
-    queue.push(EnemyKind.POWER);
+    queue.push(EnemyKind.POWER)
   }
   for (let i = 0; i < armor; i += 1) {
-    queue.push(EnemyKind.ARMOR);
+    queue.push(EnemyKind.ARMOR)
   }
-  return queue;
+  return queue
 }
 
 export const LEVELS: readonly LevelData[] = [
@@ -150,4 +150,4 @@ export const LEVELS: readonly LevelData[] = [
     ],
     enemyQueue: buildQueue(4, 4, 6, 6),
   },
-];
+]

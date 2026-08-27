@@ -1,16 +1,16 @@
-import { SoundEffect } from '../types.ts';
+import { SoundEffect } from '@/games/tank-battle/types.ts'
 
 interface ToneSpec {
   /** 波形 */
-  readonly type: OscillatorType;
+  readonly type: OscillatorType
   /** 起始频率（Hz） */
-  readonly startFrequency: number;
+  readonly startFrequency: number
   /** 结束频率（Hz），用于滑音 */
-  readonly endFrequency: number;
+  readonly endFrequency: number
   /** 时长（秒） */
-  readonly duration: number;
+  readonly duration: number
   /** 峰值音量（0-1） */
-  readonly gain: number;
+  readonly gain: number
 }
 
 /** 每种音效的合成参数，全部为 8-bit 风格的方波/三角波滑音 */
@@ -39,7 +39,7 @@ const TONE_SPECS: Readonly<Record<SoundEffect, readonly ToneSpec[]>> = {
   [SoundEffect.GAME_OVER]: [
     { type: 'triangle', startFrequency: 420, endFrequency: 110, duration: 0.7, gain: 0.22 },
   ],
-};
+}
 
 /**
  * 程序化 8-bit 音效引擎。
@@ -50,74 +50,74 @@ const TONE_SPECS: Readonly<Record<SoundEffect, readonly ToneSpec[]>> = {
  * 不影响游戏进行。
  */
 export class AudioEngine {
-  private context: AudioContext | null = null;
-  private masterGain: GainNode | null = null;
-  private enabled = true;
-  private unavailable = false;
+  private context: AudioContext | null = null
+  private masterGain: GainNode | null = null
+  private enabled = true
+  private unavailable = false
 
   /** 在首次用户交互时调用，建立或恢复 AudioContext */
   unlock(): void {
     if (this.unavailable) {
-      return;
+      return
     }
 
     try {
       if (this.context === null) {
-        const AudioContextCtor = window.AudioContext ?? window.webkitAudioContext;
+        const AudioContextCtor = window.AudioContext ?? window.webkitAudioContext
         if (AudioContextCtor === undefined) {
-          this.unavailable = true;
-          return;
+          this.unavailable = true
+          return
         }
-        this.context = new AudioContextCtor();
-        this.masterGain = this.context.createGain();
-        this.masterGain.gain.value = 0.6;
-        this.masterGain.connect(this.context.destination);
+        this.context = new AudioContextCtor()
+        this.masterGain = this.context.createGain()
+        this.masterGain.gain.value = 0.6
+        this.masterGain.connect(this.context.destination)
       }
 
       if (this.context.state === 'suspended') {
-        void this.context.resume();
+        void this.context.resume()
       }
     } catch {
       // 音频不可用时静默降级，游戏逻辑不受影响
-      this.unavailable = true;
+      this.unavailable = true
     }
   }
 
   setEnabled(enabled: boolean): void {
-    this.enabled = enabled;
+    this.enabled = enabled
   }
 
   isEnabled(): boolean {
-    return this.enabled;
+    return this.enabled
   }
 
   dispose(): void {
-    const context = this.context;
-    this.context = null;
-    this.masterGain = null;
+    const context = this.context
+    this.context = null
+    this.masterGain = null
 
     if (context !== null) {
       void context.close().catch((): void => {
         // 页面卸载期间关闭失败不应影响广场路由切换。
-      });
+      })
     }
   }
 
   play(effect: SoundEffect): void {
     if (!this.enabled || this.unavailable) {
-      return;
+      return
     }
 
-    const context = this.context;
-    const masterGain = this.masterGain;
+    const context = this.context
+    const masterGain = this.masterGain
     if (context === null || masterGain === null || context.state !== 'running') {
-      return;
+      return
     }
 
     try {
-      const startTime = context.currentTime;
+      const startTime = context.currentTime
       for (const spec of TONE_SPECS[effect]) {
-        this.playTone(context, masterGain, spec, startTime);
+        this.playTone(context, masterGain, spec, startTime)
       }
     } catch {
       // 单次播放失败不影响后续
@@ -130,24 +130,24 @@ export class AudioEngine {
     spec: ToneSpec,
     startTime: number,
   ): void {
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
+    const oscillator = context.createOscillator()
+    const gain = context.createGain()
 
-    oscillator.type = spec.type;
-    oscillator.frequency.setValueAtTime(spec.startFrequency, startTime);
+    oscillator.type = spec.type
+    oscillator.frequency.setValueAtTime(spec.startFrequency, startTime)
     oscillator.frequency.exponentialRampToValueAtTime(
       Math.max(1, spec.endFrequency),
       startTime + spec.duration,
-    );
+    )
 
     // 快速起音 + 指数衰减，模拟 FC 音源的包络
-    gain.gain.setValueAtTime(0.0001, startTime);
-    gain.gain.exponentialRampToValueAtTime(spec.gain, startTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + spec.duration);
+    gain.gain.setValueAtTime(0.0001, startTime)
+    gain.gain.exponentialRampToValueAtTime(spec.gain, startTime + 0.01)
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + spec.duration)
 
-    oscillator.connect(gain);
-    gain.connect(destination);
-    oscillator.start(startTime);
-    oscillator.stop(startTime + spec.duration + 0.02);
+    oscillator.connect(gain)
+    gain.connect(destination)
+    oscillator.start(startTime)
+    oscillator.stop(startTime + spec.duration + 0.02)
   }
 }

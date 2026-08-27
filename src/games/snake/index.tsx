@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createRecord } from '../../api'
+import { useGameRecord } from '@/hooks/useGameRecord'
 
 interface Props {
   userId?: string
@@ -12,7 +12,14 @@ type Level = '简单' | '中等' | '复杂'
 
 const CONFIG: Record<
   Level,
-  { cols: number; rows: number; cell: number; baseSpeed: number; minSpeed: number; speedStep: number }
+  {
+    cols: number
+    rows: number
+    cell: number
+    baseSpeed: number
+    minSpeed: number
+    speedStep: number
+  }
 > = {
   简单: { cols: 20, rows: 14, cell: 24, baseSpeed: 220, minSpeed: 110, speedStep: 12 },
   中等: { cols: 30, rows: 20, cell: 20, baseSpeed: 180, minSpeed: 80, speedStep: 10 },
@@ -33,7 +40,7 @@ function randFood(snake: Pos[], cols: number, rows: number): Pos {
   let pos: Pos
   do {
     pos = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) }
-  } while (snake.some(s => s.x === pos.x && s.y === pos.y))
+  } while (snake.some((s) => s.x === pos.x && s.y === pos.y))
   return pos
 }
 
@@ -42,18 +49,18 @@ export default function Snake({ userId, gameId }: Props) {
   const cfg = CONFIG[level]
 
   const [snake, setSnake] = useState<Pos[]>(() => initSnake(cfg.cols, cfg.rows))
-  const [food, setFood] = useState<Pos>(() => randFood(initSnake(cfg.cols, cfg.rows), cfg.cols, cfg.rows))
+  const [food, setFood] = useState<Pos>(() =>
+    randFood(initSnake(cfg.cols, cfg.rows), cfg.cols, cfg.rows),
+  )
   const [dir, setDir] = useState<Dir>('RIGHT')
   const [score, setScore] = useState(0)
   const [status, setStatus] = useState<'idle' | 'playing' | 'paused' | 'over'>('idle')
   const [highScore, setHighScore] = useState(0)
-  const [submitted, setSubmitted] = useState(false)
 
   const dirRef = useRef<Dir>('RIGHT')
   const snakeRef = useRef(snake)
   const foodRef = useRef(food)
   const scoreRef = useRef(0)
-  const startTimeRef = useRef(0)
   const statusRef = useRef<'idle' | 'playing' | 'paused' | 'over'>('idle')
   const gridRef = useRef({ cols: cfg.cols, rows: cfg.rows })
 
@@ -63,13 +70,11 @@ export default function Snake({ userId, gameId }: Props) {
   statusRef.current = status
   gridRef.current = { cols: cfg.cols, rows: cfg.rows }
 
-  const submitRecord = useCallback(async (s: number, duration: number) => {
-    if (!userId || submitted) return
-    setSubmitted(true)
-    try {
-      await createRecord(userId, { gameId, score: s, duration, result: 'complete' })
-    } catch {}
-  }, [userId, gameId, submitted])
+  const {
+    start: startRecord,
+    submit: submitRecord,
+    reset: resetRecord,
+  } = useGameRecord({ userId, gameId })
 
   const restartLayout = useCallback(() => {
     const { cols, rows } = CONFIG[level]
@@ -80,8 +85,8 @@ export default function Snake({ userId, gameId }: Props) {
     dirRef.current = 'RIGHT'
     setScore(0)
     setStatus('idle')
-    setSubmitted(false)
-  }, [level])
+    resetRecord()
+  }, [level, resetRecord])
 
   useEffect(() => {
     restartLayout()
@@ -90,8 +95,14 @@ export default function Snake({ userId, gameId }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const map: Record<string, Dir> = {
-        ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
-        w: 'UP', s: 'DOWN', a: 'LEFT', d: 'RIGHT',
+        ArrowUp: 'UP',
+        ArrowDown: 'DOWN',
+        ArrowLeft: 'LEFT',
+        ArrowRight: 'RIGHT',
+        w: 'UP',
+        s: 'DOWN',
+        a: 'LEFT',
+        d: 'RIGHT',
       }
       const d = map[e.key]
       if (!d) return
@@ -104,12 +115,12 @@ export default function Snake({ userId, gameId }: Props) {
       if (statusRef.current === 'idle') {
         setStatus('playing')
         statusRef.current = 'playing'
-        startTimeRef.current = Date.now()
+        startRecord()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [startRecord])
 
   useEffect(() => {
     if (status !== 'playing') return
@@ -133,14 +144,12 @@ export default function Snake({ userId, gameId }: Props) {
 
       if (next.x < 0 || next.x >= COLS || next.y < 0 || next.y >= ROWS) {
         setStatus('over')
-        const dur = Math.floor((Date.now() - startTimeRef.current) / 1000)
-        submitRecord(scoreRef.current, dur)
+        void submitRecord({ score: scoreRef.current, result: 'complete' })
         return
       }
-      if (s.some(seg => seg.x === next.x && seg.y === next.y)) {
+      if (s.some((seg) => seg.x === next.x && seg.y === next.y)) {
         setStatus('over')
-        const dur = Math.floor((Date.now() - startTimeRef.current) / 1000)
-        submitRecord(scoreRef.current, dur)
+        void submitRecord({ score: scoreRef.current, result: 'complete' })
         return
       }
 
@@ -152,7 +161,7 @@ export default function Snake({ userId, gameId }: Props) {
       if (ate) {
         const ns = scoreRef.current + 10
         setScore(ns)
-        setHighScore(h => Math.max(h, ns))
+        setHighScore((h) => Math.max(h, ns))
         setFood(randFood(newSnake, COLS, ROWS))
       }
     }, speed)
@@ -167,7 +176,7 @@ export default function Snake({ userId, gameId }: Props) {
 
   const startGame = () => {
     setStatus('playing')
-    startTimeRef.current = Date.now()
+    startRecord()
   }
 
   const pickingIdle = status === 'idle' || status === 'over'
@@ -175,7 +184,7 @@ export default function Snake({ userId, gameId }: Props) {
   return (
     <div className="flex flex-col items-center gap-5">
       <div className="flex flex-wrap items-center gap-2 justify-center">
-        {(Object.keys(CONFIG) as Level[]).map(lv => (
+        {(Object.keys(CONFIG) as Level[]).map((lv) => (
           <button
             key={lv}
             type="button"
@@ -194,12 +203,35 @@ export default function Snake({ userId, gameId }: Props) {
 
       <div className="flex items-center gap-4 flex-wrap justify-center">
         {[
-          { label: '当前分数', value: score, color: 'text-fun-accent', bg: 'bg-orange-50 border-orange-200', emoji: '⭐' },
-          { label: '最高分', value: highScore, color: 'text-fun-purple', bg: 'bg-purple-50 border-purple-200', emoji: '🏆' },
-          { label: '长度', value: snake.length, color: 'text-fun-green', bg: 'bg-green-50 border-green-200', emoji: '🐍' },
+          {
+            label: '当前分数',
+            value: score,
+            color: 'text-fun-accent',
+            bg: 'bg-orange-50 border-orange-200',
+            emoji: '⭐',
+          },
+          {
+            label: '最高分',
+            value: highScore,
+            color: 'text-fun-purple',
+            bg: 'bg-purple-50 border-purple-200',
+            emoji: '🏆',
+          },
+          {
+            label: '长度',
+            value: snake.length,
+            color: 'text-fun-green',
+            bg: 'bg-green-50 border-green-200',
+            emoji: '🐍',
+          },
         ].map(({ label, value, color, bg, emoji }) => (
-          <div key={label} className={`${bg} border-2 rounded-2xl px-4 py-3 text-center shadow-card min-w-[90px]`}>
-            <p className={`text-2xl font-black ${color}`}>{emoji} {value}</p>
+          <div
+            key={label}
+            className={`${bg} border-2 rounded-2xl px-4 py-3 text-center shadow-card min-w-[90px]`}
+          >
+            <p className={`text-2xl font-black ${color}`}>
+              {emoji} {value}
+            </p>
             <p className="text-xs text-fun-muted font-semibold mt-0.5">{label}</p>
           </div>
         ))}
@@ -216,10 +248,26 @@ export default function Snake({ userId, gameId }: Props) {
           height={cfg.rows * cfg.cell}
         >
           {Array.from({ length: cfg.cols + 1 }, (_, i) => (
-            <line key={`v${i}`} x1={i * cfg.cell} y1={0} x2={i * cfg.cell} y2={cfg.rows * cfg.cell} stroke="#38bdf8" strokeWidth="0.5" />
+            <line
+              key={`v${i}`}
+              x1={i * cfg.cell}
+              y1={0}
+              x2={i * cfg.cell}
+              y2={cfg.rows * cfg.cell}
+              stroke="#38bdf8"
+              strokeWidth="0.5"
+            />
           ))}
           {Array.from({ length: cfg.rows + 1 }, (_, i) => (
-            <line key={`h${i}`} x1={0} y1={i * cfg.cell} x2={cfg.cols * cfg.cell} y2={i * cfg.cell} stroke="#38bdf8" strokeWidth="0.5" />
+            <line
+              key={`h${i}`}
+              x1={0}
+              y1={i * cfg.cell}
+              x2={cfg.cols * cfg.cell}
+              y2={i * cfg.cell}
+              stroke="#38bdf8"
+              strokeWidth="0.5"
+            />
           ))}
         </svg>
 
@@ -232,9 +280,7 @@ export default function Snake({ userId, gameId }: Props) {
               top: seg.y * cfg.cell + 1,
               width: cfg.cell - 2,
               height: cfg.cell - 2,
-              background: i === 0
-                ? '#22c55e'
-                : `hsl(${140 - i}, 75%, ${52 - i * 0.4}%)`,
+              background: i === 0 ? '#22c55e' : `hsl(${140 - i}, 75%, ${52 - i * 0.4}%)`,
               boxShadow: i === 0 ? '0 0 6px rgba(34,197,94,0.6)' : 'none',
             }}
           />
@@ -274,7 +320,9 @@ export default function Snake({ userId, gameId }: Props) {
           <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3 rounded-2xl">
             <p className="text-3xl">😢</p>
             <p className="text-red-500 text-2xl font-black">游戏结束！</p>
-            <p className="text-fun-text text-lg font-semibold">得分：<span className="text-fun-accent font-black text-2xl">{score}</span></p>
+            <p className="text-fun-text text-lg font-semibold">
+              得分：<span className="text-fun-accent font-black text-2xl">{score}</span>
+            </p>
             <button
               type="button"
               onClick={restartLayout}
@@ -308,10 +356,20 @@ export default function Snake({ userId, gameId }: Props) {
                 type="button"
                 key={`${ri}-${ci}`}
                 onMouseDown={() => {
-                  const map2: Record<string, Dir> = { '↑': 'UP', '↓': 'DOWN', '←': 'LEFT', '→': 'RIGHT' }
+                  const map2: Record<string, Dir> = {
+                    '↑': 'UP',
+                    '↓': 'DOWN',
+                    '←': 'LEFT',
+                    '→': 'RIGHT',
+                  }
                   const d = map2[key]
                   if (d) {
-                    const opp: Record<Dir, Dir> = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' }
+                    const opp: Record<Dir, Dir> = {
+                      UP: 'DOWN',
+                      DOWN: 'UP',
+                      LEFT: 'RIGHT',
+                      RIGHT: 'LEFT',
+                    }
                     if (d !== opp[dirRef.current]) {
                       dirRef.current = d
                       setDir(d)
@@ -320,11 +378,14 @@ export default function Snake({ userId, gameId }: Props) {
                   if (statusRef.current === 'idle') {
                     setStatus('playing')
                     statusRef.current = 'playing'
-                    startTimeRef.current = Date.now()
+                    startRecord()
                   }
                 }}
                 className={`w-12 h-12 rounded-2xl bg-fun-card border-2 border-fun-border text-fun-text font-black hover:bg-fun-accent/10 hover:border-fun-accent/40 active:scale-95 active:shadow-none shadow-btn transition-all text-sm ${
-                  dir === ({ '↑': 'UP', '↓': 'DOWN', '←': 'LEFT', '→': 'RIGHT' } as Record<string, Dir>)[key]
+                  dir ===
+                  ({ '↑': 'UP', '↓': 'DOWN', '←': 'LEFT', '→': 'RIGHT' } as Record<string, Dir>)[
+                    key
+                  ]
                     ? 'bg-fun-accent/15 border-fun-accent'
                     : ''
                 }`}
@@ -333,8 +394,8 @@ export default function Snake({ userId, gameId }: Props) {
               </button>
             ) : (
               <div key={`${ri}-${ci}`} />
-            )
-          )
+            ),
+          ),
         )}
       </div>
     </div>

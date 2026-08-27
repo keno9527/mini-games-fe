@@ -1,8 +1,8 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
-import Header from './components/Header'
-import Home from './pages/Home'
-import GameDetail from './pages/GameDetail'
-import Profile from './pages/Profile'
+import Header from '@/components/Header'
+import Home from '@/pages/Home'
+import GameDetail from '@/pages/GameDetail'
+import Profile from '@/pages/Profile'
 
 function App() {
   return (

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { createRecord } from '../../api'
+import { createRecord } from '@/api'
 
 interface Props {
   userId?: string
@@ -76,7 +76,7 @@ export default function SlidePuzzle({ userId, gameId }: Props) {
         await createRecord(userId, { gameId, score: s, duration: seconds, result: 'win' })
       } catch {}
     },
-    [userId, gameId]
+    [userId, gameId],
   )
 
   useEffect(() => {
@@ -136,7 +136,7 @@ export default function SlidePuzzle({ userId, gameId }: Props) {
   return (
     <div className="flex flex-col items-center gap-5">
       <div className="flex flex-wrap gap-2 justify-center">
-        {(Object.keys(LEVEL_N) as Level[]).map(lv => (
+        {(Object.keys(LEVEL_N) as Level[]).map((lv) => (
           <button
             key={lv}
             type="button"
@@ -154,14 +154,20 @@ export default function SlidePuzzle({ userId, gameId }: Props) {
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-4 text-sm font-bold text-fun-muted">
-        <span>步数：<span className="text-fun-accent text-xl">{moves}</span></span>
+        <span>
+          步数：<span className="text-fun-accent text-xl">{moves}</span>
+        </span>
         {status === 'playing' && startRef.current > 0 && (
           <span>
             用时：
             <span className="text-fun-purple text-xl">{elapsed}s</span>
           </span>
         )}
-        {status === 'won' && <span>用时：<span className="text-fun-purple text-xl">{elapsed}s</span></span>}
+        {status === 'won' && (
+          <span>
+            用时：<span className="text-fun-purple text-xl">{elapsed}s</span>
+          </span>
+        )}
       </div>
 
       {status === 'idle' && (

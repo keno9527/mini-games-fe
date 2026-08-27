@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createRecord } from '../../api'
+import { createRecord } from '@/api'
 
 interface Props {
   userId?: string
@@ -10,7 +10,14 @@ type Level = '简单' | '中等' | '复杂'
 
 const CFG: Record<
   Level,
-  { holes: number; duration: number; spawnStart: number; spawnMin: number; hideMs: number; gridCols: number }
+  {
+    holes: number
+    duration: number
+    spawnStart: number
+    spawnMin: number
+    hideMs: number
+    gridCols: number
+  }
 > = {
   简单: { holes: 9, duration: 75, spawnStart: 1500, spawnMin: 850, hideMs: 1900, gridCols: 3 },
   中等: { holes: 9, duration: 60, spawnStart: 1200, spawnMin: 600, hideMs: 1400, gridCols: 3 },
@@ -29,7 +36,6 @@ export default function WhackAMole({ userId, gameId }: Props) {
   const [status, setStatus] = useState<'idle' | 'playing' | 'over'>('idle')
   const [whacked, setWhacked] = useState<number | null>(null)
   const [missed, setMissed] = useState<number | null>(null)
-  const [submitted, setSubmitted] = useState(false)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const spawnRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -67,11 +73,10 @@ export default function WhackAMole({ userId, gameId }: Props) {
     setTimeLeft(c.duration)
     setStatus('playing')
     statusRef.current = 'playing'
-    setSubmitted(false)
     submittedRef.current = false
 
     timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
+      setTimeLeft((prev) => {
         if (prev <= 1) {
           clearTimers()
           setStatus('over')
@@ -79,7 +84,6 @@ export default function WhackAMole({ userId, gameId }: Props) {
           setTimeout(() => {
             if (!submittedRef.current && userId) {
               submittedRef.current = true
-              setSubmitted(true)
               createRecord(userId, {
                 gameId,
                 score: scoreRef.current,
@@ -98,16 +102,16 @@ export default function WhackAMole({ userId, gameId }: Props) {
     const spawnMoles = () => {
       if (statusRef.current !== 'playing') return
 
-      setMoles(prev => {
+      setMoles((prev) => {
         const next = [...prev]
-        const empties = next.map((v, i) => (v === null ? i : -1)).filter(i => i >= 0)
+        const empties = next.map((v, i) => (v === null ? i : -1)).filter((i) => i >= 0)
         const count = Math.min(empties.length, Math.floor(Math.random() * 2) + 1)
         for (let k = 0; k < count; k++) {
           const idx = empties[Math.floor(Math.random() * empties.length)]
           if (idx !== undefined) {
             next[idx] = MOLE_EMOJIS[Math.floor(Math.random() * MOLE_EMOJIS.length)]
             setTimeout(() => {
-              setMoles(m => {
+              setMoles((m) => {
                 const nm = [...m]
                 if (idx < nm.length) nm[idx] = null
                 return nm
@@ -132,8 +136,8 @@ export default function WhackAMole({ userId, gameId }: Props) {
   const handleHit = (idx: number) => {
     if (status !== 'playing') return
     if (moles[idx] !== null) {
-      setScore(s => s + 10)
-      setMoles(prev => {
+      setScore((s) => s + 10)
+      setMoles((prev) => {
         const next = [...prev]
         next[idx] = null
         return next
@@ -152,7 +156,7 @@ export default function WhackAMole({ userId, gameId }: Props) {
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="flex flex-wrap gap-2 justify-center">
-        {(Object.keys(CFG) as Level[]).map(lv => (
+        {(Object.keys(CFG) as Level[]).map((lv) => (
           <button
             key={lv}
             type="button"
@@ -175,7 +179,9 @@ export default function WhackAMole({ userId, gameId }: Props) {
           <p className="text-xs text-fun-muted font-semibold">击中数</p>
         </div>
         {status === 'playing' && (
-          <div className={`border-2 rounded-2xl px-6 py-3 text-center shadow-card min-w-[110px] ${danger ? 'bg-red-50 border-red-300 animate-pulse' : 'bg-sky-50 border-sky-200'}`}>
+          <div
+            className={`border-2 rounded-2xl px-6 py-3 text-center shadow-card min-w-[110px] ${danger ? 'bg-red-50 border-red-300 animate-pulse' : 'bg-sky-50 border-sky-200'}`}
+          >
             <p className={`text-3xl font-black ${danger ? 'text-red-500' : 'text-fun-sky'}`}>
               ⏰ {timeLeft}
             </p>
@@ -209,7 +215,9 @@ export default function WhackAMole({ userId, gameId }: Props) {
                 className="absolute bottom-3 cursor-pointer select-none z-10 transition-all duration-200"
                 style={{
                   transform: hasMole
-                    ? isWhacked ? 'translateY(-20px) scale(0.7)' : 'translateY(-28px) scale(1.1)'
+                    ? isWhacked
+                      ? 'translateY(-20px) scale(0.7)'
+                      : 'translateY(-28px) scale(1.1)'
                     : 'translateY(32px) scale(0.8)',
                   opacity: hasMole ? 1 : 0,
                   filter: isWhacked ? 'brightness(0.6)' : 'none',
@@ -256,7 +264,8 @@ export default function WhackAMole({ userId, gameId }: Props) {
           <div className="text-5xl">🎊</div>
           <p className="text-2xl font-black text-fun-text">时间到！</p>
           <p className="text-fun-muted font-semibold">
-            共击中 <span className="text-fun-accent text-3xl font-black">{score / 10}</span> 只地鼠！
+            共击中 <span className="text-fun-accent text-3xl font-black">{score / 10}</span>{' '}
+            只地鼠！
           </p>
           <p className="text-fun-muted font-semibold">
             得分：<span className="text-fun-accent text-2xl font-black">{score}</span> 分

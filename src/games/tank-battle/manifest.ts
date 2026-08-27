@@ -1,11 +1,10 @@
-import type { GameManifest } from '../manifest.ts'
+import type { GameManifest } from '@/games/manifest.ts'
 
 export default {
   game: {
     id: 'tank-battle',
     name: '坦克大战',
     description: '守住老鹰基地，驾驶坦克突破砖墙与钢墙，迎战五关逐步升级的敌军攻势。',
-    coverImage: '/covers/tank-battle.svg',
     tags: ['动作', '街机', '经典'],
     difficulties: ['经典战役'],
   },

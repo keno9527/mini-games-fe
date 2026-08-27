@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createRecord } from '../../api'
+import { createRecord } from '@/api'
 
 interface Props {
   userId?: string
@@ -18,46 +18,186 @@ const PIECES: Piece[] = ['I', 'O', 'T', 'S', 'Z', 'J', 'L']
 
 const SHAPES: Record<Piece, number[][][]> = {
   I: [
-    [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[0, 0, 1, 0], [0, 0, 1, 0], [0, 0, 1, 0], [0, 0, 1, 0]],
-    [[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0]],
-    [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0]],
+    [
+      [0, 0, 0, 0],
+      [1, 1, 1, 1],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 0, 1, 0],
+      [0, 0, 1, 0],
+      [0, 0, 1, 0],
+      [0, 0, 1, 0],
+    ],
+    [
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+      [1, 1, 1, 1],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 1, 0, 0],
+      [0, 1, 0, 0],
+      [0, 1, 0, 0],
+      [0, 1, 0, 0],
+    ],
   ],
   O: [
-    [[0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+    [
+      [0, 1, 1, 0],
+      [0, 1, 1, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 1, 1, 0],
+      [0, 1, 1, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 1, 1, 0],
+      [0, 1, 1, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 1, 1, 0],
+      [0, 1, 1, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
   ],
   T: [
-    [[0, 1, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[0, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
-    [[0, 0, 0, 0], [1, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
-    [[0, 1, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
+    [
+      [0, 1, 0, 0],
+      [1, 1, 1, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 1, 0, 0],
+      [0, 1, 1, 0],
+      [0, 1, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 0, 0, 0],
+      [1, 1, 1, 0],
+      [0, 1, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 1, 0, 0],
+      [1, 1, 0, 0],
+      [0, 1, 0, 0],
+      [0, 0, 0, 0],
+    ],
   ],
   S: [
-    [[0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 1, 0], [0, 0, 0, 0]],
-    [[0, 0, 0, 0], [0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0]],
-    [[1, 0, 0, 0], [1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
+    [
+      [0, 1, 1, 0],
+      [1, 1, 0, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 1, 0, 0],
+      [0, 1, 1, 0],
+      [0, 0, 1, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 0, 0, 0],
+      [0, 1, 1, 0],
+      [1, 1, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [1, 0, 0, 0],
+      [1, 1, 0, 0],
+      [0, 1, 0, 0],
+      [0, 0, 0, 0],
+    ],
   ],
   Z: [
-    [[1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[0, 0, 1, 0], [0, 1, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
-    [[0, 0, 0, 0], [1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
-    [[0, 1, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0]],
+    [
+      [1, 1, 0, 0],
+      [0, 1, 1, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 0, 1, 0],
+      [0, 1, 1, 0],
+      [0, 1, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 0, 0, 0],
+      [1, 1, 0, 0],
+      [0, 1, 1, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 1, 0, 0],
+      [1, 1, 0, 0],
+      [1, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
   ],
   J: [
-    [[1, 0, 0, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[0, 1, 1, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
-    [[0, 0, 0, 0], [1, 1, 1, 0], [0, 0, 1, 0], [0, 0, 0, 0]],
-    [[0, 1, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [0, 0, 0, 0]],
+    [
+      [1, 0, 0, 0],
+      [1, 1, 1, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 1, 1, 0],
+      [0, 1, 0, 0],
+      [0, 1, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 0, 0, 0],
+      [1, 1, 1, 0],
+      [0, 0, 1, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 1, 0, 0],
+      [0, 1, 0, 0],
+      [1, 1, 0, 0],
+      [0, 0, 0, 0],
+    ],
   ],
   L: [
-    [[0, 0, 1, 0], [1, 1, 1, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]],
-    [[0, 0, 0, 0], [1, 1, 1, 0], [1, 0, 0, 0], [0, 0, 0, 0]],
-    [[1, 1, 0, 0], [0, 1, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0]],
+    [
+      [0, 0, 1, 0],
+      [1, 1, 1, 0],
+      [0, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 1, 0, 0],
+      [0, 1, 0, 0],
+      [0, 1, 1, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [0, 0, 0, 0],
+      [1, 1, 1, 0],
+      [1, 0, 0, 0],
+      [0, 0, 0, 0],
+    ],
+    [
+      [1, 1, 0, 0],
+      [0, 1, 0, 0],
+      [0, 1, 0, 0],
+      [0, 0, 0, 0],
+    ],
   ],
 }
 
@@ -109,7 +249,7 @@ function collides(board: (Piece | null)[][], a: Active): boolean {
 }
 
 function merge(board: (Piece | null)[][], a: Active): (Piece | null)[][] {
-  const nb = board.map(r => [...r])
+  const nb = board.map((r) => [...r])
   const shape = SHAPES[a.type][a.rot]
   for (let dy = 0; dy < 4; dy++) {
     for (let dx = 0; dx < 4; dx++) {
@@ -123,7 +263,7 @@ function merge(board: (Piece | null)[][], a: Active): (Piece | null)[][] {
 }
 
 function clearFullLines(board: (Piece | null)[][]): { board: (Piece | null)[][]; cleared: number } {
-  const kept = board.filter(row => row.some(c => c === null))
+  const kept = board.filter((row) => row.some((c) => c === null))
   const cleared = ROWS - kept.length
   const newRows = Array.from({ length: cleared }, () => Array<Piece | null>(COLS).fill(null))
   return { board: [...newRows, ...kept], cleared }
@@ -161,7 +301,12 @@ export default function Tetris({ userId, gameId }: Props) {
     submittedRef.current = true
     const dur = Math.max(1, Math.floor((Date.now() - startTimeRef.current) / 1000))
     try {
-      await createRecord(userId, { gameId, score: scoreRef.current, duration: dur, result: 'complete' })
+      await createRecord(userId, {
+        gameId,
+        score: scoreRef.current,
+        duration: dur,
+        result: 'complete',
+      })
     } catch {}
   }, [userId, gameId])
 
@@ -174,8 +319,8 @@ export default function Tetris({ userId, gameId }: Props) {
     boardRef.current = cleared
     setBoard(cleared)
     if (n > 0) {
-      setScore(s => s + LINE_SCORE[n])
-      setLines(l => l + n)
+      setScore((s) => s + LINE_SCORE[n])
+      setLines((l) => l + n)
     }
     const nx = nextPiece
     const newActive = spawn(nx)
@@ -224,7 +369,7 @@ export default function Tetris({ userId, gameId }: Props) {
     const landed: Active = { ...a, y: a.y + drop }
     setActive(landed)
     activeRef.current = landed
-    setScore(s => s + drop * 2)
+    setScore((s) => s + drop * 2)
     scoreRef.current += drop * 2
     lockAndNext()
   }, [lockAndNext])
@@ -243,15 +388,26 @@ export default function Tetris({ userId, gameId }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (statusRef.current !== 'playing' || !activeRef.current) return
-      if (e.key === 'ArrowLeft') { e.preventDefault(); tryMove(-1, 0) }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); tryMove(1, 0) }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); rotate() }
-      else if (e.key === 'ArrowDown') {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        tryMove(-1, 0)
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        tryMove(1, 0)
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        rotate()
+      } else if (e.key === 'ArrowDown') {
         e.preventDefault()
         if (!tryMove(0, 1)) lockAndNext()
-        else { setScore(s => s + 1); scoreRef.current += 1 }
+        else {
+          setScore((s) => s + 1)
+          scoreRef.current += 1
+        }
+      } else if (e.key === ' ') {
+        e.preventDefault()
+        hardDrop()
       }
-      else if (e.key === ' ') { e.preventDefault(); hardDrop() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -264,8 +420,10 @@ export default function Tetris({ userId, gameId }: Props) {
     setActive(a)
     activeRef.current = a
     setNextPiece(randomPiece())
-    setScore(0); scoreRef.current = 0
-    setLines(0); linesRef.current = 0
+    setScore(0)
+    scoreRef.current = 0
+    setLines(0)
+    linesRef.current = 0
     submittedRef.current = false
     startTimeRef.current = Date.now()
     setStatus('playing')
@@ -275,8 +433,10 @@ export default function Tetris({ userId, gameId }: Props) {
   const reset = useCallback(() => {
     setBoard(emptyBoard())
     setActive(null)
-    setScore(0); scoreRef.current = 0
-    setLines(0); linesRef.current = 0
+    setScore(0)
+    scoreRef.current = 0
+    setLines(0)
+    linesRef.current = 0
     setStatus('idle')
     statusRef.current = 'idle'
   }, [])
@@ -288,7 +448,7 @@ export default function Tetris({ userId, gameId }: Props) {
   const pickingIdle = status === 'idle' || status === 'over'
 
   // 渲染：把当前活动方块叠到盘面
-  const display: (Piece | null)[][] = board.map(r => [...r])
+  const display: (Piece | null)[][] = board.map((r) => [...r])
   if (active) {
     const shape = SHAPES[active.type][active.rot]
     for (let dy = 0; dy < 4; dy++) {
@@ -306,7 +466,7 @@ export default function Tetris({ userId, gameId }: Props) {
   return (
     <div className="flex flex-col items-center gap-5">
       <div className="flex flex-wrap gap-2 justify-center">
-        {(['简单', '中等', '复杂'] as const).map(lv => (
+        {(['简单', '中等', '复杂'] as const).map((lv) => (
           <button
             key={lv}
             type="button"
@@ -339,11 +499,13 @@ export default function Tetris({ userId, gameId }: Props) {
                   width: CELL,
                   height: CELL,
                   background: c ? COLORS[c] : 'transparent',
-                  border: c ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(255,255,255,0.03)',
+                  border: c
+                    ? '1px solid rgba(255,255,255,0.25)'
+                    : '1px solid rgba(255,255,255,0.03)',
                   boxSizing: 'border-box',
                 }}
               />
-            ))
+            )),
           )}
           {status === 'idle' && (
             <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3 text-white">
@@ -355,14 +517,18 @@ export default function Tetris({ userId, gameId }: Props) {
               >
                 开始游戏
               </button>
-              <p className="text-xs font-semibold opacity-80">← → 移动 · ↑ 旋转 · ↓ 加速 · 空格 硬降</p>
+              <p className="text-xs font-semibold opacity-80">
+                ← → 移动 · ↑ 旋转 · ↓ 加速 · 空格 硬降
+              </p>
             </div>
           )}
           {status === 'over' && (
             <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-2 text-white">
               <p className="text-3xl">💥</p>
               <p className="text-xl font-black">顶格啦！</p>
-              <p className="text-sm">得分 <span className="text-fun-yellow font-black text-2xl">{score}</span></p>
+              <p className="text-sm">
+                得分 <span className="text-fun-yellow font-black text-2xl">{score}</span>
+              </p>
               <button
                 type="button"
                 onClick={start}
@@ -385,10 +551,7 @@ export default function Tetris({ userId, gameId }: Props) {
           </div>
           <div className="bg-purple-50 border-2 border-purple-200 rounded-2xl p-2 shadow-card">
             <p className="text-xs text-fun-muted font-semibold text-center mb-1">下一块</p>
-            <div
-              className="relative mx-auto"
-              style={{ width: 4 * 16, height: 4 * 16 }}
-            >
+            <div className="relative mx-auto" style={{ width: 4 * 16, height: 4 * 16 }}>
               {nextShape.map((row, y) =>
                 row.map((c, x) =>
                   c ? (
@@ -404,8 +567,8 @@ export default function Tetris({ userId, gameId }: Props) {
                         border: '1px solid rgba(0,0,0,0.15)',
                       }}
                     />
-                  ) : null
-                )
+                  ) : null,
+                ),
               )}
             </div>
           </div>

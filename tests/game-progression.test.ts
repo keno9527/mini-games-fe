@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { getGameProgression, saveGameProgression } from '../src/api/progression.ts'
+import { getGameProgression, saveGameProgression } from '../src/games/gravity-graveyard/progression.ts'
 
 const values = new Map<string, string>()
 

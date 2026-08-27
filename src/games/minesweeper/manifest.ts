@@ -1,11 +1,10 @@
-import type { GameManifest } from '../manifest.ts'
+import type { GameManifest } from '@/games/manifest.ts'
 
 export default {
   game: {
     id: 'minesweeper',
     name: '扫雷',
     description: '经典扫雷：左键揭开、右键插旗。含简单、中等、复杂三档盘面与雷数。',
-    coverImage: '/covers/minesweeper.svg',
     tags: ['益智', '经典'],
     difficulties: ['简单', '中等', '复杂'],
   },

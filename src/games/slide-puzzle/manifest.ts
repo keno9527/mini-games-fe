@@ -1,11 +1,10 @@
-import type { GameManifest } from '../manifest.ts'
+import type { GameManifest } from '@/games/manifest.ts'
 
 export default {
   game: {
     id: 'slide-puzzle',
     name: '数字华容道',
     description: '滑动方块复原顺序。三档对应 3x3、4x4、5x5 盘面。',
-    coverImage: '/covers/slide-puzzle.svg',
     tags: ['益智', '经典'],
     difficulties: ['简单', '中等', '复杂'],
   },

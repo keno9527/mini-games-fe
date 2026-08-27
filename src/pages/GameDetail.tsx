@@ -1,10 +1,11 @@
 import { Suspense, useEffect, useState } from 'react'
+/* eslint-disable react-hooks/static-components -- 动态获取懒加载游戏组件是预期模式 */
 import { useParams, Link } from 'react-router-dom'
-import { getGame } from '../api'
-import { getDifficultyChipClass } from '../features/games/catalog'
-import { getGameComponent } from '../games/registry'
-import { useUserStore } from '../store/userStore'
-import type { Game } from '../types'
+import { getGame } from '@/api'
+import { getDifficultyChipClass } from '@/features/games/catalog'
+import { getGameComponent } from '@/games/registry'
+import { useUserStore } from '@/store/userStore'
+import type { Game } from '@/types'
 
 export default function GameDetail() {
   const { id } = useParams<{ id: string }>()
@@ -27,9 +28,7 @@ export default function GameDetail() {
         <div className="font-pixel text-crt-yellow text-sm tracking-widest animate-blink">
           LOADING...
         </div>
-        <div className="font-mono-crt text-crt-cyan text-lg tracking-widest">
-          ▓▓▓▓▒▒▒▒
-        </div>
+        <div className="font-mono-crt text-crt-cyan text-lg tracking-widest">▓▓▓▓▒▒▒▒</div>
       </div>
     )
   }
@@ -37,11 +36,19 @@ export default function GameDetail() {
   if (error || !game || !id) {
     return (
       <div className="text-center py-32">
-        <div className="font-pixel text-3xl text-crt-pink mb-6 tracking-widest" style={{ textShadow: '0 0 12px #FF2EC8' }}>
+        <div
+          className="font-pixel text-3xl text-crt-pink mb-6 tracking-widest"
+          style={{ textShadow: '0 0 12px #FF2EC8' }}
+        >
           GAME OVER
         </div>
-        <p className="font-mono-crt text-crt-text text-lg mb-6 tracking-wide">{error || 'GAME NOT FOUND'}</p>
-        <Link to="/" className="inline-block font-pixel text-xs text-crt-cyan border-2 border-crt-cyan px-6 py-3 tracking-widest hover:bg-crt-cyan hover:text-black transition-all">
+        <p className="font-mono-crt text-crt-text text-lg mb-6 tracking-wide">
+          {error || 'GAME NOT FOUND'}
+        </p>
+        <Link
+          to="/"
+          className="inline-block font-pixel text-xs text-crt-cyan border-2 border-crt-cyan px-6 py-3 tracking-widest hover:bg-crt-cyan hover:text-black transition-all"
+        >
           ← BACK TO HALL
         </Link>
       </div>
@@ -55,7 +62,9 @@ export default function GameDetail() {
     <main className="max-w-7xl mx-auto px-6 py-8">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 font-mono-crt text-sm text-crt-text-dim mb-6 tracking-wider">
-        <Link to="/" className="hover:text-crt-cyan transition-colors">&gt; GAME HALL</Link>
+        <Link to="/" className="hover:text-crt-cyan transition-colors">
+          &gt; GAME HALL
+        </Link>
         <span className="text-crt-border">/</span>
         <span className="text-crt-yellow font-pixel text-[10px] tracking-widest">{game.name}</span>
       </div>
@@ -67,10 +76,13 @@ export default function GameDetail() {
             <div className="absolute inset-0 pointer-events-none crt-scanlines opacity-60" />
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-6 flex-wrap">
-                <h1 className="font-pixel text-xl md:text-2xl text-crt-cyan tracking-widest" style={{ textShadow: '0 0 10px #00F0FF' }}>
+                <h1
+                  className="font-pixel text-xl md:text-2xl text-crt-cyan tracking-widest"
+                  style={{ textShadow: '0 0 10px #00F0FF' }}
+                >
                   {game.name}
                 </h1>
-                {levels.map(lv => (
+                {levels.map((lv) => (
                   <span
                     key={lv}
                     className={`font-pixel text-[9px] px-3 py-1 border-2 tracking-widest ${getDifficultyChipClass(lv)}`}
@@ -78,8 +90,11 @@ export default function GameDetail() {
                     {lv}
                   </span>
                 ))}
-                {game.tags.map(tag => (
-                  <span key={tag} className="font-mono-crt text-xs px-2 py-1 bg-black border border-crt-border text-crt-text-dim tracking-wider">
+                {game.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="font-mono-crt text-xs px-2 py-1 bg-black border border-crt-border text-crt-text-dim tracking-wider"
+                  >
                     #{tag}
                   </span>
                 ))}
@@ -87,11 +102,11 @@ export default function GameDetail() {
 
               {GameComponent ? (
                 <Suspense
-                  fallback={(
+                  fallback={
                     <div className="py-20 text-center font-pixel text-[10px] tracking-widest text-crt-cyan">
                       LOADING GAME...
                     </div>
-                  )}
+                  }
                 >
                   <GameComponent userId={currentUser?.id} gameId={id} />
                 </Suspense>
@@ -108,10 +123,15 @@ export default function GameDetail() {
         <div className="space-y-4">
           {/* Game info */}
           <div className="bg-crt-bg-card border-2 border-crt-cyan shadow-crt-card p-5">
-            <h3 className="font-pixel text-[10px] text-crt-cyan tracking-widest mb-3" style={{ textShadow: '0 0 6px #00F0FF' }}>
+            <h3
+              className="font-pixel text-[10px] text-crt-cyan tracking-widest mb-3"
+              style={{ textShadow: '0 0 6px #00F0FF' }}
+            >
               ▸ INTRO
             </h3>
-            <p className="font-mono-crt text-base text-crt-text leading-relaxed tracking-wide">{game.description}</p>
+            <p className="font-mono-crt text-base text-crt-text leading-relaxed tracking-wide">
+              {game.description}
+            </p>
           </div>
 
           {/* Login reminder */}
@@ -131,7 +151,10 @@ export default function GameDetail() {
 
           {currentUser && (
             <div className="bg-crt-bg-card border-2 border-crt-pink shadow-crt-card p-5">
-              <p className="font-pixel text-[10px] text-crt-pink mb-3 tracking-widest" style={{ textShadow: '0 0 6px #FF2EC8' }}>
+              <p
+                className="font-pixel text-[10px] text-crt-pink mb-3 tracking-widest"
+                style={{ textShadow: '0 0 6px #FF2EC8' }}
+              >
                 ▸ PLAYER 1
               </p>
               <div className="flex items-center gap-3">
@@ -141,7 +164,9 @@ export default function GameDetail() {
                 >
                   {currentUser.name[0]?.toUpperCase()}
                 </div>
-                <span className="font-mono-crt text-lg text-crt-text tracking-wide">{currentUser.name}</span>
+                <span className="font-mono-crt text-lg text-crt-text tracking-wide">
+                  {currentUser.name}
+                </span>
               </div>
             </div>
           )}

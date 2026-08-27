@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { User } from '../types'
+import type { User } from '@/types'
 
 interface UserStore {
   currentUser: User | null
@@ -13,6 +13,6 @@ export const useUserStore = create<UserStore>()(
       currentUser: null,
       setCurrentUser: (user) => set({ currentUser: user }),
     }),
-    { name: 'mini-game-user' }
-  )
+    { name: 'mini-game-user' },
+  ),
 )

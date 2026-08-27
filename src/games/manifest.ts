@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import type { Game } from '../types'
+import type { Game } from '@/types'
 
 export interface GameComponentProps {
   userId?: string

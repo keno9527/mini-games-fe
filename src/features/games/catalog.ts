@@ -1,8 +1,8 @@
-import { getRegisteredGamePresentation } from '../../games/registry'
-import type { GamePresentation } from '../../games/manifest'
-import { getCatalogGame } from './data'
+import { getRegisteredGamePresentation } from '@/games/registry'
+import type { GamePresentation } from '@/games/manifest'
+import { getCatalogGame } from '@/features/games/data'
 
-export type { GamePresentation } from '../../games/manifest'
+export type { GamePresentation } from '@/games/manifest'
 
 const fallbackPresentation: GamePresentation = {
   coverGradient: 'from-crt-purple to-crt-pink',
@@ -38,9 +38,11 @@ const resultBadgeMeta: Record<string, { label: string; className: string }> = {
 }
 
 export function getGamePresentation(gameId: string): GamePresentation {
-  return getRegisteredGamePresentation(gameId)
-    ?? externalGamePresentations[gameId]
-    ?? fallbackPresentation
+  return (
+    getRegisteredGamePresentation(gameId) ??
+    externalGamePresentations[gameId] ??
+    fallbackPresentation
+  )
 }
 
 export function getGameTarget(gameId: string) {
@@ -61,8 +63,10 @@ export function getDifficultyChipClass(difficulty: string): string {
 }
 
 export function getResultBadgeMeta(result: string) {
-  return resultBadgeMeta[result] ?? {
-    label: result,
-    className: 'text-crt-text-dim border-crt-border',
-  }
+  return (
+    resultBadgeMeta[result] ?? {
+      label: result,
+      className: 'text-crt-text-dim border-crt-border',
+    }
+  )
 }

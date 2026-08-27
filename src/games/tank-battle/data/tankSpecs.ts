@@ -1,5 +1,5 @@
-import { BULLET_SPEED, BULLET_SPEED_FAST } from '../constants.ts';
-import { EnemyKind, type TankSpec } from '../types.ts';
+import { BULLET_SPEED, BULLET_SPEED_FAST } from '@/games/tank-battle/constants.ts'
+import { EnemyKind, type TankSpec } from '@/games/tank-battle/types.ts'
 
 /**
  * 四类敌方坦克的属性配置。
@@ -42,7 +42,7 @@ export const ENEMY_SPECS: Readonly<Record<EnemyKind, TankSpec>> = {
     bulletPower: 1,
     score: 400,
   },
-};
+}
 
 /**
  * 玩家坦克按星级（0-3）的属性。
@@ -85,10 +85,10 @@ export const PLAYER_SPECS: readonly TankSpec[] = [
     bulletPower: 2,
     score: 0,
   },
-];
+]
 
 /** 玩家最高星级 */
-export const MAX_PLAYER_STAR = PLAYER_SPECS.length - 1;
+export const MAX_PLAYER_STAR = PLAYER_SPECS.length - 1
 
 /** 拾取道具的固定得分 */
-export const POWERUP_SCORE = 500;
+export const POWERUP_SCORE = 500

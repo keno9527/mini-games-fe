@@ -1,11 +1,10 @@
-import type { GameManifest } from '../manifest.ts'
+import type { GameManifest } from '@/games/manifest.ts'
 
 export default {
   game: {
     id: 'tetris',
     name: '俄罗斯方块',
     description: '下落方块，旋转拼消。方向键平移/旋转/加速，空格硬降。三档对应起始速度与加速节奏。',
-    coverImage: '/covers/tetris.svg',
     tags: ['经典', '消除'],
     difficulties: ['简单', '中等', '复杂'],
   },

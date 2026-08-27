@@ -1,11 +1,10 @@
-import type { GameManifest } from '../manifest.ts'
+import type { GameManifest } from '@/games/manifest.ts'
 
 export default {
   game: {
     id: 'wordle',
     name: '猜词',
     description: '按字母位置反馈颜色线索。简单 4 字母、中等 5 字母、复杂 6 字母且次数更少。',
-    coverImage: '/covers/wordle.svg',
     tags: ['文字', '推理'],
     difficulties: ['简单', '中等', '复杂'],
   },

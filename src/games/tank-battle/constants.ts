@@ -9,91 +9,91 @@
  */
 
 /** 每个地形格的边长（逻辑像素） */
-export const CELL_SIZE = 16;
+export const CELL_SIZE = 16
 
 /** 战场为 13x13 格 */
-export const GRID_SIZE = 13;
+export const GRID_SIZE = 13
 
 /** 战场像素宽高 */
-export const FIELD_PIXELS = CELL_SIZE * GRID_SIZE;
+export const FIELD_PIXELS = CELL_SIZE * GRID_SIZE
 
 /** 右侧信息栏宽度（逻辑像素） */
-export const SIDEBAR_WIDTH = 40;
+export const SIDEBAR_WIDTH = 40
 
 /** 画布逻辑宽度（战场 + 信息栏） */
-export const CANVAS_WIDTH = FIELD_PIXELS + SIDEBAR_WIDTH;
+export const CANVAS_WIDTH = FIELD_PIXELS + SIDEBAR_WIDTH
 
 /** 画布逻辑高度 */
-export const CANVAS_HEIGHT = FIELD_PIXELS;
+export const CANVAS_HEIGHT = FIELD_PIXELS
 
 /** 砖墙每格在单轴上切分的子块数（4x4 = 16 个子块） */
-export const BRICK_SUB = 4;
+export const BRICK_SUB = 4
 
 /** 单个砖块子块的边长（逻辑像素） */
-export const BRICK_SUB_SIZE = CELL_SIZE / BRICK_SUB;
+export const BRICK_SUB_SIZE = CELL_SIZE / BRICK_SUB
 
 /** 逻辑帧率 */
-export const TICKS_PER_SECOND = 60;
+export const TICKS_PER_SECOND = 60
 
 /** 单个逻辑帧的时长（秒） */
-export const TICK_SECONDS = 1 / TICKS_PER_SECOND;
+export const TICK_SECONDS = 1 / TICKS_PER_SECOND
 
 /** 单次 rAF 回调内最多补的逻辑帧数，防止切后台恢复时雪崩 */
-export const MAX_TICKS_PER_FRAME = 5;
+export const MAX_TICKS_PER_FRAME = 5
 
 /** 坦克边长（逻辑像素），与一格等宽 */
-export const TANK_SIZE = CELL_SIZE;
+export const TANK_SIZE = CELL_SIZE
 
 /** 子弹边长（逻辑像素） */
-export const BULLET_SIZE = 4;
+export const BULLET_SIZE = 4
 
 /** 子弹每帧移动的逻辑像素数 */
-export const BULLET_SPEED = 3;
+export const BULLET_SPEED = 3
 
 /** 高速子弹（装甲型敌人 / 玩家升级后）每帧移动的逻辑像素数 */
-export const BULLET_SPEED_FAST = 4;
+export const BULLET_SPEED_FAST = 4
 
 /** 转向时非移动轴的吸附粒度（半格） */
-export const TURN_SNAP = CELL_SIZE / 2;
+export const TURN_SNAP = CELL_SIZE / 2
 
 /** 玩家初始生命数 */
-export const PLAYER_INITIAL_LIVES = 3;
+export const PLAYER_INITIAL_LIVES = 3
 
 /** 每关敌方坦克总数 */
-export const ENEMIES_PER_LEVEL = 20;
+export const ENEMIES_PER_LEVEL = 20
 
 /** 同屏敌方坦克上限 */
-export const MAX_ACTIVE_ENEMIES = 4;
+export const MAX_ACTIVE_ENEMIES = 4
 
 /** 敌方生成间隔（逻辑帧） */
-export const ENEMY_SPAWN_INTERVAL_TICKS = 150;
+export const ENEMY_SPAWN_INTERVAL_TICKS = 150
 
 /** 生成点闪烁保护时长（逻辑帧） */
-export const SPAWN_BLINK_TICKS = 90;
+export const SPAWN_BLINK_TICKS = 90
 
 /** 玩家重生后的无敌时长（逻辑帧） */
-export const RESPAWN_SHIELD_TICKS = 180;
+export const RESPAWN_SHIELD_TICKS = 180
 
 /** 头盔道具提供的无敌时长（逻辑帧） */
-export const HELMET_SHIELD_TICKS = 600;
+export const HELMET_SHIELD_TICKS = 600
 
 /** 铲子道具的基地钢墙持续时长（逻辑帧） */
-export const SHOVEL_TICKS = 900;
+export const SHOVEL_TICKS = 900
 
 /** 计时器道具的敌方冻结时长（逻辑帧） */
-export const FREEZE_TICKS = 600;
+export const FREEZE_TICKS = 600
 
 /** 场上同时存在的道具上限 */
-export const MAX_POWERUPS_ON_FIELD = 1;
+export const MAX_POWERUPS_ON_FIELD = 1
 
 /** 敌方坦克被击毁后掉落道具的概率 */
-export const POWERUP_DROP_CHANCE = 0.18;
+export const POWERUP_DROP_CHANCE = 0.18
 
 /** 爆炸动画总时长（逻辑帧） */
-export const EXPLOSION_TICKS = 24;
+export const EXPLOSION_TICKS = 24
 
 /** 关卡开场提示的持续时长（逻辑帧） */
-export const LEVEL_INTRO_TICKS = 120;
+export const LEVEL_INTRO_TICKS = 120
 
 /** 关卡结算画面的持续时长（逻辑帧） */
-export const LEVEL_CLEAR_TICKS = 180;
+export const LEVEL_CLEAR_TICKS = 180

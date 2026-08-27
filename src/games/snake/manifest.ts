@@ -1,11 +1,10 @@
-import type { GameManifest } from '../manifest.ts'
+import type { GameManifest } from '@/games/manifest.ts'
 
 export default {
   game: {
     id: 'snake',
     name: '贪吃蛇',
     description: '吃食物变长，别撞墙和自己。三档难度对应不同场地大小与速度。',
-    coverImage: '/covers/snake.svg',
     tags: ['休闲', '经典'],
     difficulties: ['简单', '中等', '复杂'],
   },

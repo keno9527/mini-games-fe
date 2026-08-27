@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createRecord } from '../../api'
+import { createRecord } from '@/api'
 
 interface Props {
   userId?: string
@@ -16,16 +16,23 @@ const STAR = [3, 7, 11]
 const inBounds = (x: number, y: number) => x >= 0 && x < SIZE && y >= 0 && y < SIZE
 
 function isWin(board: Cell[][], x: number, y: number, s: 'X' | 'O'): boolean {
-  const dirs: [number, number][] = [[1, 0], [0, 1], [1, 1], [1, -1]]
+  const dirs: [number, number][] = [
+    [1, 0],
+    [0, 1],
+    [1, 1],
+    [1, -1],
+  ]
   for (const [dx, dy] of dirs) {
     let c = 1
     for (let k = 1; k < 5; k++) {
-      const nx = x + dx * k, ny = y + dy * k
+      const nx = x + dx * k,
+        ny = y + dy * k
       if (!inBounds(nx, ny) || board[ny][nx] !== s) break
       c++
     }
     for (let k = 1; k < 5; k++) {
-      const nx = x - dx * k, ny = y - dy * k
+      const nx = x - dx * k,
+        ny = y - dy * k
       if (!inBounds(nx, ny) || board[ny][nx] !== s) break
       c++
     }
@@ -57,7 +64,12 @@ function scorePattern(count: number, openA: boolean, openB: boolean): number {
 }
 
 function cellScore(board: Cell[][], x: number, y: number, s: 'X' | 'O'): number {
-  const dirs: [number, number][] = [[1, 0], [0, 1], [1, 1], [1, -1]]
+  const dirs: [number, number][] = [
+    [1, 0],
+    [0, 1],
+    [1, 1],
+    [1, -1],
+  ]
   let total = 0
   for (const [dx, dy] of dirs) {
     let count = 1
@@ -82,7 +94,8 @@ function hasNeighbor(board: Cell[][], x: number, y: number, range: number): bool
   for (let dy = -range; dy <= range; dy++) {
     for (let dx = -range; dx <= range; dx++) {
       if (dx === 0 && dy === 0) continue
-      const nx = x + dx, ny = y + dy
+      const nx = x + dx,
+        ny = y + dy
       if (inBounds(nx, ny) && board[ny][nx] !== null) return true
     }
   }
@@ -169,7 +182,7 @@ export default function Gomoku({ userId, gameId }: Props) {
         await createRecord(userId, { gameId, score, duration: dur, result })
       } catch {}
     },
-    [userId, gameId]
+    [userId, gameId],
   )
 
   const endGame = useCallback(
@@ -186,7 +199,7 @@ export default function Gomoku({ userId, gameId }: Props) {
         void submitEnd('complete', 40)
       }
     },
-    [submitEnd]
+    [submitEnd],
   )
 
   const reset = useCallback(() => {
@@ -214,7 +227,7 @@ export default function Gomoku({ userId, gameId }: Props) {
 
   const playAI = useCallback(
     (b: Cell[][]) => {
-      const working = b.map(r => [...r])
+      const working = b.map((r) => [...r])
       const mv = aiMove(working, level)
       if (!mv) {
         endGame('draw')
@@ -227,20 +240,20 @@ export default function Gomoku({ userId, gameId }: Props) {
         endGame('O')
         return
       }
-      if (working.every(row => row.every(c => c !== null))) {
+      if (working.every((row) => row.every((c) => c !== null))) {
         endGame('draw')
         return
       }
       setTurn('X')
       setMessage('轮到你（黑）')
     },
-    [level, endGame]
+    [level, endGame],
   )
 
   const onCell = (x: number, y: number) => {
     if (status !== 'playing' || turn !== 'X') return
     if (board[y][x] !== null) return
-    const nb = board.map(r => [...r])
+    const nb = board.map((r) => [...r])
     nb[y][x] = 'X'
     setBoard(nb)
     setLastMove({ x, y })
@@ -248,7 +261,7 @@ export default function Gomoku({ userId, gameId }: Props) {
       endGame('X')
       return
     }
-    if (nb.every(row => row.every(c => c !== null))) {
+    if (nb.every((row) => row.every((c) => c !== null))) {
       endGame('draw')
       return
     }
@@ -262,7 +275,7 @@ export default function Gomoku({ userId, gameId }: Props) {
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="flex flex-wrap gap-2 justify-center">
-        {(['简单', '中等', '复杂'] as const).map(lv => (
+        {(['简单', '中等', '复杂'] as const).map((lv) => (
           <button
             key={lv}
             type="button"
@@ -309,15 +322,17 @@ export default function Gomoku({ userId, gameId }: Props) {
               />
             </g>
           ))}
-          {STAR.flatMap(sx => STAR.map(sy => (
-            <circle
-              key={`${sx}-${sy}`}
-              cx={MARGIN + sx * STONE}
-              cy={MARGIN + sy * STONE}
-              r={3}
-              fill="#6b3a1f"
-            />
-          )))}
+          {STAR.flatMap((sx) =>
+            STAR.map((sy) => (
+              <circle
+                key={`${sx}-${sy}`}
+                cx={MARGIN + sx * STONE}
+                cy={MARGIN + sy * STONE}
+                r={3}
+                fill="#6b3a1f"
+              />
+            )),
+          )}
         </svg>
 
         {board.map((row, y) =>
@@ -336,7 +351,8 @@ export default function Gomoku({ userId, gameId }: Props) {
                   width: STONE,
                   height: STONE,
                   background: 'transparent',
-                  cursor: c === null && status === 'playing' && turn === 'X' ? 'pointer' : 'default',
+                  cursor:
+                    c === null && status === 'playing' && turn === 'X' ? 'pointer' : 'default',
                 }}
               >
                 {c && (
@@ -345,9 +361,10 @@ export default function Gomoku({ userId, gameId }: Props) {
                     style={{
                       width: STONE * 0.82,
                       height: STONE * 0.82,
-                      background: c === 'X'
-                        ? 'radial-gradient(circle at 35% 30%, #4a4a4a, #0a0a0a 70%)'
-                        : 'radial-gradient(circle at 35% 30%, #ffffff, #c8c8c8 80%)',
+                      background:
+                        c === 'X'
+                          ? 'radial-gradient(circle at 35% 30%, #4a4a4a, #0a0a0a 70%)'
+                          : 'radial-gradient(circle at 35% 30%, #ffffff, #c8c8c8 80%)',
                       boxShadow: '0 2px 3px rgba(0,0,0,0.35)',
                       border: c === 'O' ? '1px solid #999' : 'none',
                       outline: isLast ? '2px solid #ef4444' : 'none',
@@ -356,7 +373,7 @@ export default function Gomoku({ userId, gameId }: Props) {
                 )}
               </button>
             )
-          })
+          }),
         )}
       </div>
 

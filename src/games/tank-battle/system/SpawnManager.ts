@@ -4,12 +4,12 @@ import {
   MAX_ACTIVE_ENEMIES,
   SPAWN_BLINK_TICKS,
   TANK_SIZE,
-} from '../constants.ts';
-import { rectsIntersect } from '../core/geometry.ts';
-import { ENEMY_SPAWN_CELLS } from '../data/levels.ts';
-import { Tank } from '../entity/Tank.ts';
-import { Direction, TankSide, type Rect } from '../types.ts';
-import type { World } from './World.ts';
+} from '@/games/tank-battle/constants.ts'
+import { rectsIntersect } from '@/games/tank-battle/core/geometry.ts'
+import { ENEMY_SPAWN_CELLS } from '@/games/tank-battle/data/levels.ts'
+import { Tank } from '@/games/tank-battle/entity/Tank.ts'
+import { Direction, TankSide, type Rect } from '@/games/tank-battle/types.ts'
+import type { World } from '@/games/tank-battle/system/World.ts'
 
 /**
  * 敌方生成管理。
@@ -20,29 +20,29 @@ import type { World } from './World.ts';
  * 坦克在生成点互相顶死。
  */
 export function updateSpawning(world: World): void {
-  updatePlayerRespawn(world);
+  updatePlayerRespawn(world)
 
   if (world.pendingEnemies.length === 0) {
-    return;
+    return
   }
   if (world.enemies.length >= MAX_ACTIVE_ENEMIES) {
-    return;
+    return
   }
 
   if (world.spawnCountdownTicks > 0) {
-    world.spawnCountdownTicks -= 1;
-    return;
+    world.spawnCountdownTicks -= 1
+    return
   }
 
-  const spawnCell = findAvailableSpawnCell(world);
+  const spawnCell = findAvailableSpawnCell(world)
   if (spawnCell === null) {
     // 所有生成点都被占用，下一帧再试
-    return;
+    return
   }
 
-  const kind = world.pendingEnemies.shift();
+  const kind = world.pendingEnemies.shift()
   if (kind === undefined) {
-    return;
+    return
   }
 
   const enemy = new Tank({
@@ -51,11 +51,11 @@ export function updateSpawning(world: World): void {
     y: spawnCell[1] * CELL_SIZE,
     direction: Direction.DOWN,
     enemyKind: kind,
-  });
-  enemy.spawnBlinkTicks = SPAWN_BLINK_TICKS;
-  world.enemies.push(enemy);
+  })
+  enemy.spawnBlinkTicks = SPAWN_BLINK_TICKS
+  world.enemies.push(enemy)
 
-  world.spawnCountdownTicks = ENEMY_SPAWN_INTERVAL_TICKS;
+  world.spawnCountdownTicks = ENEMY_SPAWN_INTERVAL_TICKS
 }
 
 /**
@@ -63,52 +63,52 @@ export function updateSpawning(world: World): void {
  * 找到后推进轮转索引，使三个生成点被均匀使用。
  */
 function findAvailableSpawnCell(world: World): readonly [number, number] | null {
-  const total = ENEMY_SPAWN_CELLS.length;
+  const total = ENEMY_SPAWN_CELLS.length
 
   for (let offset = 0; offset < total; offset += 1) {
-    const index = (world.nextSpawnPointIndex + offset) % total;
-    const cell = ENEMY_SPAWN_CELLS[index];
+    const index = (world.nextSpawnPointIndex + offset) % total
+    const cell = ENEMY_SPAWN_CELLS[index]
     const rect: Rect = {
       x: cell[0] * CELL_SIZE,
       y: cell[1] * CELL_SIZE,
       width: TANK_SIZE,
       height: TANK_SIZE,
-    };
-
-    if (isOccupied(world, rect)) {
-      continue;
     }
 
-    world.nextSpawnPointIndex = (index + 1) % total;
-    return cell;
+    if (isOccupied(world, rect)) {
+      continue
+    }
+
+    world.nextSpawnPointIndex = (index + 1) % total
+    return cell
   }
 
-  return null;
+  return null
 }
 
 /** 生成点是否被任何坦克占用 */
 function isOccupied(world: World, rect: Rect): boolean {
   for (const enemy of world.enemies) {
     if (enemy.alive && rectsIntersect(rect, enemy.getRect())) {
-      return true;
+      return true
     }
   }
-  const player = world.player;
+  const player = world.player
   if (player !== null && player.alive && rectsIntersect(rect, player.getRect())) {
-    return true;
+    return true
   }
-  return false;
+  return false
 }
 
 /** 玩家阵亡后的重生倒计时 */
 function updatePlayerRespawn(world: World): void {
   if (world.player !== null || world.respawnDelayTicks <= 0) {
-    return;
+    return
   }
 
-  world.respawnDelayTicks -= 1;
+  world.respawnDelayTicks -= 1
   if (world.respawnDelayTicks <= 0) {
     // 阵亡后星级归零，贴合原作惩罚
-    world.spawnPlayer(false);
+    world.spawnPlayer(false)
   }
 }

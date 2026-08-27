@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { createRecord } from '../../api'
+import { createRecord } from '@/api'
 
 interface Props {
   userId?: string
@@ -24,12 +24,12 @@ function checkTerminal(b: Cell[]): 'X' | 'O' | 'draw' | null {
   for (const [a, c, d] of LINES) {
     if (b[a] && b[a] === b[c] && b[a] === b[d]) return b[a] as 'X' | 'O'
   }
-  if (b.every(x => x !== null)) return 'draw'
+  if (b.every((x) => x !== null)) return 'draw'
   return null
 }
 
 function emptyIndices(b: Cell[]) {
-  return b.map((v, i) => (v === null ? i : -1)).filter(i => i >= 0)
+  return b.map((v, i) => (v === null ? i : -1)).filter((i) => i >= 0)
 }
 
 function randomMove(b: Cell[]): number {
@@ -51,7 +51,7 @@ function mediumMove(b: Cell[]): number {
   const block = tryWin('X')
   if (block >= 0) return block
   if (b[4] === null) return 4
-  const corners = [0, 2, 6, 8].filter(i => b[i] === null)
+  const corners = [0, 2, 6, 8].filter((i) => b[i] === null)
   if (corners.length) return corners[Math.floor(Math.random() * corners.length)]
   return randomMove(b)
 }
@@ -119,7 +119,7 @@ export default function TicTacToe({ userId, gameId }: Props) {
         await createRecord(userId, { gameId, score, duration: dur, result })
       } catch {}
     },
-    [userId, gameId]
+    [userId, gameId],
   )
 
   const endGame = useCallback(
@@ -136,7 +136,7 @@ export default function TicTacToe({ userId, gameId }: Props) {
         void submitEnd('complete', 40)
       }
     },
-    [submitEnd]
+    [submitEnd],
   )
 
   const reset = useCallback(() => {
@@ -176,7 +176,7 @@ export default function TicTacToe({ userId, gameId }: Props) {
         setMessage('轮到你（X）')
       }
     },
-    [level, endGame]
+    [level, endGame],
   )
 
   const onCell = (idx: number) => {
@@ -200,7 +200,7 @@ export default function TicTacToe({ userId, gameId }: Props) {
   return (
     <div className="flex flex-col items-center gap-5">
       <div className="flex flex-wrap gap-2 justify-center">
-        {(['简单', '中等', '复杂'] as const).map(lv => (
+        {(['简单', '中等', '复杂'] as const).map((lv) => (
           <button
             key={lv}
             type="button"

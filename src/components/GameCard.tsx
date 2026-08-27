@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { getGamePresentation, getGameTarget } from '../features/games/catalog'
-import type { Game } from '../types'
+import { getGamePresentation, getGameTarget } from '@/features/games/catalog'
+import type { Game } from '@/types'
 
 interface Props {
   game: Game
@@ -9,7 +9,8 @@ interface Props {
 export default function GameCard({ game }: Props) {
   const { coverGradient, icon } = getGamePresentation(game.id)
   const target = getGameTarget(game.id)
-  const cardClassName = 'group block overflow-hidden rounded-lg border-4 border-white bg-white shadow-[0_4px_0_#9ac6df,0_10px_24px_rgba(34,91,130,0.18)] transition-all duration-150 hover:-translate-y-1 hover:shadow-[0_7px_0_#74a9c8,0_16px_28px_rgba(34,91,130,0.22)]'
+  const cardClassName =
+    'group block overflow-hidden rounded-lg border-4 border-white bg-white shadow-[0_4px_0_#9ac6df,0_10px_24px_rgba(34,91,130,0.18)] transition-all duration-150 hover:-translate-y-1 hover:shadow-[0_7px_0_#74a9c8,0_16px_28px_rgba(34,91,130,0.22)]'
 
   const content = (
     <>
@@ -29,14 +30,12 @@ export default function GameCard({ game }: Props) {
 
       {/* Info */}
       <div className="p-4">
-        <h3 className="mb-2 truncate font-game text-xl font-black text-[#19314d]">
-          {game.name}
-        </h3>
+        <h3 className="mb-2 truncate font-game text-xl font-black text-[#19314d]">{game.name}</h3>
         <p className="mb-3 min-h-[40px] line-clamp-2 font-game text-sm font-semibold leading-snug text-[#58708b]">
           {game.description}
         </p>
         <div className="mb-4 flex min-h-[24px] flex-wrap gap-2">
-          {game.tags.map(tag => (
+          {game.tags.map((tag) => (
             <span
               key={tag}
               className={`rounded-md px-2 py-1 font-game text-xs font-extrabold ${

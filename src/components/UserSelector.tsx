@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { getUsers, createUser, deleteUser } from '../api'
-import { useUserStore } from '../store/userStore'
-import type { User } from '../types'
+import { getUsers, createUser, deleteUser } from '@/api'
+import { useUserStore } from '@/store/userStore'
+import type { User } from '@/types'
 
 const avatarGradients = [
   'from-crt-pink to-crt-yellow',
@@ -26,7 +26,9 @@ export default function UserSelector() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+  }, [])
 
   const handleCreate = async () => {
     const name = newName.trim()
@@ -34,7 +36,7 @@ export default function UserSelector() {
     setCreating(true)
     try {
       const user = await createUser(name)
-      setUsers(prev => [...prev, user])
+      setUsers((prev) => [...prev, user])
       setCurrentUser(user)
       setNewName('')
     } finally {
@@ -51,7 +53,10 @@ export default function UserSelector() {
 
   return (
     <div className="bg-crt-bg-card border-2 border-crt-cyan shadow-crt-card p-5">
-      <h2 className="font-pixel text-[11px] text-crt-cyan mb-4 tracking-wider" style={{ textShadow: '0 0 6px #00f0ff' }}>
+      <h2
+        className="font-pixel text-[11px] text-crt-cyan mb-4 tracking-wider"
+        style={{ textShadow: '0 0 6px #00f0ff' }}
+      >
         &gt;&gt; PLAYER SELECT
       </h2>
 
@@ -81,13 +86,17 @@ export default function UserSelector() {
                 {u.name[0]?.toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-mono-crt text-[15px] text-crt-text tracking-wider truncate">{u.name}</p>
+                <p className="font-mono-crt text-[15px] text-crt-text tracking-wider truncate">
+                  {u.name}
+                </p>
                 <p className="font-mono-crt text-[12px] text-crt-muted">
                   &gt; {new Date(u.createdAt).toLocaleDateString('zh-CN')}
                 </p>
               </div>
               {currentUser?.id === u.id && (
-                <span className="font-pixel text-[7px] text-crt-bg-deep bg-crt-pink px-1.5 py-0.5 tracking-wider">ACTIVE</span>
+                <span className="font-pixel text-[7px] text-crt-bg-deep bg-crt-pink px-1.5 py-0.5 tracking-wider">
+                  ACTIVE
+                </span>
               )}
               <button
                 onClick={(e) => handleDelete(u, e)}
@@ -106,8 +115,8 @@ export default function UserSelector() {
         <input
           type="text"
           value={newName}
-          onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleCreate()}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
           placeholder="&gt; ENTER NAME..."
           maxLength={20}
           className="flex-1 bg-black border-2 border-crt-cyan px-3 py-2 font-mono-crt text-[15px] text-crt-green placeholder-crt-muted focus:outline-none focus:border-crt-yellow transition-colors"
