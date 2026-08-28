@@ -1,10 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import {
-  gameCatalog,
-  getCatalogGame,
-} from '../src/features/games/data.ts'
+import { gameCatalog, getCatalogGame } from '../src/features/games/data.ts'
+import type { GameManifest } from '../src/games/manifest.ts'
+
+interface GameRegistry {
+  getGameManifest?: (gameId: string) => GameManifest | undefined
+  getGameComponent: (gameId: string) => { $$typeof?: symbol } | undefined
+}
 
 test('tank battle is available as an internal plaza game', () => {
   const game = getCatalogGame('tank-battle')
@@ -14,41 +17,33 @@ test('tank battle is available as an internal plaza game', () => {
   assert.deepEqual(game.difficulties, ['经典战役'])
 })
 
-test('every internal catalog game is exposed through a lazy game module', async () => {
-  type GameRegistry = {
-    getGameComponent: (gameId: string) => { $$typeof?: symbol } | undefined
-    getRegisteredGame: (gameId: string) => unknown
-    getRegisteredGamePresentation: (gameId: string) => { icon: string } | undefined
-  }
+test('every catalog game is exposed through one runtime manifest', async () => {
+  const registry = (await import('../src/games/registry.ts')) as GameRegistry
 
-  let registry: GameRegistry | undefined
-  try {
-    registry = await import('../src/games/registry.ts') as GameRegistry
-  } catch {
-    // The assertion below reports the missing module as the contract failure.
-  }
+  assert.equal(typeof registry.getGameManifest, 'function')
 
-  assert.ok(registry, 'the game module registry must exist')
-  assert.equal(typeof registry.getRegisteredGame, 'function')
-  assert.equal(typeof registry.getRegisteredGamePresentation, 'function')
-
-  const internalGames = gameCatalog.filter(game => !game.externalUrl)
-  for (const game of internalGames) {
-    assert.deepEqual(registry.getRegisteredGame(game.id), game)
-    assert.ok(registry.getRegisteredGamePresentation(game.id)?.icon)
+  for (const game of gameCatalog) {
+    const manifest = registry.getGameManifest?.(game.id)
+    assert.ok(manifest, `${game.id} is missing a game manifest`)
+    assert.deepEqual(manifest.game, game)
+    assert.ok(manifest.presentation.icon)
 
     const gameComponent = registry.getGameComponent(game.id)
-    assert.ok(gameComponent, `${game.id} is missing a game module`)
-    assert.equal(
-      gameComponent.$$typeof,
-      Symbol.for('react.lazy'),
-      `${game.id} must be lazy loaded`,
-    )
+    if (manifest.runtime.kind === 'embedded') {
+      assert.ok(gameComponent, `${game.id} is missing an embedded game module`)
+      assert.equal(
+        gameComponent.$$typeof,
+        Symbol.for('react.lazy'),
+        `${game.id} must be lazy loaded`,
+      )
+    } else {
+      assert.match(manifest.runtime.href, /^https:\/\//)
+      assert.equal(manifest.runtime.openIn, 'new-tab')
+      assert.equal(gameComponent, undefined)
+    }
   }
 
-  assert.equal('getGameLoader' in registry, false)
-  assert.equal(registry.getRegisteredGame('unknown-game'), undefined)
-  assert.equal(registry.getRegisteredGamePresentation('unknown-game'), undefined)
+  assert.equal(registry.getGameManifest?.('unknown-game'), undefined)
   assert.equal(registry.getGameComponent('unknown-game'), undefined)
 })
 
@@ -71,14 +66,14 @@ test('tank battle runtime releases browser resources when unmounted', async () =
   const documentListeners = new Map<string, Set<Listener>>()
   const canvasListeners = new Map<string, Set<Listener>>()
 
-  const addListener = (listeners: Map<string, Set<Listener>>) =>
-    (type: string, listener: Listener) => {
+  const addListener =
+    (listeners: Map<string, Set<Listener>>) => (type: string, listener: Listener) => {
       const entries = listeners.get(type) ?? new Set<Listener>()
       entries.add(listener)
       listeners.set(type, entries)
     }
-  const removeListener = (listeners: Map<string, Set<Listener>>) =>
-    (type: string, listener: Listener) => {
+  const removeListener =
+    (listeners: Map<string, Set<Listener>>) => (type: string, listener: Listener) => {
       listeners.get(type)?.delete(listener)
     }
 
@@ -139,14 +134,11 @@ test('tank battle runtime releases browser resources when unmounted', async () =
   }
 
   type RuntimeModule = {
-    mountTankBattle: (
-      canvasElement: unknown,
-      containerElement: unknown,
-    ) => { destroy: () => void }
+    mountTankBattle: (canvasElement: unknown, containerElement: unknown) => { destroy: () => void }
   }
   let runtime: RuntimeModule | undefined
   try {
-    runtime = await import('../src/games/tank-battle/runtime.ts') as RuntimeModule
+    runtime = (await import('../src/games/tank-battle/runtime.ts')) as RuntimeModule
   } catch {
     // The assertion below reports the missing runtime as the contract failure.
   }

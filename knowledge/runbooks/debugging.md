@@ -5,7 +5,7 @@
 ## 第 1 层：类型与构建
 
 ```bash
-npx tsc --noEmit      # 类型检查，零错误通过
+npx tsc -p tsconfig.app.json --noEmit # 类型检查，零错误通过
 npm run lint          # ESLint
 ```
 
@@ -25,6 +25,7 @@ npm run lint          # ESLint
 3. 数据损坏时可删除对应键重置（会丢失本地进度）。
 
 常见问题：
+
 - **战绩不记录**：确认当前已选择用户（`currentUser` 非空）；游戏组件通过 `userId` prop 判断，未登录时 `createRecord` 直接跳过。
 - **游戏不在列表**：确认 `src/games/registry.ts` 已 import 该 manifest 并加入 `gameManifests` 数组。
 
@@ -32,7 +33,7 @@ npm run lint          # ESLint
 
 游戏白屏/不启动：
 
-1. 确认 `manifest.ts` 的 `load` 返回 `import('./index.tsx')`，且 `index.tsx` 有默认导出。
+1. 确认 `manifest.ts` 的 `runtime.kind` 为 `embedded`、`runtime.load` 返回 `import('./index.tsx')`，且 `index.tsx` 有默认导出。
 2. `GameDetail.tsx` 通过 `React.lazy` 加载，用 `<Suspense>` 包裹；检查网络面板是否有 chunk 加载失败。
 3. Canvas 游戏检查画布尺寸：`canvas.width/height` 为内部坐标系，CSS 控制显示大小，鼠标坐标需经 `getBoundingClientRect()` 缩放映射。
 

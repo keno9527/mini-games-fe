@@ -1,6 +1,6 @@
 # 领域实体
 
-全局领域类型定义于 `src/types/index.ts`。游戏内部实体（如坦克、子弹、塔防敌人等）定义在各自游戏目录内，不在此跨游戏共享。
+全局领域类型定义于 `src/types/index.ts`。游戏内部实体（如坦克、子弹等）定义在各自游戏目录内，不在此跨游戏共享。
 
 ## Game
 
@@ -8,17 +8,15 @@
 
 ```ts
 interface Game {
-  id: string             // 唯一标识，如 'tank-battle'；外部游戏同样需要 id
-  name: string           // 展示名
-  description: string    // 卡片简介
-  tags: string[]         // 分类标签，用于筛选与展示
+  id: string // 唯一标识，如 'tank-battle'
+  name: string // 展示名
+  description: string // 卡片简介
+  tags: string[] // 分类标签，用于筛选与展示
   difficulties: string[] // 难度档位，如 ['简单','中等','复杂']
-  externalUrl?: string   // 存在时表示外部游戏，点击跳转而非挂载
-  externalLabel?: string // 外部游戏按钮文案
 }
 ```
 
-内部游戏的 `Game` 由各 `manifest.ts` 的 `game` 字段提供，经 `src/games/registry.ts` 聚合；外部游戏在 `src/features/games/data.ts` 的 `externalGames` 中声明。
+所有游戏的 `Game` 都由各自 `manifest.ts` 的 `game` 字段提供，经 `src/games/registry.ts` 聚合。运行方式不属于 `Game` 实体，由 manifest 的 `runtime` 判别。
 
 ## User
 
@@ -29,7 +27,7 @@ interface User {
   id: string
   name: string
   avatar: string
-  createdAt: string  // ISO 时间
+  createdAt: string // ISO 时间
 }
 ```
 
@@ -45,13 +43,13 @@ interface GameRecord {
   userId: string
   gameId: string
   score: number
-  duration: number       // 秒
-  playedAt: string       // ISO 时间
+  duration: number // 秒
+  playedAt: string // ISO 时间
   result: 'win' | 'lose' | 'complete'
 }
 ```
 
-- `win` / `lose`：有明确胜负的游戏（如井字棋、塔防、坦克大战）。
+- `win` / `lose`：有明确胜负的游戏（如五子棋、坦克大战）。
 - `complete`：以分数结算的无尽/闯关游戏（如俄罗斯方块、贪吃蛇、24 点）。
 
 ## GameStat
@@ -79,7 +77,7 @@ interface UserStats {
   totalGames: number
   totalTime: number
   totalScore: number
-  gameStats: GameStat[]   // 按 playCount 降序
+  gameStats: GameStat[] // 按 playCount 降序
 }
 ```
 
@@ -104,10 +102,24 @@ interface PlayRankItem {
 ```ts
 interface GameManifest {
   game: Game
-  presentation: GamePresentation  // { coverGradient, icon }
-  load: () => Promise<GameModule> // 懒加载
+  presentation: GamePresentation
+  runtime:
+    | {
+        kind: 'embedded'
+        load: () => Promise<GameModule>
+        href?: never
+        openIn?: never
+      }
+    | {
+        kind: 'external'
+        href: `https://${string}`
+        openIn: 'new-tab'
+        load?: never
+      }
 }
 ```
+
+`embedded` 运行时按需加载本仓库 React 游戏模块；`external` 运行时由 `GameLaunchLink` 安全地在新标签页打开独立站点。
 
 ## 游戏内成长实体（引力墓场专属）
 
@@ -115,8 +127,8 @@ interface GameManifest {
 
 ```ts
 interface GameProgression {
-  liturgies: string[]  // 已解锁模块
-  tools: string[]      // 已解锁引力工具
-  ships: string[]      // 已解锁飞船
+  liturgies: string[] // 已解锁模块
+  tools: string[] // 已解锁引力工具
+  ships: string[] // 已解锁飞船
 }
 ```

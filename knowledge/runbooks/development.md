@@ -2,7 +2,7 @@
 
 ## 环境要求
 
-- Node.js 18+
+- Node.js 20.19.x、22.13.x 或 24+（推荐 22.13.x）
 - npm（仓库 lockfile 为 `package-lock.json`，请勿混用 pnpm/yarn）
 
 ## 常用命令
@@ -29,10 +29,10 @@ npm run format   # Prettier 格式化
 
 ### 添加一个新游戏
 
-1. 在 `src/games/<game-id>/` 下创建 `manifest.ts`（默认导出 `GameManifest`）和 `index.tsx`（默认导出 React 组件）。
-2. 在 `src/games/registry.ts` 的 `gameManifests` 数组中引入并注册。
-3. 游戏组件接收 `{ userId?, gameId }` props，结束时调用 `createRecord` 提交战绩。
-4. 游戏内部代码保持在自身目录内，不修改广场框架。
+1. 在 `src/games/<game-id>/` 下创建 `manifest.ts`，声明元数据、展示配置和 `runtime`。
+2. `embedded` 游戏添加 `index.tsx`，并在 `runtime.load` 中懒加载；组件接收 `{ userId?, gameId }`，结束时调用 `createRecord`。
+3. `external` 游戏在 `runtime` 中声明 HTTPS `href` 和 `openIn: 'new-tab'`，不需要 `index.tsx`。
+4. 在 `src/games/registry.ts` 的 `gameManifests` 数组中引入并注册；卡片和排行榜无需添加分支。
 
 ### 代码风格
 

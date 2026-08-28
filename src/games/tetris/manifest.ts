@@ -12,5 +12,8 @@ export default {
     coverGradient: 'from-[#576dff] via-[#7d42e8] to-[#ff5aa5]',
     icon: '🧱',
   },
-  load: () => import('./index.tsx'),
+  runtime: {
+    kind: 'embedded',
+    load: () => import('./index.tsx'),
+  },
 } satisfies GameManifest

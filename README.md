@@ -16,27 +16,21 @@
 项目内置以下小游戏（位于 `src/games/`）：
 
 - 坦克大战 Tank Battle
-- 绿野防线 Tower Defense
 - 引力墓场 Gravity Graveyard
 - 打砖块 Breakout
 - 五子棋 Gomoku
 - 记忆翻牌 Memory Card
 - 扫雷 Minesweeper
-- 反应力测试 Reaction Test
-- 华容道 Slide Puzzle
 - 贪吃蛇 Snake
 - 俄罗斯方块 Tetris
-- 井字棋 Tic-Tac-Toe
 - 24 点 Twenty-Four Points
 - 打地鼠 Whack-A-Mole
-- 猜单词 Wordle
 
 ## 目录结构
 
 ```
 src/
 ├── api/          # 前端本地数据读写封装（保留异步接口）
-├── assets/       # 静态资源
 ├── components/   # 通用组件（GameCard / Header / UserSelector）
 ├── features/     # 广场领域配置（游戏清单 / 展示配置）
 ├── games/        # 游戏模块注册表与各游戏独立目录
@@ -53,8 +47,8 @@ src/
 
 ### 环境要求
 
-- Node.js 18+
-- npm / pnpm / yarn
+- Node.js 20.19.x、22.13.x 或 24+（推荐 22.13.x）
+- npm（使用仓库内的 `package-lock.json`）
 
 ### 安装依赖
 

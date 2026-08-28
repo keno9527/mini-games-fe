@@ -11,7 +11,7 @@ mini-games-fe 是一个纯前端的小游戏聚合广场（Game Hub）。用户�
 ## 核心职责
 
 1. **游戏广场展示**：首页以卡片网格展示所有游戏，含封面渐变、图标、标签、难度。
-2. **游戏运行时**：每个游戏通过 `manifest.ts` 声明元数据并懒加载，在 `GameDetail` 页面挂载运行。
+2. **游戏运行时**：每个游戏通过 `manifest.ts` 声明元数据和运行方式；内置游戏懒加载到 `GameDetail`，外部游戏由统一启动入口跳转。
 3. **本地数据持久化**：用户、对局记录、游戏内成长（如引力墓场的解锁档案）均存储于浏览器 `localStorage`。
 4. **战绩与排行**：聚合本地对局记录生成个人统计与全服（本地）热门排行榜。
 
@@ -24,10 +24,9 @@ mini-games-fe 是一个纯前端的小游戏聚合广场（Game Hub）。用户�
 
 ### 下游（被依赖方）
 
-| 类型 | 名称 | 用途 | 详见 |
-|------|------|------|------|
-| 浏览器存储 | `localStorage` | 用户、记录、成长存档 | [contracts/apis.md](./contracts/apis.md) |
-| 外部链接 | starlight-catcher | 一款外部游戏，以跳转方式接入广场 | [contracts/dependencies.md](./contracts/dependencies.md) |
+| 类型         | 名称                            | 用途                                        | 详见                                                     |
+| ------------ | ------------------------------- | ------------------------------------------- | -------------------------------------------------------- |
+| 浏览器存储   | `localStorage`                  | 用户、记录、成长存档                        | [contracts/apis.md](./contracts/apis.md)                 |
 | Google Fonts | Nunito / Press Start 2P / VT323 | 字体资源（在 `index.html` 中通过 CDN 引入） | [contracts/dependencies.md](./contracts/dependencies.md) |
 
 ## 技术栈

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { getGames, getPlayRanking } from '@/api'
 import GameCard from '@/components/GameCard'
+import GameLaunchLink from '@/components/GameLaunchLink'
 import { GameCardSkeleton } from '@/components/Skeleton'
-import { getGamePresentation, getGameTarget } from '@/features/games/catalog'
+import { getGamePresentation } from '@/features/games/catalog'
 import type { Game, PlayRankItem } from '@/types'
 
 export default function Home() {
@@ -81,9 +81,7 @@ export default function Home() {
           <div className="min-w-0">
             {/* Header */}
             <div className="mb-6 flex items-center justify-between gap-4">
-              <h2 className="font-game text-2xl font-black text-[#18324d]">
-                游戏列表
-              </h2>
+              <h2 className="font-game text-2xl font-black text-[#18324d]">游戏列表</h2>
               <span className="rounded-md border-2 border-white bg-white px-3 py-1 font-game text-sm font-black text-[#0c63bf] shadow-[0_3px_0_#b6d8e8]">
                 {games.length} 款
               </span>
@@ -115,7 +113,6 @@ export default function Home() {
                 <ol className="space-y-3">
                   {top5.map((item, idx) => {
                     const { coverGradient, icon } = getGamePresentation(item.gameId)
-                    const target = getGameTarget(item.gameId)
                     const rankingContent = (
                       <>
                         <span
@@ -151,20 +148,9 @@ export default function Home() {
 
                     return (
                       <li key={item.gameId}>
-                        {target.isExternal ? (
-                          <a
-                            href={target.href}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={rankingClassName}
-                          >
-                            {rankingContent}
-                          </a>
-                        ) : (
-                          <Link to={target.href} className={rankingClassName}>
-                            {rankingContent}
-                          </Link>
-                        )}
+                        <GameLaunchLink gameId={item.gameId} className={rankingClassName}>
+                          {rankingContent}
+                        </GameLaunchLink>
                       </li>
                     )
                   })}

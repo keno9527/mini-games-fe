@@ -844,6 +844,8 @@ export default function Breakout({ userId, gameId }: Props) {
 
     draw()
     rafRef.current = requestAnimationFrame(step)
+    // Game-loop helpers only read mutable refs; recreating them as callbacks would restart the RAF effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draw, submitEnd])
 
   // ===== 启动/停止循环 =====

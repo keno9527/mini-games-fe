@@ -17,7 +17,7 @@
 getGames(): Promise<Game[]>
 ```
 
-返回全部游戏清单（内部注册 + 外部游戏）。当前为同步常量 `gameCatalog` 的 Promise 包装。
+返回 registry 中全部 manifest 对应的 `Game` 元数据清单。清单同时覆盖 `embedded` 和 `external` 游戏，但 `Game` 本身不暴露 runtime。当前为同步常量 `gameCatalog` 的 Promise 包装。
 
 ### getGame(id)
 
@@ -84,7 +84,7 @@ createRecord(
 getUserStats(id: string): Promise<UserStats>
 ```
 
-聚合用户战绩：总场次、总时长、总分、按游戏分组的 `GameStat[]`（按游玩次数降序）。用户不存在时抛出 `Error('user not found')`。
+聚合用户战绩：总场次、总时长、总分、按游戏分组的 `GameStat[]`（按游玩次数降序）。已下架游戏的历史记录仍参与聚合，游戏名无法从当前清单解析时回退为 `gameId`。用户不存在时抛出 `Error('user not found')`。
 
 ## 排行榜
 
@@ -94,7 +94,7 @@ getUserStats(id: string): Promise<UserStats>
 getPlayRanking(): Promise<PlayRankItem[]>
 ```
 
-返回热门排行。合并 `defaultPlayRanking` 种子数据与本地 `GameRecord` 计数（种子数据作为基数，本地记录在此之上累加），按 `playCount` 降序。
+返回热门排行。合并 `defaultPlayRanking` 种子数据与全部本地 `GameRecord` 计数（包含已下架游戏的历史记录），种子数据作为基数，按 `playCount` 降序。
 
 ## 游戏内成长 API
 

@@ -24,14 +24,15 @@
 | `tsx` | 运行 TypeScript 测试文件 |
 | `@types/node` | Node 类型（构建脚本与测试使用） |
 
-Node 版本要求：18+（使用了 `node:test`、`node:fs/promises` 等内置模块）。
+Node 版本要求：`^20.19.0 || ^22.13.0 || >=24`，与 `package.json#engines` 及当前 Vite / ESLint 要求保持一致。
 
 ## 外部网络依赖
 
 | 资源 | URL | 用途 | 降级策略 |
 |------|-----|------|----------|
 | Google Fonts | `https://fonts.googleapis.com` | Nunito / Press Start 2P / VT323 字体 | 加载失败时使用 `system-ui` / `monospace` 回退（Tailwind font-family 已配置兜底） |
-| starlight-catcher | `https://starlight-catcher-20260721.dalio-liu.chatgpt.site` | 外部游戏，新标签页打开 | 仅一个跳转链接，不影响本站功能 |
+
+> 架构支持通过 manifest 的 `external` runtime 接入外链游戏（`GameLaunchLink` 会渲染为 `<a target="_blank">`），但当前没有游戏使用该能力，因此除字体外无其他外部网络依赖。
 
 ## localStorage 依赖
 

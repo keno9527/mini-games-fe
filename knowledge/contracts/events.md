@@ -51,7 +51,7 @@ interface TankBattleOptions {
 游戏内部监听的浏览器事件（以各游戏实现为准）：
 
 - `keydown` / `keyup`：方向键、WASD、空格等（如贪吃蛇、俄罗斯方块、打砖块、坦克大战）。
-- `pointermove` / `pointerdown`：鼠标/触屏控制（如打砖块挡板、塔防建塔、引力墓场锚点）。
+- `pointermove` / `pointerdown`：鼠标/触屏控制（如打砖块挡板、引力墓场锚点）。
 - `visibilitychange`：页面切后台时暂停游戏循环（坦克大战 `runtime.ts` 实现）。
 - `beforeunload` / `blur`：清空按键状态，避免按键"卡住"（打砖块实现）。
 

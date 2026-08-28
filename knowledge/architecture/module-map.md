@@ -26,30 +26,22 @@
 
 ## 目录职责
 
-| 目录 | 职责 | 关键文件 |
-|------|------|----------|
-| `src/pages/` | 路由页面 | `Home.tsx` 广场首页、`GameDetail.tsx` 游戏详情/挂载、`Profile.tsx` 个人战绩 |
-| `src/components/` | 无业务状态的通用 UI | `GameCard.tsx`、`Header.tsx`、`Skeleton.tsx`、`UserSelector.tsx` |
-| `src/features/games/` | 广场领域配置 | `data.ts` 游戏清单+排行种子、`catalog.ts` 展示配置与目标链接 |
-| `src/games/` | 游戏注册表与实现 | `registry.ts`、`manifest.ts`（接口定义）、各 `<game>/` |
-| `src/api/` | 数据访问 | `index.ts` 封装 localStorage，暴露 Promise 接口 |
-| `src/store/` | 全局状态 | `userStore.ts` 当前登录用户（Zustand + persist） |
-| `src/hooks/` | 复用 hook | `useGameRecord.ts` 统一战绩提交（防重、计时） |
-| `src/types/` | 全局类型 | `index.ts` 定义 Game / User / GameRecord 等 |
+| 目录                  | 职责                | 关键文件                                                                    |
+| --------------------- | ------------------- | --------------------------------------------------------------------------- |
+| `src/pages/`          | 路由页面            | `Home.tsx` 广场首页、`GameDetail.tsx` 游戏详情/挂载、`Profile.tsx` 个人战绩 |
+| `src/components/`     | 无业务状态的通用 UI | `GameCard.tsx`、`Header.tsx`、`Skeleton.tsx`、`UserSelector.tsx`            |
+| `src/features/games/` | 广场领域配置        | `data.ts` 游戏清单+排行种子、`catalog.ts` 展示与战绩文案辅助                |
+| `src/games/`          | 游戏注册表与实现    | `registry.ts`、`manifest.ts`（接口定义）、各 `<game>/`                      |
+| `src/api/`            | 数据访问            | `index.ts` 封装 localStorage，暴露 Promise 接口                             |
+| `src/store/`          | 全局状态            | `userStore.ts` 当前登录用户（Zustand + persist）                            |
+| `src/hooks/`          | 复用 hook           | `useGameRecord.ts` 统一战绩提交（防重、计时）                               |
+| `src/types/`          | 全局类型            | `index.ts` 定义 Game / User / GameRecord 等                                 |
 
 ## 游戏模块契约
 
-每个游戏目录必须包含 `manifest.ts`，默认导出一个满足 `GameManifest` 的对象（定义见 `src/games/manifest.ts`）：
+每个游戏目录必须包含 `manifest.ts`，默认导出一个满足 `GameManifest` 的对象。契约的唯一文档定义见 [领域实体](../domain/entities.md#游戏注册接口)，代码定义见 `src/games/manifest.ts`。
 
-```ts
-interface GameManifest {
-  game: Game                    // 广场元数据：id / name / tags / difficulties
-  presentation: GamePresentation // 视觉：coverGradient / icon
-  load: () => Promise<GameModule> // 懒加载：() => import('./index.tsx')
-}
-```
-
-游戏入口组件接收 `GameComponentProps`（`{ userId?, gameId }`），自行管理内部状态，并在对局结束时调用 `createRecord` 提交战绩。
+`embedded` 游戏入口组件接收 `GameComponentProps`（`{ userId?, gameId }`），自行管理内部状态，并在对局结束时调用 `createRecord` 提交战绩。`external` 游戏只提供安全跳转，不挂载本地组件。
 
 ### 游戏内部分层（以 tank-battle 为例）
 
@@ -62,7 +54,7 @@ interface GameManifest {
 - `scene/`：场景管理（标题 / 战斗 / 结算）
 - `data/`：关卡、精灵、数值配置
 
-简单游戏可单文件实现（如 `tic-tac-toe/index.tsx`）。
+简单游戏可单文件实现（如 `gomoku/index.tsx`）。
 
 ## 路径别名
 

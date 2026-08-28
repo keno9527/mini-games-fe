@@ -4,7 +4,7 @@
 
 - 使用 Node 内置测试运行器 `node:test` + `node:assert/strict`。
 - 通过 `tsx` 直接运行 TypeScript 测试文件，无需单独编译。
-- 测试文件位于 `tests/` 目录，命名 `*.test.ts`。
+- 运行时测试位于 `tests/` 目录，命名 `*.test.ts`；编译期契约使用 `*.typecheck.ts` 并由 `tsc` 校验。
 
 ## 运行测试
 
@@ -17,17 +17,18 @@ npm test
 运行单个测试文件：
 
 ```bash
-npx tsx --test tests/tower-defense.test.ts
+npx tsx --test tests/gravity-graveyard.test.ts
 ```
 
 ## 现有测试
 
-| 文件 | 覆盖范围 |
-|------|----------|
-| `tests/game-modules.test.ts` | 游戏注册表契约：每个内部游戏都有 manifest、懒加载组件、presentation；tank-battle 运行时挂载/销毁资源释放 |
-| `tests/game-progression.test.ts` | 引力墓场成长存档：按 gameId 隔离、去重、损坏数据安全回退 |
-| `tests/gravity-graveyard.test.ts` | 引力物理引擎：牵引/斥力、对消、速度上限、轨迹预测不修改原对象、RunState 事件流转 |
-| `tests/tower-defense.test.ts` | 塔防引擎：建塔校验、波次刷怪、索敌击杀奖励、冰冻/范围伤害、升级出售、通关/失败判定 |
+| 文件                               | 覆盖范围                                                                                                |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `tests/game-modules.test.ts`       | 当前游戏注册表契约：manifest 元数据与 `embedded` 懒加载；tank-battle 运行时挂载/销毁资源释放 |
+| `tests/game-manifest.typecheck.ts` | 编译期 manifest 契约：拒绝非 HTTPS 外链和混合 runtime 字段                                              |
+| `tests/game-launch-link.test.ts`   | 统一启动入口：内部 Router Link、外部新标签页链接与已下架游戏的非链接展示                         |
+| `tests/game-progression.test.ts`   | 引力墓场成长存档：按 gameId 隔离、去重、损坏数据安全回退                                                |
+| `tests/gravity-graveyard.test.ts`  | 引力物理引擎：牵引/斥力、对消、速度上限、轨迹预测不修改原对象、RunState 事件流转                        |
 
 ## 编写测试的约定
 
@@ -46,17 +47,15 @@ npm test 2>&1 | grep -E "^(ok|not ok|# (tests|pass|fail))"
 输出示例：
 
 ```
-# tests 22
+# tests 18
 # pass 18
-# fail 4
+# fail 0
 ```
-
-> 注意：当前 `tower-defense.test.ts` 中存在 4 个与建塔/波次/升级逻辑相关的已知失败（测试断言与引擎实现不同步），修复前需先核对引擎当前行为是否为预期。
 
 ### 类型检查（独立于测试）
 
 ```bash
-npx tsc --noEmit
+npx tsc -p tsconfig.app.json --noEmit
 ```
 
 零输出即通过。建议在 `npm test` 前后各跑一次。

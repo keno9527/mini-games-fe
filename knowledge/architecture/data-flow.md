@@ -11,28 +11,28 @@
 ```
 Home.tsx
   ├─ getGames()          → features/games/data.ts: gameCatalog
-  │                       （registeredGameCatalog + externalGames）
+  │                       （registry 聚合全部 manifest）
   ├─ getPlayRanking()    → api/index.ts: 合并 defaultPlayRanking 与本地记录
   └─ 渲染 GameCard 网格 + 排行榜侧栏
 ```
 
 - `getGames()` 直接返回 `gameCatalog` 常量（同步值包装为 Promise）。
 - `getPlayRanking()` 读取 `localStorage` 中的对局记录，按 `gameId` 聚合计数，与种子排行合并后排序。
+- 已下架游戏的历史记录仍保留并参与统计；首页排行保留该条目，但不再链接到无效的游戏详情页。
 
 ## 3. 进入游戏
 
 ```
-用户点击 GameCard
-  └─ Link to /game/:id
-       └─ GameDetail.tsx
-            ├─ getGame(id)            校验游戏存在
-            ├─ getGameComponent(id)   从 registry 取 React.lazy 组件
-            ├─ getUserStats(id)      读取个人最高分（可选）
-            └─ <Suspense> 挂载游戏组件
+用户点击 GameCard / 排行榜条目
+  └─ GameLaunchLink
+       ├─ embedded → Link to /game/:id
+       │                  └─ GameDetail → getGameComponent → <Suspense>
+       ├─ external → <a target="_blank" rel="noreferrer">
+       └─ 已下架 → <span aria-disabled="true">
 ```
 
-- 游戏组件通过 `lazy(() => import('./index.tsx'))` 按需加载，未访问的游戏不进入主包。
-- 外部游戏（`externalUrl` 存在时）由 `GameCard` 直接渲染为 `<a target="_blank">`，不经过 `GameDetail`。
+- `embedded` 游戏通过 `runtime.load` 按需加载，未访问的游戏不进入主包。
+- `external` 游戏由统一启动入口打开外部站点，不经过 `GameDetail`。卡片和排行榜不直接判断运行方式。
 
 ## 4. 对局与战绩提交流
 
@@ -71,9 +71,9 @@ gravity-graveyard/progression.ts
 
 ## 7. localStorage 键总览
 
-| Key | 写入方 | 内容 |
-|-----|--------|------|
-| `mini-games-local-users` | `api/index.ts` | 用户列表 |
-| `mini-games-local-records` | `api/index.ts` | 全部对局记录 |
-| `mini-game-user` | `store/userStore.ts` | 当前登录用户（Zustand persist） |
-| `mini-games-local-progression:<gameId>` | `games/gravity-graveyard/progression.ts` | 游戏内成长 |
+| Key                                     | 写入方                                   | 内容                            |
+| --------------------------------------- | ---------------------------------------- | ------------------------------- |
+| `mini-games-local-users`                | `api/index.ts`                           | 用户列表                        |
+| `mini-games-local-records`              | `api/index.ts`                           | 全部对局记录                    |
+| `mini-game-user`                        | `store/userStore.ts`                     | 当前登录用户（Zustand persist） |
+| `mini-games-local-progression:<gameId>` | `games/gravity-graveyard/progression.ts` | 游戏内成长                      |

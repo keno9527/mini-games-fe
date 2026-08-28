@@ -1,4 +1,4 @@
-import { getRegisteredGamePresentation } from '@/games/registry'
+import { getGameManifest } from '@/games/registry'
 import type { GamePresentation } from '@/games/manifest'
 import { getCatalogGame } from '@/features/games/data'
 
@@ -7,13 +7,6 @@ export type { GamePresentation } from '@/games/manifest'
 const fallbackPresentation: GamePresentation = {
   coverGradient: 'from-crt-purple to-crt-pink',
   icon: '🎮',
-}
-
-const externalGamePresentations: Record<string, GamePresentation> = {
-  'starlight-catcher': {
-    coverGradient: 'from-[#18225f] via-[#6d4df6] to-[#ffd66b]',
-    icon: '✦',
-  },
 }
 
 const difficultyChipClasses: Record<string, string> = {
@@ -38,18 +31,7 @@ const resultBadgeMeta: Record<string, { label: string; className: string }> = {
 }
 
 export function getGamePresentation(gameId: string): GamePresentation {
-  return (
-    getRegisteredGamePresentation(gameId) ??
-    externalGamePresentations[gameId] ??
-    fallbackPresentation
-  )
-}
-
-export function getGameTarget(gameId: string) {
-  const game = getCatalogGame(gameId)
-  return game?.externalUrl
-    ? { href: game.externalUrl, isExternal: true }
-    : { href: `/game/${gameId}`, isExternal: false }
+  return getGameManifest(gameId)?.presentation ?? fallbackPresentation
 }
 
 export function getGameRecordTitle(gameId: string, fallbackName?: string): string {

@@ -20,8 +20,9 @@
 ## 目录结构（常用）
 
 - 源码目录：`src/`
-- 游戏配置：`src/features/games/`
-- 游戏实现：`src/games/<game-id>/`（每个游戏含 `manifest.ts` + `index.tsx`）
+- 游戏注册与配置：`src/games/<game-id>/manifest.ts`
+- 广场清单与排行辅助：`src/features/games/`
+- 游戏实现：`src/games/<game-id>/`（所有游戏含 `manifest.ts`；仅 `embedded` 运行时需要 `index.tsx`）
 - 本地数据封装：`src/api/`
 - 配置目录：`.trae/rules/`（包含 workspace_rules.md）
 
@@ -29,7 +30,7 @@
 
 - 安装依赖：`npm install`
 - 本地启动：`npm run dev`（端口 5183）
-- 类型检查：`npx tsc --noEmit`
+- 类型检查：`npx tsc -p tsconfig.app.json --noEmit`
 - 运行测试：`npm test`
 - 构建产物：`dist/client/`（附带 `dist/server/` Worker）
 

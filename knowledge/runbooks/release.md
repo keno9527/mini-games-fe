@@ -5,7 +5,7 @@
 ```bash
 npm install        # 确保依赖与 lockfile 一致
 npm run lint       # ESLint 通过
-npx tsc --noEmit   # 类型检查通过
+npx tsc -p tsconfig.app.json --noEmit # 类型检查通过
 npm test           # 单元测试通过
 npm run build      # 生产构建成功
 ```
