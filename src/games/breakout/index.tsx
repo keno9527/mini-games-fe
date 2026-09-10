@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
+import '../game-surfaces.css'
 import { LEVEL_LAYOUTS } from './levels'
 
 interface Props {
@@ -15,6 +16,7 @@ type BrickType = 'normal' | 'hard' | 'explosive' | 'indestructible'
 // ===== 画布常量 =====
 const W = 480
 const H = 520
+const RENDER_SCALE = 2
 const BRICK_H = 20
 const BRICK_TOP = 52
 const PADDLE_Y = H - 32
@@ -44,12 +46,22 @@ const CONFIG: Record<Level, Cfg> = {
 }
 
 const BRICK_COLORS = [
-  '#ef4444', '#f97316', '#eab308', '#22c55e',
-  '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
-  '#14b8a6', '#f43f5e',
+  '#d88978',
+  '#d9a56c',
+  '#dcca87',
+  '#87bba0',
+  '#7bbdc5',
+  '#7d9dbd',
+  '#9e94c4',
+  '#c28da8',
+  '#74b5b1',
+  '#c78687',
 ]
 
-const POWERUP_META: Record<PowerUpType, { color: string; glow: string; label: string; name: string }> = {
+const POWERUP_META: Record<
+  PowerUpType,
+  { color: string; glow: string; label: string; name: string }
+> = {
   wider: { color: '#047857', glow: '#34d399', label: 'W', name: '加宽挡板' },
   multiball: { color: '#0369a1', glow: '#38bdf8', label: 'M', name: '多球' },
   laser: { color: '#b91c1c', glow: '#f87171', label: 'L', name: '激光炮' },
@@ -430,12 +442,17 @@ export default function Breakout({ userId, gameId }: Props) {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0)
+
     // 背景
-    ctx.fillStyle = '#1a1030'
+    const background = ctx.createLinearGradient(0, 0, W, H)
+    background.addColorStop(0, '#163a46')
+    background.addColorStop(1, '#091923')
+    ctx.fillStyle = background
     ctx.fillRect(0, 0, W, H)
 
     // 顶部网格装饰
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)'
+    ctx.strokeStyle = 'rgba(166,205,210,0.045)'
     ctx.lineWidth = 1
     for (let x = 0; x < W; x += 40) {
       ctx.beginPath()
@@ -454,8 +471,20 @@ export default function Breakout({ userId, gameId }: Props) {
     for (const b of bricksRef.current) {
       if (!b.alive) continue
       const color = brickColor(b)
-      ctx.fillStyle = color
-      ctx.fillRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2)
+      ctx.shadowColor = '#00000055'
+      ctx.shadowBlur = 4
+      ctx.shadowOffsetY = 3
+      const brickGradient = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.h)
+      brickGradient.addColorStop(0, color)
+      brickGradient.addColorStop(1, color + 'bb')
+      ctx.fillStyle = brickGradient
+      ctx.beginPath()
+      ctx.roundRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2, 3)
+      ctx.fill()
+      ctx.shadowBlur = 0
+      ctx.shadowOffsetY = 0
+      ctx.fillStyle = 'rgba(0,0,0,0.2)'
+      ctx.fillRect(b.x + 3, b.y + b.h - 5, b.w - 6, 3)
       // 高光
       ctx.fillStyle = 'rgba(255,255,255,0.2)'
       ctx.fillRect(b.x + 1, b.y + 1, b.w - 2, 3)
@@ -527,8 +556,8 @@ export default function Breakout({ userId, gameId }: Props) {
     const hasLaser = effectsRef.current.laser > 0
     // 挡板主体
     const grad = ctx.createLinearGradient(px, PADDLE_Y, px, PADDLE_Y + PADDLE_H)
-    grad.addColorStop(0, hasLaser ? '#f87171' : '#fb923c')
-    grad.addColorStop(1, hasLaser ? '#dc2626' : '#ea580c')
+    grad.addColorStop(0, hasLaser ? '#ffad9b' : '#f4e1b9')
+    grad.addColorStop(1, hasLaser ? '#ba5d52' : '#aa8556')
     ctx.fillStyle = grad
     ctx.beginPath()
     ctx.roundRect(px, PADDLE_Y, pw, PADDLE_H, 4)
@@ -542,6 +571,8 @@ export default function Breakout({ userId, gameId }: Props) {
 
     // 球
     for (const ball of ballsRef.current) {
+      ctx.shadowBlur = 12
+      ctx.shadowColor = ball.piercing ? '#c084fc' : '#f4e5bd'
       // 拖尾
       if (ball.vx !== 0 || ball.vy !== 0) {
         ctx.fillStyle = ball.piercing ? 'rgba(168,85,247,0.25)' : 'rgba(251,191,36,0.2)'
@@ -558,6 +589,8 @@ export default function Breakout({ userId, gameId }: Props) {
       ctx.arc(ball.x - 2, ball.y - 2, ball.r * 0.35, 0, Math.PI * 2)
       ctx.fill()
     }
+
+    ctx.shadowBlur = 0
 
     // 粒子
     for (const p of particlesRef.current) {
@@ -819,9 +852,7 @@ export default function Breakout({ userId, gameId }: Props) {
     }
 
     // 关卡完成检测（所有可破坏砖块清除）
-    const remaining = bricksRef.current.some(
-      (b) => b.alive && b.type !== 'indestructible',
-    )
+    const remaining = bricksRef.current.some((b) => b.alive && b.type !== 'indestructible')
     if (!remaining) {
       if (levelIdxRef.current >= cfg.maxLevel) {
         const bonus = livesRef.current * 100
@@ -887,6 +918,15 @@ export default function Breakout({ userId, gameId }: Props) {
     }
   }, [])
 
+  const fireLaser = () => {
+    if (statusRef.current !== 'playing' || effectsRef.current.laser <= 0 || laserCdRef.current > 0)
+      return
+    const pw = currentPaddleWidth()
+    const px = paddleXRef.current - pw / 2
+    lasersRef.current.push({ x: px + 8, y: PADDLE_Y - 6 }, { x: px + pw - 8, y: PADDLE_Y - 6 })
+    laserCdRef.current = LASER_COOLDOWN
+  }
+
   // ===== 键盘：空格发射激光 =====
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -896,13 +936,7 @@ export default function Breakout({ userId, gameId }: Props) {
           handleLaunch()
           return
         }
-        if (statusRef.current === 'playing' && effectsRef.current.laser > 0 && laserCdRef.current === 0) {
-          const pw = currentPaddleWidth()
-          const px = paddleXRef.current - pw / 2
-          lasersRef.current.push({ x: px + 8, y: PADDLE_Y - 6 })
-          lasersRef.current.push({ x: px + pw - 8, y: PADDLE_Y - 6 })
-          laserCdRef.current = LASER_COOLDOWN
-        }
+        fireLaser()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -911,7 +945,7 @@ export default function Breakout({ userId, gameId }: Props) {
   }, [])
 
   // ===== 鼠标控制 =====
-  const onMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
     if (!canvas) return
     const rect = canvas.getBoundingClientRect()
@@ -947,126 +981,122 @@ export default function Breakout({ userId, gameId }: Props) {
   const totalLevels = cfgRef.current.maxLevel + 1
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      {/* 难度选择 */}
-      <div className="flex flex-wrap gap-2 justify-center">
-        {(['简单', '中等', '复杂'] as const).map((lv) => (
-          <button
-            key={lv}
-            type="button"
-            disabled={!pickingIdle}
-            onClick={() => setLevel(lv)}
-            className={`px-4 py-2 rounded-full text-sm font-black border-2 transition-all ${
-              level === lv
-                ? 'bg-fun-accent text-white border-fun-accent'
-                : 'border-fun-border text-fun-text bg-fun-bg hover:border-fun-accent/50'
-            } ${!pickingIdle ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {lv}
-          </button>
-        ))}
+    <section className="game-surface breakout-room">
+      <header className="gs-heading">
+        <div>
+          <p className="gs-eyebrow">BRICK BREAKER · 反弹计划</p>
+          <h2>击碎边界，一路向上</h2>
+        </div>
+        <span className="breakout-emblem" aria-hidden="true">
+          ◈
+        </span>
+      </header>
+      <div className="gs-toolbar">
+        <div className="gs-segments" aria-label="游戏难度">
+          {(['简单', '中等', '复杂'] as const).map((lv) => (
+            <button
+              key={lv}
+              disabled={!pickingIdle}
+              aria-pressed={level === lv}
+              onClick={() => setLevel(lv)}
+            >
+              {lv}
+            </button>
+          ))}
+        </div>
+        <span className="gs-caption">
+          {combo > 1 ? `${combo} 连击 · 保持节奏` : '找准角度，清空砖墙'}
+        </span>
       </div>
-
-      {/* 状态栏 */}
-      <div className="flex items-center gap-3 flex-wrap justify-center">
-        <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl px-4 py-2 text-center shadow-card min-w-[80px]">
-          <p className="text-xl font-black text-fun-accent">⭐ {score}</p>
-          <p className="text-xs text-fun-muted font-semibold">得分</p>
+      <div className="gs-metrics">
+        <div>
+          <span>本局得分</span>
+          <strong>{String(score).padStart(4, '0')}</strong>
         </div>
-        <div className="bg-red-50 border-2 border-red-200 rounded-2xl px-4 py-2 text-center shadow-card min-w-[80px]">
-          <p className="text-xl font-black text-red-500">{'❤️'.repeat(Math.max(0, lives))}</p>
-          <p className="text-xs text-fun-muted font-semibold">命数</p>
+        <div>
+          <span>剩余生命</span>
+          <strong>
+            {lives}
+            <small> 次</small>
+          </strong>
         </div>
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl px-4 py-2 text-center shadow-card min-w-[80px]">
-          <p className="text-xl font-black text-blue-500">
-            {levelIdx + 1}/{totalLevels}
-          </p>
-          <p className="text-xs text-fun-muted font-semibold">关卡</p>
+        <div>
+          <span>当前关卡</span>
+          <strong>
+            {String(levelIdx + 1).padStart(2, '0')}
+            <small> / {totalLevels}</small>
+          </strong>
         </div>
-        {combo > 1 && (
-          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl px-4 py-2 text-center shadow-card min-w-[80px] animate-pulse">
-            <p className="text-xl font-black text-yellow-600">x{combo}</p>
-            <p className="text-xs text-fun-muted font-semibold">连击</p>
+      </div>
+      <div className="breakout-frame">
+        <canvas
+          ref={canvasRef}
+          width={W * RENDER_SCALE}
+          height={H * RENDER_SCALE}
+          aria-label="打砖块游戏区域，拖动挡板，点击发球"
+          tabIndex={0}
+          onPointerMove={(e) => {
+            if (e.pointerType === 'mouse' || e.buttons > 0) onPointerMove(e)
+          }}
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId)
+            onPointerMove(e)
+            onCanvasClick()
+          }}
+        />
+        {status === 'ready' && (
+          <div className="breakout-ready" role="status">
+            点击画面或按空格，再次发球
+          </div>
+        )}
+        {(status === 'idle' || status === 'won' || status === 'lost') && (
+          <div className="gs-overlay">
+            <span className="gs-eyebrow">
+              {status === 'idle'
+                ? 'A NEW ANGLE, A NEW RECORD'
+                : status === 'won'
+                  ? 'STAGE CLEAR'
+                  : 'GAME OVER'}
+            </span>
+            <div className="breakout-launch-art" aria-hidden="true">
+              ●
+            </div>
+            <h3>
+              {status === 'idle'
+                ? '下一次反弹，由你掌控'
+                : status === 'won'
+                  ? '漂亮！全部通关'
+                  : '再来一次，突破纪录'}
+            </h3>
+            <p>
+              {status === 'idle' ? '移动鼠标或拖动画面控制挡板。' : `最终得分 ${score}`}
+              <br />
+              {status === 'idle' ? '接住道具，解锁更多击球方式。' : `到达第 ${levelIdx + 1} 关`}
+            </p>
+            <button className="gs-primary" onClick={status === 'idle' ? handleLaunch : restart}>
+              {status === 'idle' ? '发球，开始挑战' : '再来一局'} ↗
+            </button>
           </div>
         )}
       </div>
-
-      {/* 道具说明 */}
-      <div className="flex flex-wrap gap-1.5 justify-center w-full max-w-[720px]">
+      <div className="breakout-controls">
+        <p>
+          鼠标 / 拖动 / ← → 移动挡板
+          <br />
+          点击画面发球 · 获得激光后按空格或按钮发射
+        </p>
+        <button className="gs-secondary" onClick={fireLaser} disabled={status !== 'playing'}>
+          发射激光
+        </button>
+      </div>
+      <div className="breakout-tools" aria-label="道具说明">
         {(Object.keys(POWERUP_META) as PowerUpType[]).map((t) => (
-          <span
-            key={t}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-fun-muted bg-fun-bg/60 border border-fun-border rounded-full px-2 py-0.5"
-          >
-            <span
-              className="inline-flex items-center justify-center w-4 h-4 rounded text-white text-[10px] border border-white/30 shadow-sm"
-              style={{ backgroundColor: POWERUP_META[t].color }}
-            >
-              {POWERUP_META[t].label}
-            </span>
+          <span key={t}>
+            <i style={{ background: POWERUP_META[t].color }}>{POWERUP_META[t].label}</i>
             {POWERUP_META[t].name}
           </span>
         ))}
       </div>
-
-      {/* 画布 */}
-      <div className="relative w-full max-w-[720px] border-4 border-fun-border rounded-2xl overflow-hidden shadow-card">
-        <canvas
-          ref={canvasRef}
-          width={W}
-          height={H}
-          onMouseMove={onMouseMove}
-          onClick={onCanvasClick}
-          className="block w-full h-auto cursor-none"
-        />
-        {status === 'idle' && (
-          <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-3 text-white px-6 text-center">
-            <p className="text-2xl font-black">🏓 打砖块</p>
-            <div className="text-sm space-y-1 text-white/80">
-              <p>鼠标移动 或 <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-xs">←</kbd> <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-xs">→</kbd> 控制挡板，点击画面发球</p>
-              <p>获得激光道具后按 <kbd className="bg-white/20 px-1.5 py-0.5 rounded text-xs">空格</kbd> 发射</p>
-              <p>击碎砖块有概率掉落道具，清关进入下一关</p>
-            </div>
-          </div>
-        )}
-        {status === 'ready' && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 text-white px-3 py-1 rounded-full text-xs font-bold">
-            点击画面发球
-          </div>
-        )}
-        {status === 'won' && (
-          <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-2 text-white">
-            <p className="text-3xl">🎉</p>
-            <p className="text-xl font-black">全部通关！</p>
-            <p className="text-sm">
-              最终得分 <span className="text-fun-yellow font-black text-2xl">{score}</span>
-            </p>
-            <button
-              type="button"
-              onClick={restart}
-              className="mt-2 px-6 py-2 rounded-full bg-fun-green text-white font-black shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 transition-all"
-            >
-              再玩一次
-            </button>
-          </div>
-        )}
-        {status === 'lost' && (
-          <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-2 text-white">
-            <p className="text-3xl">💔</p>
-            <p className="text-xl font-black">游戏结束</p>
-            <p className="text-sm">
-              得分 <span className="text-fun-yellow font-black text-2xl">{score}</span>
-            </p>
-            <button
-              type="button"
-              onClick={restart}
-              className="mt-2 px-6 py-2 rounded-full bg-fun-accent text-white font-black shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 transition-all"
-            >
-              再来一局
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+    </section>
   )
 }

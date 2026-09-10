@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
+import '../game-surfaces.css'
 
 interface Props {
   userId?: string
@@ -11,7 +12,6 @@ type Level = '简单' | '中等' | '复杂'
 type Status = 'idle' | 'playing' | 'over'
 
 const SIZE = 15
-const STAR = [3, 7, 11]
 
 const inBounds = (x: number, y: number) => x >= 0 && x < SIZE && y >= 0 && y < SIZE
 
@@ -170,6 +170,13 @@ export default function Gomoku({ userId, gameId }: Props) {
   const [message, setMessage] = useState('你执黑先手，点「开始对局」')
   const [lastMove, setLastMove] = useState<{ x: number; y: number } | null>(null)
 
+  const aiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (aiTimerRef.current) clearTimeout(aiTimerRef.current)
+    },
+    [],
+  )
   const startTimeRef = useRef(0)
   const submittedRef = useRef(false)
 
@@ -267,136 +274,146 @@ export default function Gomoku({ userId, gameId }: Props) {
     }
     setTurn('O')
     setMessage('电脑思考中…')
-    window.setTimeout(() => playAI(nb), 260)
+    aiTimerRef.current = setTimeout(() => playAI(nb), 260)
   }
 
   const picking = status === 'idle' || status === 'over'
 
+  const moves = board.flat().filter(Boolean).length
+
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="flex flex-wrap gap-2 justify-center">
-        {(['简单', '中等', '复杂'] as const).map((lv) => (
-          <button
-            key={lv}
-            type="button"
-            disabled={!picking}
-            onClick={() => setLevel(lv)}
-            className={`px-4 py-2 rounded-full text-sm font-black border-2 transition-all ${
-              level === lv
-                ? 'bg-fun-purple text-white border-fun-purple'
-                : 'border-fun-border text-fun-text bg-fun-bg hover:border-fun-purple/50'
-            } ${!picking ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {lv}
-            {lv === '简单' && ' · 随机'}
-            {lv === '中等' && ' · 会守'}
-            {lv === '复杂' && ' · 棋形评估'}
-          </button>
-        ))}
-      </div>
-
-      <p className="text-sm font-bold text-fun-text min-h-[1.5rem]">{message}</p>
-
-      <div
-        className="relative rounded-2xl shadow-card border-4 border-[#8b5a2b]"
-        style={{ width: BOARD_PX, height: BOARD_PX, background: '#f4d58d' }}
-      >
-        <svg className="absolute inset-0 pointer-events-none" width={BOARD_PX} height={BOARD_PX}>
-          {Array.from({ length: SIZE }, (_, i) => (
-            <g key={i}>
-              <line
-                x1={MARGIN}
-                y1={MARGIN + i * STONE}
-                x2={MARGIN + (SIZE - 1) * STONE}
-                y2={MARGIN + i * STONE}
-                stroke="#6b3a1f"
-                strokeWidth={1}
-              />
-              <line
-                x1={MARGIN + i * STONE}
-                y1={MARGIN}
-                x2={MARGIN + i * STONE}
-                y2={MARGIN + (SIZE - 1) * STONE}
-                stroke="#6b3a1f"
-                strokeWidth={1}
-              />
-            </g>
+    <section className="game-surface gomoku-room">
+      <header className="gs-heading">
+        <div>
+          <p className="gs-eyebrow">GOMOKU · 黑白之间</p>
+          <h2>一局，静心落子</h2>
+        </div>
+        <span className="gs-seal">弈</span>
+      </header>
+      <div className="gs-toolbar">
+        <div className="gs-segments" aria-label="对局难度">
+          {(['简单', '中等', '复杂'] as const).map((lv) => (
+            <button
+              key={lv}
+              disabled={!picking}
+              aria-pressed={level === lv}
+              onClick={() => setLevel(lv)}
+            >
+              {lv}
+            </button>
           ))}
-          {STAR.flatMap((sx) =>
-            STAR.map((sy) => (
-              <circle
-                key={`${sx}-${sy}`}
-                cx={MARGIN + sx * STONE}
-                cy={MARGIN + sy * STONE}
-                r={3}
-                fill="#6b3a1f"
-              />
-            )),
-          )}
-        </svg>
-
-        {board.map((row, y) =>
-          row.map((c, x) => {
-            const isLast = lastMove && lastMove.x === x && lastMove.y === y
-            return (
-              <button
-                key={`${x}-${y}`}
-                type="button"
-                onClick={() => onCell(x, y)}
-                disabled={status !== 'playing' || turn !== 'X' || c !== null}
-                className="absolute flex items-center justify-center"
-                style={{
-                  left: MARGIN + x * STONE - STONE / 2,
-                  top: MARGIN + y * STONE - STONE / 2,
-                  width: STONE,
-                  height: STONE,
-                  background: 'transparent',
-                  cursor:
-                    c === null && status === 'playing' && turn === 'X' ? 'pointer' : 'default',
-                }}
+        </div>
+        <span className="gs-caption">十五路棋盘 · 五子连珠</span>
+      </div>
+      <div className="gs-play-layout">
+        <div className="gomoku-table">
+          <div className="gs-seat">
+            <span>
+              <i className="gomoku-stone white" /> 电脑 · 白棋
+            </span>
+            <span>{turn === 'O' && status === 'playing' ? '思考中…' : '后手'}</span>
+          </div>
+          <div className="gomoku-frame">
+            <div className="gomoku-board">
+              <svg
+                viewBox={`0 0 ${BOARD_PX} ${BOARD_PX}`}
+                className="gomoku-lines"
+                aria-hidden="true"
               >
-                {c && (
-                  <span
-                    className="block rounded-full"
+                {Array.from({ length: SIZE }, (_, i) => (
+                  <g key={i}>
+                    <line
+                      x1={MARGIN}
+                      y1={MARGIN + i * STONE}
+                      x2={BOARD_PX - MARGIN}
+                      y2={MARGIN + i * STONE}
+                    />
+                    <line
+                      x1={MARGIN + i * STONE}
+                      y1={MARGIN}
+                      x2={MARGIN + i * STONE}
+                      y2={BOARD_PX - MARGIN}
+                    />
+                  </g>
+                ))}
+                {[
+                  [3, 3],
+                  [11, 3],
+                  [7, 7],
+                  [3, 11],
+                  [11, 11],
+                ].map(([x, y]) => (
+                  <circle key={`${x}-${y}`} cx={MARGIN + x * STONE} cy={MARGIN + y * STONE} r="3" />
+                ))}
+                {Array.from({ length: SIZE }, (_, i) => (
+                  <text key={i} x={MARGIN + i * STONE} y="11">
+                    {String.fromCharCode(65 + i)}
+                  </text>
+                ))}
+              </svg>
+              {board.map((row, y) =>
+                row.map((c, x) => (
+                  <button
+                    key={`${x}-${y}`}
+                    className="gomoku-point"
+                    aria-label={`${String.fromCharCode(65 + x)}${y + 1}，${c === 'X' ? '黑棋' : c === 'O' ? '白棋' : '空位'}`}
+                    onClick={() => onCell(x, y)}
+                    disabled={status !== 'playing' || turn !== 'X' || c !== null}
                     style={{
-                      width: STONE * 0.82,
-                      height: STONE * 0.82,
-                      background:
-                        c === 'X'
-                          ? 'radial-gradient(circle at 35% 30%, #4a4a4a, #0a0a0a 70%)'
-                          : 'radial-gradient(circle at 35% 30%, #ffffff, #c8c8c8 80%)',
-                      boxShadow: '0 2px 3px rgba(0,0,0,0.35)',
-                      border: c === 'O' ? '1px solid #999' : 'none',
-                      outline: isLast ? '2px solid #ef4444' : 'none',
+                      left: `${((MARGIN + x * STONE - STONE / 2) / BOARD_PX) * 100}%`,
+                      top: `${((MARGIN + y * STONE - STONE / 2) / BOARD_PX) * 100}%`,
+                      width: `${(STONE / BOARD_PX) * 100}%`,
+                      height: `${(STONE / BOARD_PX) * 100}%`,
                     }}
-                  />
-                )}
-              </button>
-            )
-          }),
-        )}
+                  >
+                    {c && (
+                      <span className={`gomoku-stone ${c === 'X' ? 'black' : 'white'}`}>
+                        {lastMove?.x === x && lastMove.y === y && <i className="gomoku-last" />}
+                      </span>
+                    )}
+                  </button>
+                )),
+              )}
+            </div>
+          </div>
+          <div className="gs-seat">
+            <span>
+              <i className="gomoku-stone black" /> 你 · 黑棋
+            </span>
+            <span>{status === 'playing' && turn === 'X' ? '请落子' : '先手'}</span>
+          </div>
+        </div>
+        <aside className="gs-sidebar">
+          <div className="gs-panel">
+            <p className="gs-eyebrow">对局状态</p>
+            <h3 role="status">{message}</h3>
+            <p>纵、横或斜向，率先连成五子即可获胜。</p>
+            <div className="gs-stat">
+              <span>已落子</span>
+              <strong>
+                {String(moves).padStart(2, '0')}
+                <small> 手</small>
+              </strong>
+            </div>
+          </div>
+          {picking && (
+            <button className="gs-primary" onClick={start}>
+              {status === 'idle' ? '开始对局' : '再来一局'} <span>↗</span>
+            </button>
+          )}
+          <div className="gs-help">
+            <strong>黑白相间，步步为营</strong>
+            <p>你执黑先行。棋心上的朱红小点标记最近一步。</p>
+            <p>
+              {level === '简单'
+                ? '入门对弈，熟悉连珠棋形。'
+                : level === '中等'
+                  ? '电脑会攻守兼顾，留意两端的空位。'
+                  : '电脑评估棋形，试着制造双重威胁。'}
+            </p>
+          </div>
+        </aside>
       </div>
-
-      <div className="flex flex-wrap gap-3 justify-center">
-        {status === 'idle' && (
-          <button
-            type="button"
-            onClick={start}
-            className="px-8 py-3 rounded-full bg-fun-accent text-white font-black shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 transition-all"
-          >
-            开始对局
-          </button>
-        )}
-        {status === 'over' && (
-          <button
-            type="button"
-            onClick={start}
-            className="px-8 py-3 rounded-full bg-fun-purple text-white font-black shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 transition-all"
-          >
-            再来一局
-          </button>
-        )}
-      </div>
-    </div>
+    </section>
   )
 }

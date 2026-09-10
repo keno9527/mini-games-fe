@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
+import '../game-surfaces.css'
 
 interface Props {
   userId?: string
@@ -7,12 +8,11 @@ interface Props {
 }
 
 type Level = '简单' | '中等' | '复杂'
-type Status = 'idle' | 'playing' | 'over'
+type Status = 'idle' | 'playing' | 'paused' | 'over'
 type Piece = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L'
 
 const COLS = 10
 const ROWS = 20
-const CELL = 24
 
 const PIECES: Piece[] = ['I', 'O', 'T', 'S', 'Z', 'J', 'L']
 
@@ -319,7 +319,8 @@ export default function Tetris({ userId, gameId }: Props) {
     boardRef.current = cleared
     setBoard(cleared)
     if (n > 0) {
-      setScore((s) => s + LINE_SCORE[n])
+      scoreRef.current += LINE_SCORE[n]
+      setScore(scoreRef.current)
       setLines((l) => l + n)
     }
     const nx = nextPiece
@@ -339,7 +340,7 @@ export default function Tetris({ userId, gameId }: Props) {
 
   const tryMove = useCallback((dx: number, dy: number): boolean => {
     const a = activeRef.current
-    if (!a) return false
+    if (!a || statusRef.current !== 'playing') return false
     const next: Active = { ...a, x: a.x + dx, y: a.y + dy }
     if (collides(boardRef.current, next)) return false
     setActive(next)
@@ -349,7 +350,7 @@ export default function Tetris({ userId, gameId }: Props) {
 
   const rotate = useCallback(() => {
     const a = activeRef.current
-    if (!a) return
+    if (!a || statusRef.current !== 'playing') return
     const nextRot = (a.rot + 1) % 4
     for (const kick of [0, -1, 1, -2, 2]) {
       const next: Active = { ...a, rot: nextRot, x: a.x + kick }
@@ -363,7 +364,7 @@ export default function Tetris({ userId, gameId }: Props) {
 
   const hardDrop = useCallback(() => {
     const a = activeRef.current
-    if (!a) return
+    if (!a || statusRef.current !== 'playing') return
     let drop = 0
     while (!collides(boardRef.current, { ...a, y: a.y + drop + 1 })) drop++
     const landed: Active = { ...a, y: a.y + drop }
@@ -373,6 +374,15 @@ export default function Tetris({ userId, gameId }: Props) {
     scoreRef.current += drop * 2
     lockAndNext()
   }, [lockAndNext])
+
+  const softDrop = useCallback(() => {
+    if (statusRef.current !== 'playing') return
+    if (!tryMove(0, 1)) lockAndNext()
+    else {
+      scoreRef.current += 1
+      setScore(scoreRef.current)
+    }
+  }, [tryMove, lockAndNext])
 
   useEffect(() => {
     if (status !== 'playing') return
@@ -399,11 +409,7 @@ export default function Tetris({ userId, gameId }: Props) {
         rotate()
       } else if (e.key === 'ArrowDown') {
         e.preventDefault()
-        if (!tryMove(0, 1)) lockAndNext()
-        else {
-          setScore((s) => s + 1)
-          scoreRef.current += 1
-        }
+        softDrop()
       } else if (e.key === ' ') {
         e.preventDefault()
         hardDrop()
@@ -411,7 +417,7 @@ export default function Tetris({ userId, gameId }: Props) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [tryMove, rotate, hardDrop, lockAndNext])
+  }, [tryMove, rotate, hardDrop, softDrop])
 
   const start = () => {
     const a = spawn(randomPiece())
@@ -461,119 +467,168 @@ export default function Tetris({ userId, gameId }: Props) {
     }
   }
 
+  const ghostCells = new Set<string>()
+  if (active) {
+    let ghostY = active.y
+    while (!collides(board, { ...active, y: ghostY + 1 })) ghostY++
+    SHAPES[active.type][active.rot].forEach((row, dy) =>
+      row.forEach((cell, dx) => {
+        if (cell && ghostY + dy >= 0) ghostCells.add(`${ghostY + dy}-${active.x + dx}`)
+      }),
+    )
+  }
   const nextShape = SHAPES[nextPiece][0]
+  const togglePause = () => {
+    const next = statusRef.current === 'playing' ? 'paused' : 'playing'
+    statusRef.current = next
+    setStatus(next)
+  }
 
   return (
-    <div className="flex flex-col items-center gap-5">
-      <div className="flex flex-wrap gap-2 justify-center">
-        {(['简单', '中等', '复杂'] as const).map((lv) => (
-          <button
-            key={lv}
-            type="button"
-            disabled={!pickingIdle}
-            onClick={() => setLevel(lv)}
-            className={`px-4 py-2 rounded-full text-sm font-black border-2 transition-all ${
-              level === lv
-                ? 'bg-fun-purple text-white border-fun-purple'
-                : 'border-fun-border text-fun-text bg-fun-bg hover:border-fun-purple/50'
-            } ${!pickingIdle ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {lv}
-          </button>
-        ))}
+    <section className="game-surface tetris-room">
+      <header className="gs-heading">
+        <div>
+          <p className="gs-eyebrow">BLOCK STUDIO · 方块实验室</p>
+          <h2>让每一块，恰到好处</h2>
+        </div>
+        <span className="tetris-logo" aria-hidden="true">
+          ▦
+        </span>
+      </header>
+      <div className="gs-toolbar">
+        <div className="gs-segments" aria-label="下落难度">
+          {(['简单', '中等', '复杂'] as const).map((lv) => (
+            <button
+              key={lv}
+              disabled={!pickingIdle}
+              aria-pressed={level === lv}
+              onClick={() => setLevel(lv)}
+            >
+              {lv}
+            </button>
+          ))}
+        </div>
+        <span className="gs-caption">堆叠 · 消除 · 突破</span>
       </div>
-
-      <div className="flex items-start gap-5">
-        <div
-          className="relative border-4 border-fun-border rounded-2xl overflow-hidden shadow-card"
-          style={{ width: COLS * CELL, height: ROWS * CELL, background: '#1f1333' }}
-        >
-          {display.map((row, y) =>
-            row.map((c, x) => (
-              <div
-                key={`${y}-${x}`}
-                className="absolute"
-                style={{
-                  left: x * CELL,
-                  top: y * CELL,
-                  width: CELL,
-                  height: CELL,
-                  background: c ? COLORS[c] : 'transparent',
-                  border: c
-                    ? '1px solid rgba(255,255,255,0.25)'
-                    : '1px solid rgba(255,255,255,0.03)',
-                  boxSizing: 'border-box',
-                }}
-              />
-            )),
-          )}
-          {status === 'idle' && (
-            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3 text-white">
-              <p className="text-xl font-black">🧱 准备好了吗？</p>
-              <button
-                type="button"
-                onClick={start}
-                className="px-6 py-2 rounded-full bg-fun-accent text-white font-black shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 transition-all"
-              >
-                开始游戏
-              </button>
-              <p className="text-xs font-semibold opacity-80">
-                ← → 移动 · ↑ 旋转 · ↓ 加速 · 空格 硬降
+      <div className="tetris-console">
+        <div className="tetris-board-frame">
+          <div
+            className="tetris-board"
+            role="img"
+            aria-label={`俄罗斯方块棋盘，已消除 ${lines} 行，得分 ${score}`}
+          >
+            {display.map((row, y) =>
+              row.map((c, x) => (
+                <div
+                  key={`${y}-${x}`}
+                  className={`tetris-cell ${c ? 'is-filled' : ghostCells.has(`${y}-${x}`) ? 'is-ghost' : ''}`}
+                  style={{
+                    left: `${(x / COLS) * 100}%`,
+                    top: `${(y / ROWS) * 100}%`,
+                    width: `${100 / COLS}%`,
+                    height: `${100 / ROWS}%`,
+                    backgroundColor: c ? COLORS[c] : undefined,
+                  }}
+                />
+              )),
+            )}
+          </div>
+          {status !== 'playing' && (
+            <div className="gs-overlay">
+              <span className="gs-eyebrow">
+                {status === 'paused'
+                  ? 'TAKE A BREATH'
+                  : status === 'over'
+                    ? 'GAME OVER'
+                    : 'READY TO STACK'}
+              </span>
+              <div className="tetris-splash" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+                <i />
+              </div>
+              <h3>
+                {status === 'idle'
+                  ? '下一块，无限可能'
+                  : status === 'paused'
+                    ? '休息一下'
+                    : '本局结束'}
+              </h3>
+              <p>
+                {status === 'over'
+                  ? `得分 ${score} · 消除 ${lines} 行`
+                  : status === 'paused'
+                    ? '准备好后，继续你的节奏。'
+                    : '填满一行，创造新的空间。'}
               </p>
-            </div>
-          )}
-          {status === 'over' && (
-            <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-2 text-white">
-              <p className="text-3xl">💥</p>
-              <p className="text-xl font-black">顶格啦！</p>
-              <p className="text-sm">
-                得分 <span className="text-fun-yellow font-black text-2xl">{score}</span>
-              </p>
-              <button
-                type="button"
-                onClick={start}
-                className="mt-2 px-6 py-2 rounded-full bg-fun-purple text-white font-black shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 transition-all"
-              >
-                再来一局
+              <button className="gs-primary" onClick={status === 'paused' ? togglePause : start}>
+                {status === 'paused' ? '继续游戏' : status === 'over' ? '再来一局' : '开始游戏'} ↗
               </button>
             </div>
           )}
         </div>
-
-        <div className="flex flex-col gap-3 min-w-[120px]">
-          <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl px-3 py-2 text-center shadow-card">
-            <p className="text-2xl font-black text-fun-accent">⭐ {score}</p>
-            <p className="text-xs text-fun-muted font-semibold mt-0.5">得分</p>
+        <aside className="tetris-sidebar">
+          <div className="gs-panel">
+            <p className="gs-eyebrow">SCORE · 得分</p>
+            <strong className="tetris-score">{String(score).padStart(5, '0')}</strong>
+            <div className="gs-stat">
+              <span>消除行数</span>
+              <strong>{lines}</strong>
+            </div>
+            <div className="gs-stat">
+              <span>速度等级</span>
+              <strong>{Math.floor(lines / SPEED[level].per) + 1}</strong>
+            </div>
           </div>
-          <div className="bg-green-50 border-2 border-green-200 rounded-2xl px-3 py-2 text-center shadow-card">
-            <p className="text-2xl font-black text-fun-green">🧱 {lines}</p>
-            <p className="text-xs text-fun-muted font-semibold mt-0.5">消行</p>
-          </div>
-          <div className="bg-purple-50 border-2 border-purple-200 rounded-2xl p-2 shadow-card">
-            <p className="text-xs text-fun-muted font-semibold text-center mb-1">下一块</p>
-            <div className="relative mx-auto" style={{ width: 4 * 16, height: 4 * 16 }}>
+          <div className="gs-panel tetris-next">
+            <p className="gs-eyebrow">NEXT · 下一块</p>
+            <div className="tetris-preview" role="img" aria-label={`下一块 ${nextPiece}`}>
               {nextShape.map((row, y) =>
-                row.map((c, x) =>
-                  c ? (
-                    <div
-                      key={`${y}-${x}`}
-                      className="absolute rounded-sm"
-                      style={{
-                        left: x * 16,
-                        top: y * 16,
-                        width: 16,
-                        height: 16,
-                        background: COLORS[nextPiece],
-                        border: '1px solid rgba(0,0,0,0.15)',
-                      }}
-                    />
-                  ) : null,
-                ),
+                row.map((c, x) => (
+                  <span
+                    key={`${y}-${x}`}
+                    className={c ? 'tetris-cell is-filled' : ''}
+                    style={{ backgroundColor: c ? COLORS[nextPiece] : undefined }}
+                  />
+                )),
               )}
             </div>
           </div>
-        </div>
+          {(status === 'playing' || status === 'paused') && (
+            <button className="gs-secondary" onClick={togglePause}>
+              {status === 'paused' ? '继续游戏' : '暂停游戏'}
+            </button>
+          )}
+          <div className="gs-help">
+            <strong>操作指南</strong>
+            <p>
+              ← → 左右移动
+              <br />↑ 旋转 · ↓ 加速
+              <br />
+              空格 直接落下
+            </p>
+            <p>虚线标记落点，提前安排下一步。</p>
+          </div>
+        </aside>
       </div>
-    </div>
+      <div className="tetris-controls" aria-label="触屏操作">
+        <button disabled={status !== 'playing'} onClick={() => tryMove(-1, 0)} aria-label="左移">
+          ←
+        </button>
+        <button disabled={status !== 'playing'} onClick={rotate} aria-label="旋转">
+          ↻
+        </button>
+        <button disabled={status !== 'playing'} onClick={softDrop} aria-label="下移">
+          ↓
+        </button>
+        <button disabled={status !== 'playing'} onClick={() => tryMove(1, 0)} aria-label="右移">
+          →
+        </button>
+        <button disabled={status !== 'playing'} onClick={hardDrop}>
+          落下 ⤓
+        </button>
+      </div>
+    </section>
   )
 }

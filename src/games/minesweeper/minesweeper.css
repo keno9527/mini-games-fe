@@ -1,0 +1,696 @@
+.ms-game {
+  container-type: inline-size;
+  padding: clamp(12px, 2vw, 26px);
+  border: 1px solid #d3c9b4;
+  border-radius: 10px;
+  color: #33463a;
+  background: radial-gradient(ellipse at 0 0, #fffdf5b0, transparent 60%), #f1ecdf;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  box-shadow: inset 0 1px 0 #fffdf5;
+}
+.ms-game button {
+  touch-action: manipulation;
+}
+.ms-game button:focus-visible,
+.ms-game summary:focus-visible,
+.ms-board-scroll:focus-visible {
+  outline: 3px solid #b1833e;
+  outline-offset: 3px;
+}
+.ms-game svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.ms-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #d8d0bd;
+}
+.ms-eyebrow {
+  color: #756e5c;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.ms-heading h2 {
+  font:
+    800 34px 'Songti SC',
+    'SimSun',
+    serif;
+  margin: 8px 0 0;
+  letter-spacing: 0.08em;
+  color: #304f3e;
+}
+.ms-heading h2 span {
+  font:
+    12px 'PingFang SC',
+    sans-serif;
+  margin-left: 8px;
+  letter-spacing: 0.14em;
+  color: #716b58;
+}
+.ms-seal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #87744c;
+}
+.ms-seal svg {
+  width: 30px;
+  height: 30px;
+}
+.ms-seal span {
+  font:
+    8px Georgia,
+    serif;
+  letter-spacing: 0.18em;
+}
+.ms-difficulties {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0 24px;
+}
+.ms-difficulties button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #d9cfba;
+  border-radius: 6px;
+  padding: 13px 12px;
+  background: #fcf9ef;
+  text-align: left;
+  color: #626957;
+  box-shadow: 0 2px 0 #d6cbb750;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.ms-difficulties button:hover {
+  border-color: #78816a;
+}
+.ms-difficulties button[aria-pressed='true'] {
+  color: #f5f0df;
+  background: linear-gradient(130deg, #42644f, #304f3e);
+  border-color: #304f3e;
+  box-shadow:
+    inset 0 1px 0 #ffffff1f,
+    0 2px 0 #1d372d;
+}
+.ms-difficulty-index {
+  color: #a69777;
+  font:
+    italic 17px Georgia,
+    serif;
+}
+.ms-difficulties button[aria-pressed='true'] .ms-difficulty-index {
+  color: #d4c299;
+}
+.ms-difficulties strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+.ms-difficulties small {
+  display: block;
+  font-size: 10px;
+  margin-top: 5px;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+.ms-difficulties small span {
+  margin: 0 2px;
+}
+.ms-choice-dot {
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border: 1px solid #aca58e;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ms-difficulties button[aria-pressed='true'] .ms-choice-dot {
+  background: #e3c284;
+  border-color: #e3c284;
+}
+.ms-play {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+.ms-field-column {
+  min-width: 0;
+  width: 100%;
+}
+.ms-game[data-difficulty='简单'] .ms-field-column {
+  max-width: 456px;
+  margin: 0 auto;
+}
+.ms-instruments {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 18px;
+  margin-bottom: 12px;
+  background: #e5e3d5;
+  border: 1px solid #c8c9b6;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 #fffdf2;
+}
+.ms-instruments > div {
+  min-width: 74px;
+}
+.ms-instruments > div > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #68715c;
+}
+.ms-instruments > div > span svg {
+  width: 12px;
+  height: 12px;
+}
+.ms-instruments strong {
+  display: block;
+  color: #364f3d;
+  font:
+    600 29px 'Courier New',
+    monospace;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.ms-instruments strong i {
+  font-style: normal;
+  color: #89937e;
+}
+.ms-instruments strong.ms-overflagged {
+  color: #a04432;
+}
+.ms-time {
+  text-align: right;
+}
+.ms-time > span {
+  justify-content: flex-end;
+}
+.ms-reset-dial {
+  display: grid;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  border-radius: 50%;
+  color: #806b40;
+  background: radial-gradient(circle at 35% 25%, #fffbeb, #d9cbb0);
+  border: 1px solid #c4b18a;
+  box-shadow:
+    inset 0 0 0 3px #f0e6ce,
+    0 2px 2px #5f51332b;
+  transition: transform 0.15s;
+}
+.ms-reset-dial:hover {
+  transform: rotate(-20deg);
+}
+.ms-board-frame {
+  position: relative;
+  padding: 16px;
+  border: 1px solid #8c714d;
+  border-radius: 7px;
+  background:
+    repeating-linear-gradient(4deg, #48361306 0 1px, transparent 1px 5px),
+    linear-gradient(115deg, #c8af83, #a7895f 60%, #b79c71);
+  box-shadow:
+    inset 0 1px 0 #ecd7ad,
+    inset 0 -2px 0 #79623f,
+    0 4px 0 #725d40,
+    0 10px 18px #3b392415;
+}
+.ms-screw {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: linear-gradient(130deg, #e9d4a5 40%, #79623c 44% 56%, #b8a176 60%);
+  box-shadow: 0 0 0 1px #816c494a;
+  pointer-events: none;
+}
+.ms-screw.top-left {
+  top: 6px;
+  left: 6px;
+}
+.ms-screw.top-right {
+  top: 6px;
+  right: 6px;
+}
+.ms-screw.bottom-left {
+  bottom: 6px;
+  left: 6px;
+}
+.ms-screw.bottom-right {
+  bottom: 6px;
+  right: 6px;
+}
+.ms-board-scroll {
+  overflow: auto;
+  overscroll-behavior-x: contain;
+  border: 2px solid #6c7158;
+  border-radius: 3px;
+  background: #bac0aa;
+  scrollbar-color: #7b896c #d3d5c1;
+  scrollbar-width: thin;
+}
+.ms-board {
+  display: grid;
+  grid-template-columns: repeat(var(--ms-columns), minmax(0, 1fr));
+  gap: 3px;
+  padding: 4px;
+  width: var(--ms-board-width);
+  min-width: 100%;
+  background: #bdc1ad;
+  box-shadow: inset 0 2px 4px #34412c40;
+}
+.ms-board-small {
+  width: 100%;
+}
+.ms-cell {
+  position: relative;
+  min-width: 0;
+  padding: 0;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font:
+    700 19px 'Courier New',
+    monospace;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition:
+    background 0.12s,
+    box-shadow 0.12s,
+    transform 0.12s;
+}
+.ms-cell.is-covered {
+  background: linear-gradient(145deg, #71866b, #4c694f);
+  border: 1px solid #536d4d;
+  border-top-color: #91a083;
+  box-shadow:
+    inset 1px 1px 0 #cbd8b638,
+    inset -1px -2px 0 #2c49374d,
+    0 2px 0 #38533a;
+}
+.ms-cell.is-covered::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid #d5dfbd12;
+  border-radius: 1px;
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .ms-cell.is-covered:hover:not(:disabled) {
+    background: linear-gradient(145deg, #889b79, #607d59);
+    box-shadow:
+      inset 1px 1px 0 #dde6ca50,
+      0 2px 0 #38533a;
+    transform: translateY(-1px);
+  }
+}
+.ms-cell.is-covered:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 3px #1b3d3940;
+}
+.ms-cell.is-revealed {
+  border: 1px solid #c3c6b0;
+  background: #e7e8d8;
+  box-shadow: inset 0 1px 2px #67735b14;
+}
+.ms-cell.is-latest {
+  outline: 1px solid #9c8553;
+  outline-offset: -3px;
+}
+.ms-cell[data-number='1'] {
+  color: #366785;
+}
+.ms-cell[data-number='2'] {
+  color: #43723d;
+}
+.ms-cell[data-number='3'] {
+  color: #a24a39;
+}
+.ms-cell[data-number='4'] {
+  color: #72578a;
+}
+.ms-cell[data-number='5'] {
+  color: #864331;
+}
+.ms-cell[data-number='6'] {
+  color: #307477;
+}
+.ms-cell[data-number='7'] {
+  color: #343e35;
+}
+.ms-cell[data-number='8'] {
+  color: #716756;
+}
+.ms-cell.is-flagged {
+  color: #805128;
+  background: linear-gradient(140deg, #eddfb8, #d1bc8d);
+  border-color: #b49d69;
+  box-shadow:
+    inset 0 1px 0 #fff4cf,
+    0 2px 0 #9c865e;
+}
+.ms-cell svg {
+  width: 57%;
+  height: 57%;
+  max-width: 24px;
+  max-height: 24px;
+}
+.ms-cell.is-mine {
+  color: #755544;
+  background: #dcd2b7;
+  border-color: #c5b89c;
+}
+.ms-cell.is-exploded {
+  color: #fff5dd;
+  background: #a64f3a;
+  border-color: #843a2d;
+  box-shadow: inset 0 0 0 2px #e3a88370;
+}
+.ms-cell.is-wrong {
+  background: #eed8bf;
+}
+.ms-wrong-cross {
+  position: absolute;
+  inset: 3px;
+  pointer-events: none;
+  background: linear-gradient(45deg, transparent 46%, #a33e2c 48% 52%, transparent 54%);
+}
+.ms-game[data-status='won'] .ms-board-frame {
+  border-color: #59724a;
+  box-shadow:
+    inset 0 1px 0 #e9d4a5,
+    0 4px 0 #496440,
+    0 0 0 3px #a5b3844a;
+}
+.ms-board-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  color: #736b56;
+  margin: 14px 1px;
+}
+.ms-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border-radius: 6px;
+  border: 1px solid #d7ceb8;
+  background: #e8e3d4;
+}
+.ms-mode-bar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 9px 13px;
+  font-size: 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #696b58;
+  white-space: nowrap;
+}
+.ms-mode-bar button svg {
+  width: 16px;
+  height: 16px;
+}
+.ms-mode-bar button[aria-pressed='true'] {
+  background: #faf7e9;
+  color: #35563e;
+  border-color: #d1c5a8;
+  box-shadow: 0 1px 3px #68563812;
+}
+.ms-mode-bar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ms-mode-bar > span {
+  margin-left: auto;
+  padding-right: 7px;
+  font-size: 10px;
+  color: #716b58;
+}
+.ms-sidebar {
+  min-width: 0;
+}
+.ms-status {
+  padding: 17px 16px;
+  border: 1px solid #d8cfb8;
+  border-radius: 6px;
+  background: #faf7ed;
+  position: relative;
+}
+.ms-status::before {
+  content: '';
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #a58b54;
+  margin-bottom: 16px;
+}
+.ms-status h3 {
+  font:
+    700 21px/1.5 'Songti SC',
+    'SimSun',
+    serif;
+  margin: 8px 0 10px;
+  color: #36523c;
+}
+.ms-status p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #726d5a;
+  margin: 0;
+}
+.ms-status-won {
+  border-color: #a6b18c;
+  background: #eef0df;
+}
+.ms-status-lost {
+  border-color: #d9b59c;
+  background: #f5eade;
+}
+.ms-status-lost h3 {
+  color: #914934;
+}
+.ms-status-lost::before {
+  background: #ab6450;
+}
+.ms-exploration {
+  margin: 20px 0;
+}
+.ms-exploration > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  color: #716c58;
+}
+.ms-exploration strong {
+  font:
+    600 28px Georgia,
+    serif;
+  color: #486144;
+}
+.ms-exploration small {
+  font: 11px sans-serif;
+  margin-left: 2px;
+  color: #7b8069;
+}
+.ms-progress-track {
+  height: 5px;
+  margin-top: 10px;
+  border-radius: 3px;
+  background: #dcdac8;
+  overflow: hidden;
+  box-shadow: inset 0 1px 1px #6e6b4c14;
+}
+.ms-progress-track span {
+  display: block;
+  height: 100%;
+  background: #718459;
+  border-radius: inherit;
+  transition: width 0.3s;
+}
+.ms-exploration p {
+  margin: 8px 0 0;
+  color: #746e5a;
+  font-size: 10px;
+}
+.ms-exploration b {
+  color: #4c6244;
+  font-weight: 600;
+}
+.ms-new-game {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: linear-gradient(130deg, #42644f, #304f3e);
+  border: 1px solid #304f3e;
+  border-radius: 5px;
+  box-shadow:
+    inset 0 1px 0 #ffffff20,
+    0 2px 0 #233d2d;
+  padding: 12px;
+  color: #f7f2e2;
+  font-size: 12px;
+}
+.ms-new-game:hover {
+  background: #486b4e;
+}
+.ms-new-game svg {
+  width: 15px;
+  height: 15px;
+}
+.ms-live-note {
+  min-height: 36px;
+  margin: 12px 0 18px;
+  font-size: 10px;
+  line-height: 1.8;
+  color: #756e59;
+}
+.ms-help {
+  border-top: 1px solid #d8d0ba;
+  padding-top: 14px;
+}
+.ms-help summary {
+  font-size: 12px;
+  color: #5c624c;
+  cursor: pointer;
+}
+.ms-help p {
+  font-size: 11px;
+  color: #746e5a;
+  line-height: 1.8;
+  margin: 12px 0 0;
+}
+.ms-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid #d9d1bf;
+  padding-top: 16px;
+  margin-top: 24px;
+  color: #837860;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+@container (min-width: 660px) {
+  .ms-game[data-difficulty='简单'] .ms-play {
+    grid-template-columns: minmax(0, 1fr) 198px;
+  }
+}
+@container (min-width: 500px) {
+  .ms-game:not([data-difficulty='简单']) .ms-sidebar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 180px;
+    gap: 0 22px;
+  }
+  .ms-game:not([data-difficulty='简单']) .ms-status {
+    grid-row: span 3;
+  }
+  .ms-game:not([data-difficulty='简单']) .ms-exploration {
+    margin: 0 0 14px;
+  }
+  .ms-game:not([data-difficulty='简单']) .ms-help {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+  }
+}
+@container (max-width: 420px) {
+  .ms-heading {
+    padding-bottom: 16px;
+  }
+  .ms-heading h2 {
+    font-size: 29px;
+  }
+  .ms-seal span {
+    display: none;
+  }
+  .ms-difficulties {
+    gap: 5px;
+    margin: 16px 0 18px;
+  }
+  .ms-difficulties button {
+    padding: 10px 6px;
+    justify-content: center;
+  }
+  .ms-difficulty-index,
+  .ms-choice-dot {
+    display: none;
+  }
+  .ms-difficulties small {
+    font-size: 9px;
+  }
+  .ms-difficulties strong {
+    font-size: 12px;
+  }
+  .ms-field-column {
+    display: flex;
+    flex-direction: column;
+  }
+  .ms-instruments {
+    order: 0;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .ms-instruments strong {
+    font-size: 26px;
+  }
+  .ms-mode-bar {
+    order: 1;
+    margin-bottom: 12px;
+  }
+  .ms-mode-bar button {
+    padding: 8px;
+  }
+  .ms-mode-bar > span {
+    font-size: 9px;
+    padding-right: 2px;
+  }
+  .ms-board-frame {
+    order: 2;
+    padding: 11px;
+  }
+  .ms-board-caption {
+    order: 3;
+    font-size: 9px;
+    margin-bottom: 0;
+  }
+  .ms-board {
+    gap: 2px;
+    padding: 3px;
+  }
+  .ms-cell {
+    font-size: 16px;
+  }
+  .ms-footer {
+    font-size: 9px;
+  }
+  .ms-footer span:last-child {
+    display: none;
+  }
+}

@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useId } from 'react'
+import './snake.css'
 import { useGameRecord } from '@/hooks/useGameRecord'
 
 interface Props {
@@ -45,6 +46,7 @@ function randFood(snake: Pos[], cols: number, rows: number): Pos {
 }
 
 export default function Snake({ userId, gameId }: Props) {
+  const artId = useId().replace(/:/g, '')
   const [level, setLevel] = useState<Level>('中等')
   const cfg = CONFIG[level]
 
@@ -92,8 +94,57 @@ export default function Snake({ userId, gameId }: Props) {
     restartLayout()
   }, [level, restartLayout])
 
+  const changeDirection = useCallback(
+    (next: Dir) => {
+      if (statusRef.current === 'paused' || statusRef.current === 'over') return
+      const opposite: Record<Dir, Dir> = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' }
+      const body = snakeRef.current
+      // Compare with the actual neck so rapid inputs cannot reverse into the snake.
+      const movement: Dir =
+        body[0].x > body[1].x
+          ? 'RIGHT'
+          : body[0].x < body[1].x
+            ? 'LEFT'
+            : body[0].y > body[1].y
+              ? 'DOWN'
+              : 'UP'
+      if (next === opposite[movement]) return
+      dirRef.current = next
+      setDir(next)
+      if (statusRef.current === 'idle') {
+        setStatus('playing')
+        statusRef.current = 'playing'
+        startRecord()
+      }
+    },
+    [startRecord],
+  )
+
+  const togglePause = useCallback(() => {
+    const current = statusRef.current
+    if (current !== 'playing' && current !== 'paused') return
+    const next = current === 'playing' ? 'paused' : 'playing'
+    statusRef.current = next
+    setStatus(next)
+  }, [])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest('input, textarea, select, [contenteditable="true"]')
+      )
+        return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.code === 'Space') {
+        // Keep native keyboard activation on buttons.
+        if (e.target instanceof HTMLElement && e.target.closest('button, a')) return
+        if (statusRef.current === 'playing' || statusRef.current === 'paused') {
+          e.preventDefault()
+          if (!e.repeat) togglePause()
+        }
+        return
+      }
       const map: Record<string, Dir> = {
         ArrowUp: 'UP',
         ArrowDown: 'DOWN',
@@ -104,23 +155,14 @@ export default function Snake({ userId, gameId }: Props) {
         a: 'LEFT',
         d: 'RIGHT',
       }
-      const d = map[e.key]
-      if (!d) return
+      const next = map[e.key] ?? map[e.key.toLowerCase()]
+      if (!next) return
       e.preventDefault()
-      const opp: Record<Dir, Dir> = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' }
-      if (d !== opp[dirRef.current]) {
-        dirRef.current = d
-        setDir(d)
-      }
-      if (statusRef.current === 'idle') {
-        setStatus('playing')
-        statusRef.current = 'playing'
-        startRecord()
-      }
+      changeDirection(next)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [startRecord])
+  }, [changeDirection, togglePause])
 
   useEffect(() => {
     if (status !== 'playing') return
@@ -169,235 +211,317 @@ export default function Snake({ userId, gameId }: Props) {
     return () => clearInterval(timer)
   }, [status, score, submitRecord, level])
 
-  const togglePause = () => {
-    if (status === 'playing') setStatus('paused')
-    else if (status === 'paused') setStatus('playing')
-  }
-
   const startGame = () => {
+    if (statusRef.current === 'over') restartLayout()
     setStatus('playing')
+    statusRef.current = 'playing'
     startRecord()
   }
 
   const pickingIdle = status === 'idle' || status === 'over'
+  const speed = Math.max(cfg.minSpeed, cfg.baseSpeed - Math.floor(score / 5) * cfg.speedStep)
+  const speedProgress = (cfg.baseSpeed - speed) / (cfg.baseSpeed - cfg.minSpeed)
+  const stateLabel = { idle: '准备就绪', playing: '游走中', paused: '已暂停', over: '本局结束' }[
+    status
+  ]
+  const width = cfg.cols * cfg.cell
+  const height = cfg.rows * cfg.cell
+  const center = (pos: Pos) => `${(pos.x + 0.5) * cfg.cell},${(pos.y + 0.5) * cfg.cell}`
+  const head = snake[0]
+  const neck = snake[1]
+  const angle = head.x > neck.x ? 0 : head.x < neck.x ? 180 : head.y > neck.y ? 90 : -90
+  const directions: { direction: Dir; label: string; symbol: string }[] = [
+    { direction: 'UP', label: '向上', symbol: '↑' },
+    { direction: 'LEFT', label: '向左', symbol: '←' },
+    { direction: 'DOWN', label: '向下', symbol: '↓' },
+    { direction: 'RIGHT', label: '向右', symbol: '→' },
+  ]
 
   return (
-    <div className="flex flex-col items-center gap-5">
-      <div className="flex flex-wrap items-center gap-2 justify-center">
-        {(Object.keys(CONFIG) as Level[]).map((lv) => (
-          <button
-            key={lv}
-            type="button"
-            disabled={!pickingIdle}
-            onClick={() => setLevel(lv)}
-            className={`px-4 py-2 rounded-full text-sm font-black border-2 shadow-btn transition-all ${
-              level === lv
-                ? 'bg-fun-green text-white border-fun-green'
-                : 'border-fun-border text-fun-text bg-fun-bg hover:border-fun-green/50'
-            } ${!pickingIdle ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {lv}
-          </button>
-        ))}
+    <section className="snake-game" aria-label="贪吃蛇游戏">
+      <header className="snake-heading">
+        <div>
+          <p className="snake-eyebrow">经典游艺 · 方寸之间</p>
+          <h2>
+            青玉游蛇 <span>步步生长，自得其乐</span>
+          </h2>
+        </div>
+        <span className="snake-seal" aria-hidden="true">
+          蛇趣
+        </span>
+      </header>
+
+      <div className="snake-stats">
+        <div className="snake-stat snake-stat-score">
+          <span>本局得分</span>
+          <strong>
+            {String(score).padStart(2, '0')}
+            <small>分</small>
+          </strong>
+        </div>
+        <div className="snake-stat">
+          <span>本次最高</span>
+          <strong>
+            {String(highScore).padStart(2, '0')}
+            <small>分</small>
+          </strong>
+        </div>
+        <div className="snake-stat">
+          <span>蛇身长度</span>
+          <strong>
+            {String(snake.length).padStart(2, '0')}
+            <small>节</small>
+          </strong>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4 flex-wrap justify-center">
-        {[
-          {
-            label: '当前分数',
-            value: score,
-            color: 'text-fun-accent',
-            bg: 'bg-orange-50 border-orange-200',
-            emoji: '⭐',
-          },
-          {
-            label: '最高分',
-            value: highScore,
-            color: 'text-fun-purple',
-            bg: 'bg-purple-50 border-purple-200',
-            emoji: '🏆',
-          },
-          {
-            label: '长度',
-            value: snake.length,
-            color: 'text-fun-green',
-            bg: 'bg-green-50 border-green-200',
-            emoji: '🐍',
-          },
-        ].map(({ label, value, color, bg, emoji }) => (
-          <div
-            key={label}
-            className={`${bg} border-2 rounded-2xl px-4 py-3 text-center shadow-card min-w-[90px]`}
-          >
-            <p className={`text-2xl font-black ${color}`}>
-              {emoji} {value}
-            </p>
-            <p className="text-xs text-fun-muted font-semibold mt-0.5">{label}</p>
-          </div>
-        ))}
-      </div>
-
-      <div
-        className="relative border-4 border-fun-border rounded-3xl overflow-hidden shadow-card"
-        style={{ width: cfg.cols * cfg.cell, height: cfg.rows * cfg.cell, background: '#e8f4f8' }}
-      >
-        <svg
-          className="absolute inset-0 pointer-events-none"
-          style={{ opacity: 0.08 }}
-          width={cfg.cols * cfg.cell}
-          height={cfg.rows * cfg.cell}
-        >
-          {Array.from({ length: cfg.cols + 1 }, (_, i) => (
-            <line
-              key={`v${i}`}
-              x1={i * cfg.cell}
-              y1={0}
-              x2={i * cfg.cell}
-              y2={cfg.rows * cfg.cell}
-              stroke="#38bdf8"
-              strokeWidth="0.5"
-            />
-          ))}
-          {Array.from({ length: cfg.rows + 1 }, (_, i) => (
-            <line
-              key={`h${i}`}
-              x1={0}
-              y1={i * cfg.cell}
-              x2={cfg.cols * cfg.cell}
-              y2={i * cfg.cell}
-              stroke="#38bdf8"
-              strokeWidth="0.5"
-            />
-          ))}
-        </svg>
-
-        {snake.map((seg, i) => (
-          <div
-            key={`${seg.x}-${seg.y}-${i}`}
-            className="absolute rounded-md transition-all"
-            style={{
-              left: seg.x * cfg.cell + 1,
-              top: seg.y * cfg.cell + 1,
-              width: cfg.cell - 2,
-              height: cfg.cell - 2,
-              background: i === 0 ? '#22c55e' : `hsl(${140 - i}, 75%, ${52 - i * 0.4}%)`,
-              boxShadow: i === 0 ? '0 0 6px rgba(34,197,94,0.6)' : 'none',
-            }}
-          />
-        ))}
-
-        <div
-          className="absolute rounded-full"
-          style={{
-            left: food.x * cfg.cell + 2,
-            top: food.y * cfg.cell + 2,
-            width: cfg.cell - 4,
-            height: cfg.cell - 4,
-            background: '#f472b6',
-            boxShadow: '0 0 8px rgba(244,114,182,0.8)',
-          }}
-        />
-
-        {status === 'idle' && (
-          <div className="absolute inset-0 bg-white/75 backdrop-blur-sm flex flex-col items-center justify-center gap-4 rounded-2xl">
-            <p className="text-fun-text text-xl font-black">🐍 准备好了吗？</p>
+      <div className="snake-toolbar">
+        <div className="snake-levels" role="group" aria-label="选择难度">
+          {(Object.keys(CONFIG) as Level[]).map((lv) => (
             <button
+              key={lv}
               type="button"
-              onClick={startGame}
-              className="px-8 py-3 rounded-full bg-fun-green text-white font-black text-lg shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 transition-all"
+              disabled={!pickingIdle}
+              aria-pressed={level === lv}
+              onClick={() => setLevel(lv)}
             >
-              开始游戏！
+              {lv}
+              <span>{lv === '简单' ? '悠然' : lv === '中等' ? '渐入' : '疾行'}</span>
             </button>
-            <p className="text-fun-muted text-xs font-semibold">使用 WASD 或方向键控制</p>
-          </div>
-        )}
-        {status === 'paused' && (
-          <div className="absolute inset-0 bg-white/75 backdrop-blur-sm flex items-center justify-center rounded-2xl">
-            <p className="text-fun-text text-2xl font-black">⏸ 已暂停</p>
-          </div>
-        )}
-        {status === 'over' && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3 rounded-2xl">
-            <p className="text-3xl">😢</p>
-            <p className="text-red-500 text-2xl font-black">游戏结束！</p>
-            <p className="text-fun-text text-lg font-semibold">
-              得分：<span className="text-fun-accent font-black text-2xl">{score}</span>
-            </p>
-            <button
-              type="button"
-              onClick={restartLayout}
-              className="px-8 py-3 rounded-full bg-fun-accent text-white font-black text-lg shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 transition-all"
-            >
-              再来一局 🎮
-            </button>
-          </div>
-        )}
+          ))}
+        </div>
+        <span className="snake-grid-size">
+          {cfg.cols} × {cfg.rows}
+          <span> 棋格</span>
+        </span>
       </div>
 
-      {(status === 'playing' || status === 'paused') && (
-        <button
-          type="button"
-          onClick={togglePause}
-          className="px-6 py-2 rounded-full border-2 border-fun-border text-fun-text font-bold hover:border-fun-accent/50 bg-fun-bg transition-all shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 text-sm"
-        >
-          {status === 'playing' ? '⏸ 暂停' : '▶ 继续'}
-        </button>
-      )}
-
-      <div className="grid grid-cols-3 gap-2 mt-1">
-        {[
-          [null, '↑', null],
-          ['←', '·', '→'],
-          [null, '↓', null],
-        ].map((row, ri) =>
-          row.map((key, ci) =>
-            key && key !== '·' ? (
-              <button
-                type="button"
-                key={`${ri}-${ci}`}
-                onMouseDown={() => {
-                  const map2: Record<string, Dir> = {
-                    '↑': 'UP',
-                    '↓': 'DOWN',
-                    '←': 'LEFT',
-                    '→': 'RIGHT',
-                  }
-                  const d = map2[key]
-                  if (d) {
-                    const opp: Record<Dir, Dir> = {
-                      UP: 'DOWN',
-                      DOWN: 'UP',
-                      LEFT: 'RIGHT',
-                      RIGHT: 'LEFT',
-                    }
-                    if (d !== opp[dirRef.current]) {
-                      dirRef.current = d
-                      setDir(d)
-                    }
-                  }
-                  if (statusRef.current === 'idle') {
-                    setStatus('playing')
-                    statusRef.current = 'playing'
-                    startRecord()
-                  }
-                }}
-                className={`w-12 h-12 rounded-2xl bg-fun-card border-2 border-fun-border text-fun-text font-black hover:bg-fun-accent/10 hover:border-fun-accent/40 active:scale-95 active:shadow-none shadow-btn transition-all text-sm ${
-                  dir ===
-                  ({ '↑': 'UP', '↓': 'DOWN', '←': 'LEFT', '→': 'RIGHT' } as Record<string, Dir>)[
-                    key
-                  ]
-                    ? 'bg-fun-accent/15 border-fun-accent'
-                    : ''
-                }`}
+      <div className="snake-board-frame">
+        <div className="snake-board" style={{ aspectRatio: `${width} / ${height}` }}>
+          <svg
+            className="snake-field"
+            viewBox={`0 0 ${width} ${height}`}
+            role="img"
+            aria-label={`${level}难度棋盘，蛇身${snake.length}节，本局${score}分`}
+          >
+            <defs>
+              <pattern
+                id={`${artId}-grid`}
+                width={cfg.cell}
+                height={cfg.cell}
+                patternUnits="userSpaceOnUse"
               >
-                {key}
-              </button>
-            ) : (
-              <div key={`${ri}-${ci}`} />
-            ),
-          ),
-        )}
+                <path
+                  d={`M ${cfg.cell} 0 H 0 V ${cfg.cell}`}
+                  fill="none"
+                  stroke="#52725d"
+                  strokeOpacity=".16"
+                  strokeWidth=".7"
+                />
+              </pattern>
+              <linearGradient id={`${artId}-jade`} x1="0" y1="0" x2="0" y2="1">
+                <stop stopColor="#84b694" />
+                <stop offset=".42" stopColor="#478769" />
+                <stop offset="1" stopColor="#245b47" />
+              </linearGradient>
+              <radialGradient id={`${artId}-head`} cx="30%" cy="25%" r="80%">
+                <stop stopColor="#afd5a9" />
+                <stop offset=".55" stopColor="#568d65" />
+                <stop offset="1" stopColor="#24543c" />
+              </radialGradient>
+              <radialGradient id={`${artId}-fruit`} cx="30%" cy="25%" r="80%">
+                <stop stopColor="#f3bc83" />
+                <stop offset=".35" stopColor="#cd6b48" />
+                <stop offset="1" stopColor="#943b2d" />
+              </radialGradient>
+              <filter id={`${artId}-shadow`} x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow
+                  dx="0"
+                  dy="2"
+                  stdDeviation="1.2"
+                  floodColor="#243e2d"
+                  floodOpacity=".3"
+                />
+              </filter>
+            </defs>
+            <rect width={width} height={height} fill={`url(#${artId}-grid)`} />
+            <g filter={`url(#${artId}-shadow)`}>
+              <polyline
+                points={[...snake].reverse().map(center).join(' ')}
+                fill="none"
+                stroke="#24543f"
+                strokeWidth={cfg.cell * 0.86}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <polyline
+                points={[...snake].reverse().map(center).join(' ')}
+                fill="none"
+                stroke={`url(#${artId}-jade)`}
+                strokeWidth={cfg.cell * 0.73}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {snake.slice(1, -1).map((seg, i) => (
+                <circle
+                  key={i}
+                  cx={(seg.x + 0.5) * cfg.cell}
+                  cy={(seg.y + 0.42) * cfg.cell}
+                  r={cfg.cell * 0.1}
+                  fill="#c8dfb7"
+                  opacity=".25"
+                />
+              ))}
+              <g transform={`translate(${center(head)}) rotate(${angle})`}>
+                <rect
+                  x={-cfg.cell * 0.46}
+                  y={-cfg.cell * 0.44}
+                  width={cfg.cell * 0.92}
+                  height={cfg.cell * 0.88}
+                  rx={cfg.cell * 0.32}
+                  fill={`url(#${artId}-head)`}
+                  stroke="#2f6045"
+                  strokeWidth=".8"
+                />
+                {[-1, 1].map((side) => (
+                  <g key={side}>
+                    <circle
+                      cx={cfg.cell * 0.16}
+                      cy={side * cfg.cell * 0.22}
+                      r={cfg.cell * 0.12}
+                      fill="#f5efcf"
+                    />
+                    <circle
+                      cx={cfg.cell * 0.19}
+                      cy={side * cfg.cell * 0.22}
+                      r={cfg.cell * 0.063}
+                      fill="#213d30"
+                    />
+                  </g>
+                ))}
+              </g>
+              <g transform={`translate(${center(food)})`}>
+                <circle
+                  r={cfg.cell * 0.34}
+                  cy={cfg.cell * 0.04}
+                  fill={`url(#${artId}-fruit)`}
+                  stroke="#a35639"
+                  strokeWidth=".7"
+                />
+                <path
+                  d={`M 0 ${-cfg.cell * 0.22} Q ${-cfg.cell * 0.02} ${-cfg.cell * 0.42} ${cfg.cell * 0.09} ${-cfg.cell * 0.46}`}
+                  fill="none"
+                  stroke="#695138"
+                  strokeWidth="1.5"
+                />
+                <ellipse
+                  cx={cfg.cell * 0.15}
+                  cy={-cfg.cell * 0.3}
+                  rx={cfg.cell * 0.16}
+                  ry={cfg.cell * 0.075}
+                  fill="#54744b"
+                  transform="rotate(-20)"
+                />
+                <ellipse
+                  cx={-cfg.cell * 0.13}
+                  cy={-cfg.cell * 0.08}
+                  rx={cfg.cell * 0.06}
+                  ry={cfg.cell * 0.1}
+                  fill="#ffe0b1"
+                  opacity=".65"
+                />
+              </g>
+            </g>
+          </svg>
+
+          {status !== 'playing' && (
+            <div className={`snake-overlay snake-overlay-${status}`}>
+              <div className="snake-dialog" role="group" aria-label={stateLabel}>
+                <span className="snake-dialog-mark" aria-hidden="true">
+                  {status === 'idle' ? '游' : status === 'paused' ? '歇' : '终'}
+                </span>
+                <h3>
+                  {status === 'idle'
+                    ? '一方天地，慢慢游'
+                    : status === 'paused'
+                      ? '小憩片刻'
+                      : '此局落定'}
+                </h3>
+                <p>
+                  {status === 'idle'
+                    ? '拾一颗朱果，长一寸青玉。'
+                    : status === 'paused'
+                      ? '棋盘已为你留住，随时接着游。'
+                      : `本局收获 ${score} 分 · 蛇身 ${snake.length} 节`}
+                </p>
+                <button
+                  type="button"
+                  className="snake-primary"
+                  onClick={status === 'paused' ? togglePause : startGame}
+                >
+                  {status === 'idle' ? '开始游戏' : status === 'paused' ? '继续游戏' : '再来一局'}
+                  <span aria-hidden="true">→</span>
+                </button>
+                {status === 'idle' && <small>也可按方向键 / WASD 开始</small>}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      <div className="snake-board-caption">
+        <span className={`snake-status is-${status}`} role="status">
+          <i />
+          {stateLabel}
+        </span>
+        <span>朱果 +10 分 · 越长越快</span>
+      </div>
+
+      <footer className="snake-controls">
+        <div className="snake-control-notes">
+          <div className="snake-speed">
+            <span>当前节奏</span>
+            <div
+              role="meter"
+              aria-label="加速进度"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(speedProgress * 100)}
+            >
+              <i style={{ width: `${15 + speedProgress * 85}%` }} />
+            </div>
+            <b>{speedProgress === 1 ? '疾速' : speedProgress > 0.4 ? '轻快' : '从容'}</b>
+          </div>
+          <p>
+            <kbd>↑ ↓ ← →</kbd> / <kbd>W A S D</kbd> 控制方向
+          </p>
+          <p>避开边界与蛇身，吃到朱果即可生长。</p>
+          <button
+            type="button"
+            className="snake-pause"
+            disabled={pickingIdle}
+            onClick={togglePause}
+          >
+            {status === 'paused' ? '▷ 继续游戏' : 'Ⅱ 暂停游戏'} <kbd>空格</kbd>
+          </button>
+        </div>
+        <div className="snake-dpad" role="group" aria-label="方向控制">
+          {directions.map(({ direction, label, symbol }) => (
+            <button
+              key={direction}
+              type="button"
+              className={`snake-direction snake-direction-${direction.toLowerCase()}`}
+              aria-label={label}
+              disabled={status === 'paused' || status === 'over'}
+              data-active={dir === direction}
+              onClick={() => changeDirection(direction)}
+            >
+              {symbol}
+            </button>
+          ))}
+          <span>方向控制</span>
+        </div>
+      </footer>
+    </section>
   )
 }

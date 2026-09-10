@@ -9,10 +9,12 @@ import snake from '@/games/snake/manifest.ts'
 import tankBattle from '@/games/tank-battle/manifest.ts'
 import tetris from '@/games/tetris/manifest.ts'
 import whackAMole from '@/games/whack-a-mole/manifest.ts'
+import xiangqi from '@/games/xiangqi/manifest.ts'
 import type { GameComponentProps, GameManifest } from '@/games/manifest.ts'
 import type { Game } from '@/types'
 
 const gameManifests: readonly GameManifest[] = [
+  xiangqi,
   tankBattle,
   gravityGraveyard,
   minesweeper,

@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { createRecord } from '@/api'
+import '../game-surfaces.css'
 
 interface Props {
   userId?: string
@@ -64,6 +65,13 @@ export default function MemoryCard({ userId, gameId }: Props) {
   const [startTime, setStartTime] = useState(0)
   const [submitted, setSubmitted] = useState(false)
 
+  const pendingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (pendingRef.current) clearTimeout(pendingRef.current)
+    },
+    [],
+  )
   const cfg = CONFIGS[difficulty]
 
   const submitRecord = useCallback(
@@ -79,6 +87,7 @@ export default function MemoryCard({ userId, gameId }: Props) {
 
   const reset = useCallback(
     (diff: DiffLevel = difficulty) => {
+      if (pendingRef.current) clearTimeout(pendingRef.current)
       const c = CONFIGS[diff]
       setCards(makeCards(c.pairs))
       setFlipped(new Set())
@@ -118,7 +127,7 @@ export default function MemoryCard({ userId, gameId }: Props) {
       if (cardA.pairId === cardB.pairId) {
         // Match!
         const newMatched = new Set(matched).add(a).add(b)
-        setTimeout(() => {
+        pendingRef.current = setTimeout(() => {
           setMatched(newMatched)
           setFlipped(new Set())
           setSelected([])
@@ -132,7 +141,7 @@ export default function MemoryCard({ userId, gameId }: Props) {
           }
         }, 500)
       } else {
-        setTimeout(() => {
+        pendingRef.current = setTimeout(() => {
           setFlipped(new Set(matched)) // keep matched cards "flipped"
           setSelected([])
           setLocked(false)
@@ -148,112 +157,102 @@ export default function MemoryCard({ userId, gameId }: Props) {
     }
   }, [matched, selected])
 
-  const cols = cfg.pairs >= 10 ? 6 : 4
-  const totalCards = cfg.pairs * 2
-
   return (
-    <div className="flex flex-col items-center gap-5">
-      {/* Controls */}
-      <div className="flex items-center gap-3 flex-wrap justify-center">
-        {(Object.keys(CONFIGS) as DiffLevel[]).map((d) => (
-          <button
-            key={d}
-            onClick={() => {
-              setDifficulty(d)
-              reset(d)
-            }}
-            className={`px-4 py-2 rounded-full text-sm font-black transition-all border-2 shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 ${
-              difficulty === d
-                ? 'bg-fun-pink text-white border-fun-pink'
-                : 'border-fun-border text-fun-text hover:border-fun-pink/50 bg-fun-bg'
-            }`}
-          >
-            {CONFIGS[d].emoji} {d}
-          </button>
-        ))}
-        <div className="flex items-center gap-3 bg-fun-bg border-2 border-fun-border rounded-full px-4 py-2 text-sm font-bold text-fun-muted">
-          <span>👣 {steps} 步</span>
-          <span>
-            ✅ {matched.size / 2}/{cfg.pairs} 对
-          </span>
+    <section className="game-surface memory-room">
+      <header className="gs-heading">
+        <div>
+          <p className="gs-eyebrow">MEMORY ATELIER · 记忆收藏室</p>
+          <h2>翻开一张小惊喜</h2>
         </div>
-        <button
-          onClick={() => reset()}
-          className="px-4 py-2 rounded-full text-sm font-bold border-2 border-fun-border text-fun-muted hover:border-fun-pink/50 bg-fun-bg transition-all shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5"
-        >
-          🔄 重置
-        </button>
-      </div>
-
-      {/* Win banner */}
-      {status === 'won' && (
-        <div className="bg-gradient-to-r from-fun-pink to-fun-purple text-white font-black text-lg px-8 py-3 rounded-full shadow-btn animate-bounce">
-          🎉 全部配对！用了 {steps} 步！
-        </div>
-      )}
-
-      {/* Card grid */}
-      <div
-        className="grid gap-3"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-      >
-        {cards.slice(0, totalCards).map((card, idx) => {
-          const isFlipped = flipped.has(idx)
-          const isMatched = matched.has(idx)
-
-          return (
-            <div
-              key={card.id}
-              onClick={() => handleFlip(idx)}
-              className="relative cursor-pointer"
-              style={{ width: 72, height: 72, perspective: '600px' }}
+        <span className="memory-emblem" aria-hidden="true">
+          ✦
+        </span>
+      </header>
+      <div className="gs-toolbar">
+        <div className="gs-segments" aria-label="配对难度">
+          {(Object.keys(CONFIGS) as DiffLevel[]).map((d) => (
+            <button
+              key={d}
+              aria-pressed={difficulty === d}
+              onClick={() => {
+                setDifficulty(d)
+                reset(d)
+              }}
             >
-              <div
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  transformStyle: 'preserve-3d',
-                  transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                  transition: 'transform 0.35s ease',
-                  position: 'relative',
-                }}
-              >
-                {/* Back face */}
-                <div
-                  className="absolute inset-0 rounded-2xl border-2 border-fun-border bg-gradient-to-br from-fun-pink/30 to-fun-purple/30 flex items-center justify-center shadow-card"
-                  style={{ backfaceVisibility: 'hidden' }}
-                >
-                  <span className="text-2xl">❓</span>
-                </div>
-                {/* Front face */}
-                <div
-                  className={`absolute inset-0 rounded-2xl border-2 flex items-center justify-center shadow-card text-4xl transition-all ${
-                    isMatched ? 'border-fun-green bg-green-50' : 'border-fun-pink/50 bg-pink-50'
-                  }`}
-                  style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-                >
-                  {card.emoji}
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {status === 'won' && (
-        <button
-          onClick={() => reset()}
-          className="px-8 py-3 rounded-full bg-fun-pink text-white font-black shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 transition-all"
-        >
-          再玩一次 🎴
+              {d} · {CONFIGS[d].pairs} 对
+            </button>
+          ))}
+        </div>
+        <button className="gs-secondary" onClick={() => reset()}>
+          ↻ 重新洗牌
         </button>
-      )}
-
-      {status === 'idle' && (
-        <p className="text-sm text-fun-muted font-semibold">
-          点击任意一张牌开始游戏！找到所有配对 🃏
+      </div>
+      <div className="gs-metrics">
+        <div>
+          <span>翻牌步数</span>
+          <strong>{String(steps).padStart(2, '0')}</strong>
+        </div>
+        <div>
+          <span>已收藏</span>
+          <strong>
+            {matched.size / 2}
+            <small> / {cfg.pairs} 对</small>
+          </strong>
+        </div>
+        <div>
+          <span>本局状态</span>
+          <b role="status">
+            {status === 'won' ? '全部配对成功' : locked ? '留住这一刻' : '寻找相同图案'}
+          </b>
+        </div>
+      </div>
+      <div className="gs-progress" aria-label={`配对进度 ${matched.size / 2}/${cfg.pairs}`}>
+        <span style={{ width: `${(matched.size / (cfg.pairs * 2)) * 100}%` }} />
+      </div>
+      <div className="memory-table">
+        <div className={`memory-grid ${cfg.pairs >= 10 ? 'memory-grid-large' : ''}`}>
+          {cards.map((card, idx) => {
+            const isMatched = matched.has(idx)
+            const isFlipped = flipped.has(idx) || isMatched
+            return (
+              <button
+                key={card.id}
+                className={`memory-card ${isFlipped ? 'is-flipped' : ''} ${isMatched ? 'is-matched' : ''}`}
+                disabled={locked || isMatched || isFlipped}
+                onClick={() => handleFlip(idx)}
+                aria-label={`第 ${idx + 1} 张，${isFlipped ? card.emoji : '未翻开'}${isMatched ? '，已配对' : ''}`}
+              >
+                <span className="memory-card-inner" aria-hidden="true">
+                  <span className="memory-back">
+                    <span className="memory-card-corner">✧</span>
+                    <span className="memory-rosette">✦</span>
+                    <small>MEMORY</small>
+                  </span>
+                  <span className="memory-front">
+                    <span>{card.emoji}</span>
+                    <small>{isMatched ? '✓ 已收藏' : '记住我'}</small>
+                  </span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        <p className="memory-table-note">观察 · 记忆 · 相遇</p>
+      </div>
+      <div className="gs-footer" role="status">
+        <p>
+          {status === 'won'
+            ? `漂亮！用 ${steps} 步找到了所有配对。`
+            : status === 'idle'
+              ? '点击任意卡牌开始，每次翻开两张，找到相同的图案。'
+              : '不必着急，让每一次翻牌都有迹可循。'}
         </p>
-      )}
-    </div>
+        {status === 'won' && (
+          <button className="gs-primary" onClick={() => reset()}>
+            再玩一次 ↗
+          </button>
+        )}
+      </div>
+    </section>
   )
 }
