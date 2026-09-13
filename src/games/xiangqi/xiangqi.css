@@ -1,0 +1,393 @@
+.xq-game {
+  container-type: inline-size;
+  background: #f3ecdf;
+  border: 1px solid #d3c3a5;
+  border-radius: 10px;
+  padding: clamp(12px, 2vw, 24px);
+  color: #3f3029;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+.xq-game button {
+  touch-action: manipulation;
+}
+.xq-game button:focus-visible,
+.xq-game summary:focus-visible {
+  outline: 3px solid #216c58;
+  outline-offset: 3px;
+}
+.xq-heading,
+.xq-stage-heading,
+.xq-seat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.xq-heading {
+  padding: 8px 0 18px;
+}
+.xq-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #806a58;
+}
+.xq-heading h2 {
+  font-family: 'Songti SC', 'SimSun', serif;
+  font-size: 32px;
+  margin: 4px 0 0;
+  font-weight: 800;
+  color: #803d32;
+}
+.xq-heading h2 span {
+  font-family: sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #806a58;
+  margin-left: 8px;
+}
+.xq-total {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+  font-size: 11px;
+  color: #806a58;
+}
+.xq-total strong {
+  font-size: 28px;
+  color: #803d32;
+  line-height: 1.2;
+}
+.xq-total small,
+.xq-move-count small {
+  font-size: 14px;
+  font-weight: 400;
+  color: #806a58;
+}
+.xq-progress {
+  height: 3px;
+  background: #e4d7c4;
+}
+.xq-progress span {
+  height: 100%;
+  display: block;
+  background: #8e4538;
+  transition: width 0.3s;
+}
+.xq-levels {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+  margin: 18px 0 24px;
+}
+.xq-levels button {
+  border: 1px solid #d9cbb8;
+  border-radius: 7px;
+  background: #faf6ed;
+  min-width: 0;
+  padding: 9px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.xq-levels button span {
+  font:
+    600 17px Georgia,
+    serif;
+}
+.xq-levels button small {
+  font-size: 9px;
+  color: #8d704b;
+  white-space: nowrap;
+}
+.xq-levels button[aria-current] {
+  background: #803d32;
+  border-color: #803d32;
+  color: #fff9e9;
+}
+.xq-levels button[aria-current] small {
+  color: #ead5ac;
+}
+.xq-levels button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.xq-stage-heading {
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.xq-stage-heading h3 {
+  font-family: 'Songti SC', 'SimSun', serif;
+  font-size: 25px;
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+.xq-objective {
+  font-size: 12px;
+  padding: 6px 10px;
+  border: 1px solid #d6bc93;
+  border-radius: 4px;
+  color: #815d30;
+  background: #fbf3df;
+}
+.xq-play {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+}
+.xq-board-column {
+  width: 100%;
+  max-width: 470px;
+  margin: 0 auto;
+  min-width: 0;
+}
+.xq-seat {
+  font-size: 10px;
+  color: #786958;
+  margin: 0 2px 10px;
+}
+.xq-seat:last-child {
+  margin: 10px 2px 0;
+}
+.xq-red {
+  color: #a7352c;
+  font-weight: 600;
+}
+.xq-board-frame {
+  padding: 8px 6px 3px;
+  border: 2px solid #a87a4c;
+  border-radius: 5px;
+  background: #d8b77d;
+  box-shadow:
+    0 4px 0 #795a39,
+    0 10px 25px #624a2517;
+}
+.xq-board {
+  position: relative;
+  aspect-ratio: 9 / 10;
+  container-type: inline-size;
+  background: linear-gradient(120deg, #f5e4ba, #ead09b 70%, #f5e2b7);
+}
+.xq-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  stroke: #9b7648;
+  stroke-width: 1;
+  fill: none;
+  pointer-events: none;
+}
+.xq-lines text {
+  fill: #9b7648;
+  stroke: none;
+  font-family: 'Songti SC', 'SimSun', serif;
+  font-size: 22px;
+  text-anchor: middle;
+}
+.xq-lines .xq-rank {
+  font: 8px sans-serif;
+  fill: #795a39;
+}
+.xq-squares {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+}
+.xq-square {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 5px;
+  min-width: 0;
+}
+.xq-square.is-last {
+  background: #8e654b1f;
+}
+.xq-piece {
+  width: 82%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Songti SC', 'SimSun', serif;
+  font-size: 6cqw;
+  font-weight: 900;
+  line-height: 1;
+  background: radial-gradient(circle at 35% 25%, #fff6dc, #e5bd7b);
+  border: 1px solid #b1854e;
+  outline: 1px solid #b1854e;
+  outline-offset: -4px;
+  box-shadow: 0 2px 1px #795a3990;
+  z-index: 1;
+}
+.xq-piece.red {
+  color: #a22d26;
+}
+.xq-piece.black {
+  color: #323936;
+}
+.xq-square.is-selected .xq-piece {
+  box-shadow:
+    0 0 0 3px #216c58,
+    0 3px 3px #795a3940;
+  transform: translateY(-1px);
+}
+.xq-square.is-target .xq-piece {
+  box-shadow: 0 0 0 3px #38846a;
+}
+.xq-dot {
+  width: 23%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #38846aaa;
+}
+.xq-square.is-hint {
+  outline: 3px solid #bd841b;
+  outline-offset: -3px;
+  background: #fbe19490;
+}
+.xq-piece.in-check {
+  background: #ffd4bd;
+  box-shadow: 0 0 0 2px #b2342a;
+}
+.xq-files {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  text-align: center;
+  font:
+    9px Georgia,
+    serif;
+  padding-top: 5px;
+  color: #6c4e30;
+}
+.xq-sidebar {
+  min-width: 0;
+}
+.xq-status {
+  padding: 18px;
+  background: #faf6ee;
+  border: 1px solid #e5d8c6;
+  border-radius: 6px;
+}
+.xq-status h4 {
+  color: #803d32;
+  font-size: 19px;
+  margin: 7px 0;
+  font-weight: 700;
+}
+.xq-status p,
+.xq-help p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 6px 0 0;
+}
+.xq-move-count {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-top: 1px solid #e5d8c6;
+  padding-top: 12px;
+  margin-top: 16px;
+}
+.xq-move-count strong {
+  font:
+    700 32px Georgia,
+    serif;
+}
+.xq-move-count span {
+  font-size: 11px;
+  color: #806a58;
+}
+.xq-status .xq-small {
+  font-size: 10px;
+  color: #806a58;
+}
+.xq-stars {
+  font-size: 27px;
+  letter-spacing: 0.1em;
+  color: #b68126;
+}
+.xq-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.xq-actions > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.xq-actions button {
+  padding: 11px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #fffaf0;
+  border: 1px solid #d6c4a8;
+}
+.xq-actions button:hover:not(:disabled) {
+  background: #f0e5cf;
+}
+.xq-actions button.xq-primary {
+  background: #803d32;
+  color: #fff6e4;
+  border-color: #803d32;
+}
+.xq-actions button.xq-primary:hover {
+  background: #6b3027;
+}
+.xq-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.xq-note {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #806a58;
+  min-height: 44px;
+  margin: 12px 0;
+}
+.xq-help {
+  border-top: 1px solid #ded0bb;
+  padding-top: 12px;
+}
+.xq-help summary {
+  cursor: pointer;
+  color: #69523c;
+  font-size: 12px;
+}
+.xq-help p {
+  color: #806a58;
+}
+.xq-storage {
+  text-align: center;
+  font-size: 10px;
+  color: #88755f;
+  margin: 22px 0 0;
+  line-height: 1.8;
+}
+@container (min-width: 660px) {
+  .xq-play {
+    grid-template-columns: minmax(0, 1fr) 208px;
+  }
+}
+@container (max-width: 340px) {
+  .xq-levels {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .xq-heading h2 span {
+    display: block;
+    margin: 4px 0 0;
+  }
+  .xq-seat {
+    font-size: 9px;
+  }
+}

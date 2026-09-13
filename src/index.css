@@ -9,8 +9,7 @@
 body {
   margin: 0;
   background-color: #dff5ff;
-  background-image:
-    linear-gradient(180deg, #bfefff 0%, #e9f8ff 58%, #d9f6d5 58%, #b9e784 100%);
+  background-image: linear-gradient(180deg, #bfefff 0%, #e9f8ff 58%, #d9f6d5 58%, #b9e784 100%);
   color: #18324d;
   font-family: 'Nunito', 'PingFang SC', 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -24,8 +23,13 @@ body {
 .game-plaza {
   position: relative;
   overflow-x: hidden;
-  background:
-    linear-gradient(180deg, rgba(191, 239, 255, 0.92) 0%, rgba(237, 250, 255, 0.96) 52%, rgba(215, 245, 204, 0.98) 52%, rgba(179, 226, 112, 0.98) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(191, 239, 255, 0.92) 0%,
+    rgba(237, 250, 255, 0.96) 52%,
+    rgba(215, 245, 204, 0.98) 52%,
+    rgba(179, 226, 112, 0.98) 100%
+  );
 }
 
 .game-plaza > * {
@@ -58,7 +62,8 @@ body {
   pointer-events: none;
   z-index: 0;
   background:
-    linear-gradient(90deg, rgba(62, 166, 55, 0.14) 0 12px, transparent 12px 28px) 0 4px / 56px 16px repeat-x,
+    linear-gradient(90deg, rgba(62, 166, 55, 0.14) 0 12px, transparent 12px 28px) 0 4px / 56px 16px
+      repeat-x,
     linear-gradient(180deg, rgba(82, 190, 74, 0.28), rgba(43, 139, 53, 0.12));
 }
 
@@ -96,9 +101,12 @@ body {
   width: 64px;
   height: 28px;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) 0 10px / 42px 12px no-repeat,
-    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) 20px 0 / 28px 12px no-repeat,
-    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) 36px 10px / 28px 12px no-repeat;
+    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) 0 10px / 42px 12px
+      no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) 20px 0 / 28px 12px
+      no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) 36px 10px / 28px 12px
+      no-repeat;
 }
 
 .pixel-card-art::after {
@@ -107,7 +115,8 @@ body {
   inset: auto 0 0 0;
   height: 22px;
   background:
-    linear-gradient(90deg, rgba(79, 192, 68, 0.95) 0 18px, rgba(102, 214, 90, 0.95) 18px 36px) 0 0 / 36px 8px repeat-x,
+    linear-gradient(90deg, rgba(79, 192, 68, 0.95) 0 18px, rgba(102, 214, 90, 0.95) 18px 36px) 0 0 /
+      36px 8px repeat-x,
     linear-gradient(180deg, rgba(84, 184, 70, 0.92) 8px, rgba(47, 153, 67, 0.9) 8px);
 }
 

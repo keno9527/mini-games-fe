@@ -1,18 +1,13 @@
-import { defaultPlayRanking, gameCatalog, getCatalogGame } from '../features/games/data'
-import type { Game, User, GameRecord, UserStats, PlayRankItem } from '../types'
-
-export { getGameProgression, saveGameProgression } from './progression'
-export type { GameProgression } from './progression'
+import { defaultPlayRanking, gameCatalog, getCatalogGame } from '@/features/games/data'
+import type { Game, User, GameRecord, UserStats, PlayRankItem } from '@/types'
 
 const USERS_KEY = 'mini-games-local-users'
 const RECORDS_KEY = 'mini-games-local-records'
 
-type RecordResult = GameRecord['result']
-
 function readStorage<T>(key: string, fallback: T): T {
   try {
     const raw = window.localStorage.getItem(key)
-    return raw ? JSON.parse(raw) as T : fallback
+    return raw ? (JSON.parse(raw) as T) : fallback
   } catch {
     return fallback
   }
@@ -25,11 +20,6 @@ function writeStorage<T>(key: string, value: T) {
 function createId(prefix: string) {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID()
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
-
-function normalizeResult(result: string): RecordResult {
-  if (result === 'win' || result === 'lose' || result === 'complete') return result
-  return 'complete'
 }
 
 function getStoredUsers(): User[] {
@@ -80,24 +70,27 @@ export const createUser = async (name: string, avatar = 'default'): Promise<User
 }
 
 export const deleteUser = async (id: string): Promise<void> => {
-  setStoredUsers(getStoredUsers().filter(user => user.id !== id))
-  setStoredRecords(getStoredRecords().filter(record => record.userId !== id))
+  setStoredUsers(getStoredUsers().filter((user) => user.id !== id))
+  setStoredRecords(getStoredRecords().filter((record) => record.userId !== id))
 }
 
 export const getUserStats = async (id: string): Promise<UserStats> => {
-  const user = getStoredUsers().find(item => item.id === id)
+  const user = getStoredUsers().find((item) => item.id === id)
   if (!user) throw new Error('user not found')
 
-  const records = getStoredRecords().filter(record => record.userId === id)
-  const gameStatsById = new Map<string, {
-    gameId: string
-    gameName: string
-    playCount: number
-    bestScore: number
-    totalTime: number
-  }>()
+  const records = getStoredRecords().filter((record) => record.userId === id)
+  const gameStatsById = new Map<
+    string,
+    {
+      gameId: string
+      gameName: string
+      playCount: number
+      bestScore: number
+      totalTime: number
+    }
+  >()
 
-  records.forEach(record => {
+  records.forEach((record) => {
     const current = gameStatsById.get(record.gameId) ?? {
       gameId: record.gameId,
       gameName: getGameName(record.gameId),
@@ -124,13 +117,13 @@ export const getUserStats = async (id: string): Promise<UserStats> => {
 
 // Records
 export const getRecords = async (userId: string): Promise<GameRecord[]> =>
-  getStoredRecords().filter(record => record.userId === userId)
+  getStoredRecords().filter((record) => record.userId === userId)
 
 export const createRecord = async (
   userId: string,
-  data: { gameId: string; score: number; duration: number; result: string }
+  data: { gameId: string; score: number; duration: number; result: GameRecord['result'] },
 ): Promise<GameRecord> => {
-  if (!getStoredUsers().some(user => user.id === userId)) {
+  if (!getStoredUsers().some((user) => user.id === userId)) {
     throw new Error('user not found')
   }
   if (!getCatalogGame(data.gameId)) {
@@ -144,7 +137,7 @@ export const createRecord = async (
     score: Math.max(0, Math.round(data.score)),
     duration: Math.max(0, Math.round(data.duration)),
     playedAt: new Date().toISOString(),
-    result: normalizeResult(data.result),
+    result: data.result,
   }
   const records = [...getStoredRecords(), record]
   setStoredRecords(records)
@@ -154,10 +147,10 @@ export const createRecord = async (
 // Ranking
 export const getPlayRanking = async (): Promise<PlayRankItem[]> => {
   const countByGame = new Map<string, number>()
-  defaultPlayRanking.forEach(item => {
+  defaultPlayRanking.forEach((item) => {
     countByGame.set(item.gameId, item.playCount)
   })
-  getStoredRecords().forEach(record => {
+  getStoredRecords().forEach((record) => {
     countByGame.set(record.gameId, (countByGame.get(record.gameId) ?? 0) + 1)
   })
 

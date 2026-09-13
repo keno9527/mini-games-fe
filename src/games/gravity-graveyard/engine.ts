@@ -44,18 +44,21 @@ export type RunEvent =
 const GRAVITY_SOFTENING = 80
 
 export function gravityVector(point: Vec2, anchors: GravityAnchor[]): Vec2 {
-  return anchors.reduce<Vec2>((total, anchor) => {
-    const dx = anchor.x - point.x
-    const dy = anchor.y - point.y
-    const distance = Math.hypot(dx, dy)
-    if (distance < 0.0001) return total
+  return anchors.reduce<Vec2>(
+    (total, anchor) => {
+      const dx = anchor.x - point.x
+      const dy = anchor.y - point.y
+      const distance = Math.hypot(dx, dy)
+      if (distance < 0.0001) return total
 
-    const direction = anchor.mode === 'pull' ? 1 : -1
-    const force = anchor.strength / (distance * distance + GRAVITY_SOFTENING * GRAVITY_SOFTENING)
-    total.x += (dx / distance) * force * direction
-    total.y += (dy / distance) * force * direction
-    return total
-  }, { x: 0, y: 0 })
+      const direction = anchor.mode === 'pull' ? 1 : -1
+      const force = anchor.strength / (distance * distance + GRAVITY_SOFTENING * GRAVITY_SOFTENING)
+      total.x += (dx / distance) * force * direction
+      total.y += (dy / distance) * force * direction
+      return total
+    },
+    { x: 0, y: 0 },
+  )
 }
 
 export function integrateBody<T extends KinematicBody>(
