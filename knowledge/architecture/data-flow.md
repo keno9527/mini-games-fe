@@ -57,9 +57,9 @@ Home.tsx
 - 按 `gameId` 聚合：`playCount`、`bestScore`、`totalTime`；
 - 返回 `UserStats`，按游玩次数排序。
 
-## 6. 游戏内成长（引力墓场）
+## 6. 游戏内成长
 
-引力墓场有独立的跨局成长系统，不与战绩记录混用：
+部分游戏有独立的跨局成长系统，不与战绩记录混用：
 
 ```
 gravity-graveyard/progression.ts
@@ -69,11 +69,21 @@ gravity-graveyard/progression.ts
 
 存储结构：`{ liturgies: string[], tools: string[], ships: string[] }`，记录已解锁的模块/工具/飞船。
 
+折光回廊按游戏和用户隔离关卡进度：
+
+```
+laser-mirror/progression.ts
+  ├─ readProgress(gameId, userId?)  读取已解锁关卡、星级与最佳步数
+  ├─ recordCompletion(...)          以更高星级、更少步数合并通关结果
+  └─ saveProgress(...)              写回 localStorage，存储失败不阻断游戏
+```
+
 ## 7. localStorage 键总览
 
-| Key                                     | 写入方                                   | 内容                            |
-| --------------------------------------- | ---------------------------------------- | ------------------------------- |
-| `mini-games-local-users`                | `api/index.ts`                           | 用户列表                        |
-| `mini-games-local-records`              | `api/index.ts`                           | 全部对局记录                    |
-| `mini-game-user`                        | `store/userStore.ts`                     | 当前登录用户（Zustand persist） |
-| `mini-games-local-progression:<gameId>` | `games/gravity-graveyard/progression.ts` | 游戏内成长                      |
+| Key                                                | 写入方                                   | 内容                            |
+| -------------------------------------------------- | ---------------------------------------- | ------------------------------- |
+| `mini-games-local-users`                           | `api/index.ts`                           | 用户列表                        |
+| `mini-games-local-records`                         | `api/index.ts`                           | 全部对局记录                    |
+| `mini-game-user`                                   | `store/userStore.ts`                     | 当前登录用户（Zustand persist） |
+| `mini-games-local-progression:<gameId>`            | `games/gravity-graveyard/progression.ts` | 游戏内成长                      |
+| `mini-games-laser-mirror:<gameId>:<userId\|guest>` | `games/laser-mirror/progression.ts`      | 关卡解锁、星级与最佳步数        |

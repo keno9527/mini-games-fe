@@ -98,7 +98,9 @@ getPlayRanking(): Promise<PlayRankItem[]>
 
 ## 游戏内成长 API
 
-引力墓场的跨局成长不走 `src/api/`，而由 `src/games/gravity-graveyard/progression.ts` 直接读写 localStorage：
+游戏专属的跨局成长不走 `src/api/`，由对应游戏的 `progression.ts` 直接读写 localStorage。
+
+引力墓场：
 
 ```ts
 getGameProgression(gameId: string): GameProgression
@@ -106,3 +108,13 @@ saveGameProgression(gameId: string, progression: GameProgression): void
 ```
 
 详见 [domain/entities.md](../domain/entities.md) 中的 `GameProgression`。
+
+折光回廊：
+
+```ts
+readProgress(gameId: string, userId?: string): LaserProgression
+recordCompletion(...): LaserProgression
+saveProgress(gameId: string, userId: string | undefined, value: LaserProgression): void
+```
+
+`LaserProgression` 保存已解锁关卡数量，以及每关的最高星级和最少步数。存储键按 `gameId` 与 `userId` 隔离；访客使用 `guest` 命名空间。

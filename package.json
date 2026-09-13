@@ -17,6 +17,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"*.{js,ts,json,md}\""
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.6.0",

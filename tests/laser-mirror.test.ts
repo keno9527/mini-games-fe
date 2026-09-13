@@ -10,6 +10,7 @@ import {
   type MirrorOrientation,
 } from '../src/games/laser-mirror/engine.ts'
 import { LASER_LEVELS } from '../src/games/laser-mirror/levels.ts'
+import { recordCompletion } from '../src/games/laser-mirror/progression.ts'
 
 const reflections: Array<[MirrorOrientation, Direction, Direction]> = [
   ['/', 'N', 'E'],
@@ -107,4 +108,13 @@ test('star thresholds and hint cap follow the product rule', () => {
   assert.equal(starsFor(5, 3), 2)
   assert.equal(starsFor(6, 3), 1)
   assert.equal(starsFor(1, 3, true), 1)
+})
+
+test('completion unlocks the next level and preserves the best result', () => {
+  const first = recordCompletion({ unlocked: 1, results: {} }, 'easy-1', 0, 4, 2, 9)
+  const improved = recordCompletion(first, 'easy-1', 0, 2, 3, 9)
+  const worse = recordCompletion(improved, 'easy-1', 0, 7, 1, 9)
+
+  assert.equal(worse.unlocked, 2)
+  assert.deepEqual(worse.results['easy-1'], { stars: 3, bestMoves: 2 })
 })

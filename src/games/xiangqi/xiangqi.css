@@ -1,172 +1,164 @@
+.game-page--xiangqi .game-stage {
+  max-width: none;
+  padding: 0 16px 10px;
+}
 .xq-game {
-  container-type: inline-size;
-  background: #f3ecdf;
-  border: 1px solid #d3c3a5;
-  border-radius: 10px;
-  padding: clamp(12px, 2vw, 24px);
-  color: #3f3029;
+  --xq-width: min(700px, calc((100svh - 322px) * 0.9));
+  color: #303d34;
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 .xq-game button {
   touch-action: manipulation;
 }
 .xq-game button:focus-visible,
-.xq-game summary:focus-visible {
-  outline: 3px solid #216c58;
+.xq-game select:focus-visible {
+  outline: 3px solid #39715c;
   outline-offset: 3px;
 }
-.xq-heading,
-.xq-stage-heading,
-.xq-seat {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.xq-heading {
-  padding: 8px 0 18px;
-}
-.xq-eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: #806a58;
-}
-.xq-heading h2 {
-  font-family: 'Songti SC', 'SimSun', serif;
-  font-size: 32px;
-  margin: 4px 0 0;
-  font-weight: 800;
-  color: #803d32;
-}
-.xq-heading h2 span {
-  font-family: sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  color: #806a58;
-  margin-left: 8px;
-}
-.xq-total {
-  display: flex;
-  flex-direction: column;
-  text-align: right;
-  font-size: 11px;
-  color: #806a58;
-}
-.xq-total strong {
-  font-size: 28px;
-  color: #803d32;
-  line-height: 1.2;
-}
-.xq-total small,
-.xq-move-count small {
-  font-size: 14px;
-  font-weight: 400;
-  color: #806a58;
-}
-.xq-progress {
-  height: 3px;
-  background: #e4d7c4;
-}
-.xq-progress span {
-  height: 100%;
-  display: block;
-  background: #8e4538;
-  transition: width 0.3s;
-}
-.xq-levels {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 6px;
-  margin: 18px 0 24px;
-}
-.xq-levels button {
-  border: 1px solid #d9cbb8;
-  border-radius: 7px;
-  background: #faf6ed;
-  min-width: 0;
-  padding: 9px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-.xq-levels button span {
-  font:
-    600 17px Georgia,
-    serif;
-}
-.xq-levels button small {
-  font-size: 9px;
-  color: #8d704b;
-  white-space: nowrap;
-}
-.xq-levels button[aria-current] {
-  background: #803d32;
-  border-color: #803d32;
-  color: #fff9e9;
-}
-.xq-levels button[aria-current] small {
-  color: #ead5ac;
-}
-.xq-levels button:disabled {
-  opacity: 0.42;
+.xq-game button:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
+.xq-campaign-toolbar {
+  position: absolute;
+  top: 0;
+  right: 4%;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.xq-level-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 36px;
+  border: 1px solid #c9c5b8;
+  border-radius: 6px;
+  background: #ece9df;
+}
+.xq-level-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.xq-level-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+}
+.xq-selected-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font:
+    700 24px Georgia,
+    serif;
+  color: #283d35;
+}
+.xq-level-picker select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.xq-level-picker:focus-within {
+  outline: 2px solid #39715c;
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+.xq-level-select option {
+  font:
+    14px 'PingFang SC',
+    sans-serif;
+}
+.xq-level-select > span:last-child {
+  color: #637164;
+}
+.xq-level-dots {
+  display: flex;
+  margin-left: 10px;
+}
+.xq-level-dots button {
+  padding: 8px;
+  min-height: 36px;
+}
+.xq-level-dots span {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid #baae98;
+  background: #e7dfd0;
+}
+.xq-level-dots button[aria-current] span {
+  background: #bc6950;
+  border-color: #bc6950;
+}
+.xq-level-dots button.is-complete:not([aria-current]) span {
+  background: #547866;
+}
+.xq-rules-button {
+  border-left: 1px solid #c9c5b8;
+  padding: 8px 0 8px 24px;
+  margin-left: 12px;
+  font-size: 14px;
+}
 .xq-stage-heading {
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+  width: var(--xq-width);
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 18px 12px 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
 }
 .xq-stage-heading h3 {
-  font-family: 'Songti SC', 'SimSun', serif;
-  font-size: 25px;
-  font-weight: 700;
-  margin: 4px 0 0;
+  font:
+    700 29px 'Songti SC',
+    'SimSun',
+    serif;
+  margin: 0;
 }
 .xq-objective {
-  font-size: 12px;
-  padding: 6px 10px;
-  border: 1px solid #d6bc93;
-  border-radius: 4px;
-  color: #815d30;
-  background: #fbf3df;
+  color: #79563f;
+  font:
+    600 18px 'Songti SC',
+    'SimSun',
+    serif;
 }
 .xq-play {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 20px;
-  align-items: start;
 }
 .xq-board-column {
-  width: 100%;
-  max-width: 470px;
-  margin: 0 auto;
+  width: var(--xq-width);
+  max-width: 100%;
   min-width: 0;
 }
-.xq-seat {
-  font-size: 10px;
-  color: #786958;
-  margin: 0 2px 10px;
-}
-.xq-seat:last-child {
-  margin: 10px 2px 0;
-}
-.xq-red {
-  color: #a7352c;
-  font-weight: 600;
-}
 .xq-board-frame {
-  padding: 8px 6px 3px;
+  padding: 14px 12px 4px;
   border: 2px solid #a87a4c;
-  border-radius: 5px;
+  border-radius: 12px;
   background: #d8b77d;
   box-shadow:
     0 4px 0 #795a39,
-    0 10px 25px #624a2517;
+    0 14px 24px #624a2526,
+    inset 0 1px 2px #fff6d2;
 }
 .xq-board {
   position: relative;
   aspect-ratio: 9 / 10;
   container-type: inline-size;
-  background: linear-gradient(120deg, #f5e4ba, #ead09b 70%, #f5e2b7);
+  background: #ead09b url('/textures/maple-wood.jpg') center / cover;
+  background-blend-mode: soft-light;
 }
 .xq-lines {
   position: absolute;
@@ -225,7 +217,10 @@
   border: 1px solid #b1854e;
   outline: 1px solid #b1854e;
   outline-offset: -4px;
-  box-shadow: 0 2px 1px #795a3990;
+  box-shadow:
+    0 3px 2px #795a3970,
+    0 6px 8px #67472824,
+    inset 0 1px 2px #fff9e7;
   z-index: 1;
 }
 .xq-piece.red {
@@ -268,126 +263,216 @@
   padding-top: 5px;
   color: #6c4e30;
 }
-.xq-sidebar {
-  min-width: 0;
+
+.xq-controls {
+  width: min(800px, 100%);
+  border-top: 1px solid #d3ccbc;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 16px;
+  padding: 12px 18px 0;
 }
 .xq-status {
-  padding: 18px;
-  background: #faf6ee;
-  border: 1px solid #e5d8c6;
-  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .xq-status h4 {
-  color: #803d32;
-  font-size: 19px;
-  margin: 7px 0;
-  font-weight: 700;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.xq-status p,
-.xq-help p {
-  font-size: 12px;
-  line-height: 1.8;
-  margin: 6px 0 0;
+.xq-status h4::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #bc6950;
+}
+.xq-status p {
+  width: 100%;
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0;
 }
 .xq-move-count {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  border-top: 1px solid #e5d8c6;
-  padding-top: 12px;
-  margin-top: 16px;
+  gap: 4px;
+  font-size: 13px;
 }
 .xq-move-count strong {
   font:
-    700 32px Georgia,
+    700 26px Georgia,
     serif;
+  color: #8a4d37;
 }
-.xq-move-count span {
-  font-size: 11px;
-  color: #806a58;
-}
-.xq-status .xq-small {
-  font-size: 10px;
-  color: #806a58;
+.xq-move-count small {
+  color: #455246;
+  font-size: 17px;
+  font-weight: 400;
 }
 .xq-stars {
-  font-size: 27px;
-  letter-spacing: 0.1em;
-  color: #b68126;
+  color: #97691d;
+  font-size: 22px;
 }
 .xq-actions {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-top: 14px;
 }
 .xq-actions > div {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 8px;
+  order: -1;
 }
 .xq-actions button {
-  padding: 11px 8px;
-  border-radius: 5px;
-  font-size: 12px;
-  font-weight: 600;
-  background: #fffaf0;
-  border: 1px solid #d6c4a8;
+  min-height: 42px;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid #cec8b8;
+  background: #f4f0e5;
+  font-size: 13px;
 }
 .xq-actions button:hover:not(:disabled) {
-  background: #f0e5cf;
+  background: #e9e4d7;
 }
 .xq-actions button.xq-primary {
-  background: #803d32;
-  color: #fff6e4;
-  border-color: #803d32;
+  background: #315b4e;
+  border-color: #315b4e;
+  color: #fff9ec;
 }
 .xq-actions button.xq-primary:hover {
-  background: #6b3027;
-}
-.xq-actions button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  background: #25483e;
 }
 .xq-note {
+  grid-column: 1 / -1;
+  color: #756e5f;
   font-size: 12px;
-  line-height: 1.8;
-  color: #806a58;
-  min-height: 44px;
-  margin: 12px 0;
-}
-.xq-help {
-  border-top: 1px solid #ded0bb;
-  padding-top: 12px;
-}
-.xq-help summary {
-  cursor: pointer;
-  color: #69523c;
-  font-size: 12px;
-}
-.xq-help p {
-  color: #806a58;
+  margin: 9px 0 0;
+  min-height: 18px;
+  text-align: center;
 }
 .xq-storage {
   text-align: center;
-  font-size: 10px;
-  color: #88755f;
-  margin: 22px 0 0;
-  line-height: 1.8;
+  font-size: 12px;
+  color: #9b4836;
 }
-@container (min-width: 660px) {
+.xq-rules-dialog {
+  width: min(520px, calc(100% - 32px));
+  border: 1px solid #d5cbbb;
+  border-radius: 12px;
+  background: #f8f5ed;
+  padding: 24px;
+  color: #34463b;
+  box-shadow: 0 24px 100px #14271e45;
+}
+.xq-rules-dialog::backdrop {
+  background: #172b2366;
+}
+.xq-rules-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.xq-rules-heading h2 {
+  font:
+    700 24px 'Songti SC',
+    'SimSun',
+    serif;
+}
+.xq-rules-heading button {
+  padding: 8px;
+}
+.xq-rules-dialog p {
+  font-size: 14px;
+  line-height: 1.9;
+  margin-top: 16px;
+}
+@media (max-width: 1100px) {
+  .xq-level-dots {
+    display: none;
+  }
+  .game-page--xiangqi .game-page-subtitle {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .xq-game {
+    --xq-width: min(100%, 540px);
+  }
+  .xq-campaign-toolbar {
+    position: static;
+    min-height: 52px;
+    justify-content: center;
+    border-bottom: 1px solid #ddd5c6;
+  }
+  .xq-level-select select {
+    font-size: 21px;
+  }
+  .xq-rules-button {
+    padding-left: 16px;
+    margin-left: 10px;
+  }
+  .xq-stage-heading {
+    padding: 14px 2px 10px;
+  }
+  .xq-stage-heading h3 {
+    font-size: 24px;
+  }
+  .xq-objective {
+    font-size: 15px;
+  }
+  .xq-board-frame {
+    padding: 8px 6px 3px;
+    border-radius: 8px;
+  }
   .xq-play {
-    grid-template-columns: minmax(0, 1fr) 208px;
+    gap: 16px;
+  }
+  .xq-controls {
+    padding: 10px 0 0;
+    gap: 12px;
+    grid-template-columns: 1fr;
+  }
+  .xq-status {
+    justify-content: center;
+  }
+  .xq-actions {
+    justify-content: center;
+  }
+  .xq-actions button {
+    min-height: 44px;
+    padding: 9px 18px;
+  }
+  .xq-note {
+    margin-top: 0;
   }
 }
-@container (max-width: 340px) {
-  .xq-levels {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+@media (min-width: 701px) and (max-height: 640px) {
+  .xq-game {
+    --xq-width: 360px;
   }
-  .xq-heading h2 span {
-    display: block;
-    margin: 4px 0 0;
-  }
-  .xq-seat {
-    font-size: 9px;
-  }
+}
+
+.xq-controls.is-ended {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+.xq-controls.is-ended .xq-status {
+  justify-content: center;
+  text-align: center;
+}
+.xq-controls.is-ended .xq-actions {
+  justify-content: center;
 }

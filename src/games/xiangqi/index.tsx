@@ -1,4 +1,13 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import {
+  CaretDown,
+  CaretLeft,
+  CaretRight,
+  X,
+  ArrowCounterClockwise,
+  ArrowUUpLeft,
+  Lightbulb,
+} from '@phosphor-icons/react'
 import type { GameComponentProps } from '@/games/manifest'
 import { useGameRecord } from '@/hooks/useGameRecord'
 import {
@@ -25,7 +34,7 @@ function Campaign({ gameId, userId }: GameComponentProps) {
   const [attempt, setAttempt] = useState(0)
   const [saveError, setSaveError] = useState(false)
   const unlocked = unlockedLevel(progress)
-  const completed = levels.filter((level) => progress[level.id]).length
+  const rulesDialog = useRef<HTMLDialogElement>(null)
   const complete = useCallback((id: string, stars: number) => {
     setProgress((previous) => ({ ...previous, [id]: Math.max(previous[id] ?? 0, stars) }))
   }, [])
@@ -36,73 +45,116 @@ function Campaign({ gameId, userId }: GameComponentProps) {
 
   return (
     <section className="xq-game" aria-label="中国象棋残局闯关">
-      <header className="xq-heading">
-        <div>
-          <span className="xq-eyebrow">一局残局 · 一步新境</span>
-          <h2>
-            弈境 <span>残局研习录</span>
-          </h2>
+      <nav className="xq-campaign-toolbar" aria-label="选择关卡">
+        <button
+          type="button"
+          className="xq-level-arrow"
+          aria-label="上一关"
+          disabled={current === 0}
+          onClick={() => setCurrent(current - 1)}
+        >
+          <CaretLeft size={18} />
+        </button>
+        <label className="xq-level-select">
+          选关
+          <span className="xq-level-picker">
+            <span className="xq-selected-number" aria-hidden="true">
+              {String(current + 1).padStart(2, '0')}
+              <CaretDown size={12} />
+            </span>
+            <select
+              aria-label="当前关卡"
+              value={current}
+              onChange={(event) => setCurrent(Number(event.target.value))}
+            >
+              {levels.map((level, i) => (
+                <option key={level.id} value={i} disabled={i > unlocked}>
+                  {String(i + 1).padStart(2, '0')} · {level.name}
+                  {i > unlocked ? '（未解锁）' : ''}
+                </option>
+              ))}
+            </select>
+          </span>
+          <span>/ {String(levels.length).padStart(2, '0')}</span>
+        </label>
+        <button
+          type="button"
+          className="xq-level-arrow"
+          aria-label="下一关"
+          disabled={current >= unlocked}
+          onClick={() => setCurrent(current + 1)}
+        >
+          <CaretRight size={18} />
+        </button>
+        <div className="xq-level-dots">
+          {levels.map((level, i) => (
+            <button
+              type="button"
+              key={level.id}
+              aria-label={`第 ${i + 1} 关 ${level.name}${i > unlocked ? '，未解锁' : ''}`}
+              aria-current={current === i ? 'step' : undefined}
+              disabled={i > unlocked}
+              className={progress[level.id] ? 'is-complete' : ''}
+              onClick={() => setCurrent(i)}
+            >
+              <span />
+            </button>
+          ))}
         </div>
-        <div className="xq-total">
-          <strong>
-            {completed}
-            <small> / {levels.length}</small>
-          </strong>
-          <span>已破残局</span>
-        </div>
-      </header>
-      <div className="xq-progress" aria-label={`已完成 ${completed} 关，共 ${levels.length} 关`}>
-        <span style={{ width: `${(completed / levels.length) * 100}%` }} />
-      </div>
-      <nav className="xq-levels" aria-label="选择关卡">
-        {levels.map((level, i) => (
-          <button
-            type="button"
-            key={level.id}
-            disabled={i > unlocked}
-            aria-current={current === i ? 'step' : undefined}
-            aria-label={`第 ${i + 1} 关 ${level.name}${i > unlocked ? '，未解锁' : progress[level.id] ? `，${progress[level.id]} 星` : ''}`}
-            onClick={() => setCurrent(i)}
-          >
-            <span>{String(i + 1).padStart(2, '0')}</span>
-            <small>
-              {i > unlocked
-                ? '未解锁'
-                : progress[level.id]
-                  ? '★'.repeat(progress[level.id])
-                  : `${level.moves} 步杀`}
-            </small>
-          </button>
-        ))}
+        <button
+          type="button"
+          className="xq-rules-button"
+          onClick={() => rulesDialog.current?.showModal()}
+        >
+          规则
+        </button>
       </nav>
+      <dialog ref={rulesDialog} className="xq-rules-dialog" aria-labelledby="xq-rules-title">
+        <div className="xq-rules-heading">
+          <h2 id="xq-rules-title">棋局思路与规则</h2>
+          <button type="button" aria-label="关闭规则" onClick={() => rulesDialog.current?.close()}>
+            <X size={22} />
+          </button>
+        </div>
+        <p>{levels[current].tip}</p>
+        <p>
+          车走直线；马走日，留意蹩腿；相走田，不越河、不能塞眼；炮隔一子吃子；仕、帅不出九宫；兵过河可横走，不能后退。
+        </p>
+        <p>
+          必须应将，不可送将或让将帅照面。将死或困毙黑方均获胜。此模式为限定步数残局，不采用长局循环裁定。
+        </p>
+        <p>
+          红方落子一次计 1 步，黑方应对不计步。悔棋回退一整个回合。独立过关获 3
+          星；使用提示、使用悔棋各减 1 星，最低 1 星。
+        </p>
+        <p>进度自动保存在此浏览器，每关最高 300 分。</p>
+      </dialog>
       <Puzzle
         key={`${current}:${attempt}`}
         level={levels[current]}
-        number={current + 1}
         gameId={gameId}
         userId={userId}
         onComplete={complete}
         onRetry={() => setAttempt((value) => value + 1)}
         onNext={current < levels.length - 1 ? () => setCurrent(current + 1) : undefined}
       />
-      <p className="xq-storage" role="status">
-        {saveError
-          ? '浏览器未能保存进度；本次仍可继续，刷新后可能丢失。'
-          : `${userId ? '当前玩家' : '访客'}进度自动保存在此浏览器 · 每关最高 300 分`}
-      </p>
+      {saveError && (
+        <p className="xq-storage" role="status">
+          浏览器未能保存进度；本次仍可继续，刷新后可能丢失。
+        </p>
+      )}
     </section>
   )
 }
 
 interface PuzzleProps extends GameComponentProps {
   level: Level
-  number: number
   onComplete: (id: string, stars: number) => void
   onRetry: () => void
   onNext?: () => void
 }
 
-function Puzzle({ level, number, gameId, userId, onComplete, onRetry, onNext }: PuzzleProps) {
+function Puzzle({ level, gameId, userId, onComplete, onRetry, onNext }: PuzzleProps) {
   const [session, dispatch] = useReducer(sessionReducer, level, newSession)
   const [selected, setSelected] = useState<number | null>(null)
   const [hint, setHint] = useState<Move | null>(null)
@@ -207,20 +259,11 @@ function Puzzle({ level, number, gameId, userId, onComplete, onRetry, onNext }: 
   return (
     <>
       <div className="xq-stage-heading">
-        <div>
-          <span className="xq-eyebrow">
-            第 {String(number).padStart(2, '0')} 关 · {level.theme}
-          </span>
-          <h3>{level.name}</h3>
-        </div>
+        <h3>{level.name}</h3>
         <span className="xq-objective">{level.moves} 步内取胜</span>
       </div>
       <div className="xq-play">
         <div className="xq-board-column">
-          <div className="xq-seat">
-            <span>● 黑方 · 电脑</span>
-            <span>{phase === 'black' ? '思考中…' : '楚河汉界'}</span>
-          </div>
           <div className="xq-board-frame">
             <div
               className="xq-board"
@@ -307,16 +350,9 @@ function Puzzle({ level, number, gameId, userId, onComplete, onRetry, onNext }: 
               ))}
             </div>
           </div>
-          <div className="xq-seat">
-            <span className="xq-red">● 红方 · 你执先手</span>
-            <span>
-              {lastMove ? `${squareName(lastMove.from)} → ${squareName(lastMove.to)}` : '红方先行'}
-            </span>
-          </div>
         </div>
-        <aside className="xq-sidebar">
+        <div className={`xq-controls ${ended ? 'is-ended' : ''}`}>
           <div className="xq-status" role="status" aria-live="polite">
-            <span className="xq-eyebrow">{ended ? '本关结果' : '当前棋局'}</span>
             <h4>
               {phase === 'won'
                 ? '破局成功'
@@ -346,17 +382,14 @@ function Puzzle({ level, number, gameId, userId, onComplete, onRetry, onNext }: 
                   </>
                 )}
               </>
-            ) : (
-              <p>选择红子，寻找制胜一步。</p>
-            )}
+            ) : null}
             <div className="xq-move-count">
               <strong>
                 {moves}
                 <small> / {level.moves}</small>
               </strong>
-              <span>红方步数</span>
+              <span>步</span>
             </div>
-            <p className="xq-small">红方落子一次计 1 步，黑方应对不计步。</p>
           </div>
           <div className="xq-actions">
             {phase === 'won' && onNext && (
@@ -364,8 +397,9 @@ function Puzzle({ level, number, gameId, userId, onComplete, onRetry, onNext }: 
                 下一关 →
               </button>
             )}
-            <button type="button" onClick={onRetry} className={ended ? 'xq-primary' : ''}>
-              {ended ? '重新挑战' : '↻ 重来本关'}
+            <button type="button" onClick={onRetry} className="xq-primary xq-retry">
+              <ArrowCounterClockwise size={18} aria-hidden="true" />
+              {ended ? '重新挑战' : '重来'}
             </button>
             <div>
               <button
@@ -379,7 +413,7 @@ function Puzzle({ level, number, gameId, userId, onComplete, onRetry, onNext }: 
                   setNote('已退回你上一次落子前，可重新选择。')
                 }}
               >
-                ↶ 悔棋
+                <ArrowUUpLeft size={18} aria-hidden="true" /> 悔棋
               </button>
               <button
                 type="button"
@@ -390,25 +424,14 @@ function Puzzle({ level, number, gameId, userId, onComplete, onRetry, onNext }: 
                   setHint(null)
                 }}
               >
-                ✦ {hintRequested ? '推演中' : '提示'}
+                <Lightbulb size={18} aria-hidden="true" /> {hintRequested ? '推演中' : '提示'}
               </button>
             </div>
           </div>
           <p className="xq-note" role="status">
             {ended ? '可以重玩已解锁关卡，刷新最佳星级。' : note}
           </p>
-          <details className="xq-help">
-            <summary>棋局思路与规则</summary>
-            <p>{level.tip}</p>
-            <p>
-              车走直线；马走日，留意蹩腿；相走田，不越河、不能塞眼；炮隔一子吃子；仕、帅不出九宫；兵过河可横走，不能后退。
-            </p>
-            <p>
-              必须应将，不可送将或让将帅照面。将死或困毙黑方均获胜。此模式为限定步数残局，不采用长局循环裁定。
-            </p>
-            <p>悔棋回退一整个回合。独立过关获 3 星；使用提示、使用悔棋各减 1 星，最低 1 星。</p>
-          </details>
-        </aside>
+        </div>
       </div>
     </>
   )
