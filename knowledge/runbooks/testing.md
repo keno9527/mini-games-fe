@@ -22,13 +22,14 @@ npx tsx --test tests/gravity-graveyard.test.ts
 
 ## 现有测试
 
-| 文件                               | 覆盖范围                                                                                                |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 文件                               | 覆盖范围                                                                                     |
+| ---------------------------------- | -------------------------------------------------------------------------------------------- |
 | `tests/game-modules.test.ts`       | 当前游戏注册表契约：manifest 元数据与 `embedded` 懒加载；tank-battle 运行时挂载/销毁资源释放 |
-| `tests/game-manifest.typecheck.ts` | 编译期 manifest 契约：拒绝非 HTTPS 外链和混合 runtime 字段                                              |
-| `tests/game-launch-link.test.ts`   | 统一启动入口：内部 Router Link、外部新标签页链接与已下架游戏的非链接展示                         |
-| `tests/game-progression.test.ts`   | 引力墓场成长存档：按 gameId 隔离、去重、损坏数据安全回退                                                |
-| `tests/gravity-graveyard.test.ts`  | 引力物理引擎：牵引/斥力、对消、速度上限、轨迹预测不修改原对象、RunState 事件流转                        |
+| `tests/game-manifest.typecheck.ts` | 编译期 manifest 契约：拒绝非 HTTPS 外链和混合 runtime 字段                                   |
+| `tests/game-launch-link.test.ts`   | 统一启动入口：内部 Router Link、外部新标签页链接与已下架游戏的非链接展示                     |
+| `tests/game-progression.test.ts`   | 引力墓场成长存档：按 gameId 隔离、去重、损坏数据安全回退                                     |
+| `tests/gravity-graveyard.test.ts`  | 引力物理引擎：牵引/斥力、对消、速度上限、轨迹预测不修改原对象、RunState 事件流转             |
+| `tests/laser-mirror.test.ts`       | 折光回廊引擎：8 向反射、手工关卡解、墙体吸收、分束、循环收敛与星级规则                       |
 
 ## 编写测试的约定
 

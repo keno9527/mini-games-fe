@@ -8,116 +8,353 @@
 
 body {
   margin: 0;
-  background-color: #dff5ff;
-  background-image: linear-gradient(180deg, #bfefff 0%, #e9f8ff 58%, #d9f6d5 58%, #b9e784 100%);
-  color: #18324d;
+  background: #f3f0e8;
+  color: #283d35;
   font-family: 'Nunito', 'PingFang SC', 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
-
 #root {
   min-height: 100vh;
 }
-
 .game-plaza {
+  min-height: 100vh;
+  background: #f3f0e8 url('/textures/plaza-paper.jpg') repeat;
+  background-size: 700px;
+  background-blend-mode: soft-light;
+}
+.plaza-header {
+  background: #25483e;
+  color: #f8f4e9;
+}
+.plaza-header-inner {
+  height: 56px;
+  max-width: 1600px;
+  margin: auto;
+  padding: 0 4%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.plaza-brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: #f4e8ce;
+}
+.plaza-brand span {
+  font-family: 'Songti SC', 'SimSun', serif;
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.plaza-header nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  font-size: 14px;
+}
+.plaza-header nav a {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 8px 0;
+}
+.plaza-header nav a:hover {
+  color: #e5ce9f;
+}
+.plaza-header nav a + a {
+  border-left: 1px solid #ffffff35;
+  padding-left: 28px;
+}
+.plaza-header a:focus-visible,
+.game-page a:focus-visible {
+  outline: 2px solid #c89d68;
+  outline-offset: 5px;
+}
+.game-page {
   position: relative;
-  overflow-x: hidden;
-  background: linear-gradient(
-    180deg,
-    rgba(191, 239, 255, 0.92) 0%,
-    rgba(237, 250, 255, 0.96) 52%,
-    rgba(215, 245, 204, 0.98) 52%,
-    rgba(179, 226, 112, 0.98) 100%
-  );
+  color: #283d35;
+}
+.game-page-toolbar {
+  min-height: 72px;
+  padding: 12px 4%;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  border-bottom: 1px solid #d9d3c7;
+  background: #faf8f16b;
+}
+.game-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 24px;
+  border-right: 1px solid #d0cabc;
+  font-size: 14px;
+}
+.game-page-toolbar h1 {
+  font:
+    700 25px 'Songti SC',
+    'SimSun',
+    serif;
+  color: #794b3b;
+  margin: 0;
+}
+.game-page-subtitle {
+  font-size: 17px;
+}
+.game-stage {
+  max-width: 1280px;
+  padding: 24px 32px 40px;
+  margin: auto;
+}
+.game-placeholder {
+  padding: 100px 20px;
+  text-align: center;
+  color: #52665b;
+}
+.game-stage > .game-surface {
+  border: 0;
+  box-shadow: 0 8px 32px #293e3510;
+}
+@media (max-width: 640px) {
+  .plaza-header-inner {
+    height: 50px;
+    padding: 0 16px;
+  }
+  .plaza-brand {
+    gap: 8px;
+  }
+  .plaza-brand span {
+    font-size: 19px;
+  }
+  .plaza-header nav {
+    gap: 16px;
+    font-size: 12px;
+  }
+  .plaza-header nav a + a {
+    padding-left: 16px;
+    max-width: 95px;
+  }
+  .game-page-toolbar {
+    min-height: 58px;
+    padding: 10px 16px;
+    gap: 12px;
+  }
+  .game-back {
+    padding-right: 12px;
+  }
+  .game-back span {
+    display: none;
+  }
+  .game-page-toolbar h1 {
+    font-size: 21px;
+  }
+  .game-page-subtitle {
+    font-size: 13px;
+  }
+  .game-stage {
+    padding: 14px 12px 24px;
+  }
 }
 
-.game-plaza > * {
-  position: relative;
-  z-index: 1;
+.plaza-library {
+  max-width: 1280px;
+  margin: auto;
+  padding: 38px 32px 60px;
 }
-
-.game-plaza::before {
-  content: '';
-  position: fixed;
-  inset: 76px 0 auto 0;
-  height: 190px;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    linear-gradient(#fff, #fff) 9% 30% / 96px 22px no-repeat,
-    linear-gradient(#fff, #fff) 14% 20% / 52px 22px no-repeat,
-    linear-gradient(#fff, #fff) 19% 31% / 70px 22px no-repeat,
-    linear-gradient(#fff, #fff) 74% 26% / 112px 22px no-repeat,
-    linear-gradient(#fff, #fff) 81% 16% / 56px 22px no-repeat,
-    linear-gradient(#fff, #fff) 88% 27% / 74px 22px no-repeat;
-  opacity: 0.72;
+.library-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #d6d1c3;
+  color: #2d463a;
 }
-
-.game-plaza::after {
-  content: '';
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 120px;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    linear-gradient(90deg, rgba(62, 166, 55, 0.14) 0 12px, transparent 12px 28px) 0 4px / 56px 16px
-      repeat-x,
-    linear-gradient(180deg, rgba(82, 190, 74, 0.28), rgba(43, 139, 53, 0.12));
+.library-eyebrow {
+  color: #8b6550;
+  font-size: 12px;
+  letter-spacing: 0.12em;
 }
-
-.pixel-hero {
-  position: relative;
+.library-heading h1 {
+  font:
+    700 34px 'Songti SC',
+    'SimSun',
+    serif;
+  margin: 12px 0;
 }
-
-.pixel-hero::before {
-  content: '';
-  position: absolute;
-  inset: 14px 14px auto auto;
-  width: 150px;
-  height: 58px;
-  background:
-    linear-gradient(#fff, #fff) 0 18px / 96px 22px no-repeat,
-    linear-gradient(#fff, #fff) 44px 4px / 54px 22px no-repeat,
-    linear-gradient(#fff, #fff) 84px 20px / 66px 22px no-repeat;
-  opacity: 0.92;
+.library-heading p:last-child {
+  font-size: 14px;
+  color: #697466;
 }
-
-.pixel-hero::after {
-  content: '';
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 28px;
-  background:
-    linear-gradient(90deg, #4fc044 0 24px, #66d65a 24px 48px) 0 0 / 48px 10px repeat-x,
-    linear-gradient(180deg, #54b846 10px, #2f9943 10px);
+.library-count {
+  white-space: nowrap;
+  padding: 10px 14px;
+  font-size: 13px;
+  border: 1px solid #d1cab9;
+  border-radius: 6px;
+  color: #687464;
 }
-
-.pixel-card-art::before {
-  content: '';
-  position: absolute;
-  inset: 14px 18px auto auto;
-  width: 64px;
-  height: 28px;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) 0 10px / 42px 12px
-      no-repeat,
-    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) 20px 0 / 28px 12px
-      no-repeat,
-    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) 36px 10px / 28px 12px
-      no-repeat;
+.library-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin: 28px 0 18px;
 }
-
-.pixel-card-art::after {
-  content: '';
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 22px;
-  background:
-    linear-gradient(90deg, rgba(79, 192, 68, 0.95) 0 18px, rgba(102, 214, 90, 0.95) 18px 36px) 0 0 /
-      36px 8px repeat-x,
-    linear-gradient(180deg, rgba(84, 184, 70, 0.92) 8px, rgba(47, 153, 67, 0.9) 8px);
+.library-section-heading h2,
+.library-popular h2 {
+  font-size: 19px;
+  font-weight: 700;
+  color: #304b3d;
+}
+.library-section-heading > span {
+  font-size: 12px;
+  color: #6a7569;
+}
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.library-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ded7c7;
+  border-radius: 12px;
+  background: #fcfaf4;
+  padding: 24px;
+  color: #344c3e;
+  box-shadow: 0 4px 14px #344c3e06;
+  transition:
+    transform 0.18s,
+    box-shadow 0.18s;
+}
+.library-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 9px 26px #344c3e12;
+  border-color: #9da994;
+}
+.library-card:focus-visible {
+  outline: 3px solid #537565;
+  outline-offset: 3px;
+}
+.library-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+  color: #64836d;
+}
+.library-card:nth-child(3n + 2) .library-card-top {
+  color: #a17853;
+}
+.library-card:nth-child(3n) .library-card-top {
+  color: #71808a;
+}
+.library-card-top span {
+  font-size: 11px;
+  color: #8d6346;
+}
+.library-card h3 {
+  font:
+    700 23px 'Songti SC',
+    'SimSun',
+    serif;
+}
+.library-card > p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #72786b;
+  margin: 12px 0 18px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 47px;
+}
+.library-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+.library-tags span {
+  background: #eeeee3;
+  color: #667663;
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+}
+.library-card-action {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #e5dfd1;
+  padding-top: 14px;
+  font-size: 13px;
+}
+.library-popular {
+  margin-top: 36px;
+  border-top: 1px solid #d6d1c3;
+  padding-top: 24px;
+}
+.library-popular > p {
+  margin-top: 14px;
+  color: #72786b;
+  font-size: 13px;
+}
+.library-popular ol {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.library-popular a {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+}
+.library-popular a span {
+  color: #a17d54;
+  font-family: Georgia, serif;
+}
+.library-popular small {
+  color: #747c70;
+}
+.library-error {
+  margin: 40px 0;
+  color: #a14c3e;
+}
+@media (max-width: 960px) {
+  .library-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .plaza-library {
+    padding: 26px 16px 40px;
+  }
+  .library-heading h1 {
+    font-size: 28px;
+  }
+  .library-count {
+    display: none;
+  }
+  .library-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .library-section-heading > span {
+    font-size: 10px;
+  }
 }
 
 /* 扫描线 utility（叠加在元素上） */
@@ -161,14 +398,14 @@ body {
   width: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #dff5ff;
+  background: #f3f0e8;
 }
 ::-webkit-scrollbar-thumb {
-  background: #72c247;
-  border: 2px solid #dff5ff;
+  background: #a4afa2;
+  border: 2px solid #f3f0e8;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #1275ee;
+  background: #537565;
 }
 
 /* 降低动效偏好 */

@@ -56,15 +56,12 @@ export class SceneManager {
       (): number => this.world.highScore,
     )
 
-    this.gameOverScene = new GameOverScene(
-      { onRestart: (): void => this.switchTo(SceneKind.TITLE) },
-      () => ({
-        victory: this.finalVictory,
-        score: this.finalScore,
-        highScore: this.finalHighScore,
-        levelReached: this.finalLevel,
-      }),
-    )
+    this.gameOverScene = new GameOverScene({ onRestart: (): void => this.startNewGame() }, () => ({
+      victory: this.finalVictory,
+      score: this.finalScore,
+      highScore: this.finalHighScore,
+      levelReached: this.finalLevel,
+    }))
 
     this.battleScene = this.createBattleScene()
 
@@ -129,6 +126,10 @@ export class SceneManager {
 
   getCurrentKind(): SceneKind {
     return this.currentKind
+  }
+
+  isPaused(): boolean {
+    return this.currentKind === SceneKind.BATTLE && this.battleScene.isPaused()
   }
 
   update(input: InputSnapshot): void {

@@ -73,6 +73,9 @@ export interface InputSnapshot {
   readonly confirmEdge: boolean
 }
 
+/** 需要支持长按的玩家操作，由键盘与触控共享。 */
+export type TankBattleHoldAction = 'up' | 'down' | 'left' | 'right' | 'fire'
+
 /** 轴对齐矩形，单位为逻辑像素 */
 export interface Rect {
   x: number

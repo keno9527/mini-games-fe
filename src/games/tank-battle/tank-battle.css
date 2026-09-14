@@ -1,0 +1,163 @@
+.tank-touch-controls,
+.tank-touch-help {
+  display: none;
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .game-page--tank-battle .game-stage {
+    padding: 0 12px 18px;
+  }
+
+  .tank-battle-stage {
+    overflow: hidden;
+    padding: 10px;
+  }
+
+  .tank-battle-canvas,
+  .tank-touch-controls button {
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .tank-keyboard-help {
+    display: none;
+  }
+
+  .tank-touch-help {
+    display: block;
+    grid-column: 1 / -1;
+    text-align: center;
+  }
+
+  .tank-touch-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 20px;
+    min-height: 176px;
+    padding: 12px 18px calc(16px + env(safe-area-inset-bottom));
+    border-top: 2px solid #343434;
+    background: #0b0b0b;
+    color: #f6f1df;
+  }
+
+  .tank-touch-controls button {
+    border: 2px solid #626262;
+    background: #242424;
+    color: #f6f1df;
+    box-shadow: inset 0 -4px 0 #111;
+  }
+
+  .tank-touch-controls button:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: inset 0 -2px 0 #111;
+    background: #353535;
+  }
+
+  .tank-touch-controls button:focus-visible {
+    outline: 3px solid #f4c542;
+    outline-offset: 3px;
+  }
+
+  .tank-touch-controls button:disabled {
+    opacity: 0.35;
+  }
+
+  .tank-touch-start {
+    grid-column: 1 / -1;
+    min-height: 64px;
+    border-color: #b98d1b !important;
+    border-radius: 10px;
+    background: #765c16 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .tank-touch-dpad {
+    display: grid;
+    grid-template: repeat(2, 62px) / repeat(3, 62px);
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .tank-touch-direction {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 62px;
+    min-height: 62px;
+    border-radius: 10px;
+  }
+
+  .tank-touch-up {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .tank-touch-left {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .tank-touch-down {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .tank-touch-right {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .tank-touch-actions {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+  }
+
+  .tank-touch-fire {
+    width: 82px;
+    height: 82px;
+    border-color: #a3483f !important;
+    border-radius: 50%;
+    background: #7c2f29 !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .tank-touch-pause {
+    min-width: 96px;
+    min-height: 44px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+  }
+}
+
+@media (max-width: 380px) {
+  .tank-touch-controls {
+    gap: 10px;
+    padding-inline: 10px;
+  }
+
+  .tank-touch-dpad {
+    grid-template: repeat(2, 56px) / repeat(3, 56px);
+  }
+
+  .tank-touch-direction {
+    min-width: 56px;
+    min-height: 56px;
+  }
+}

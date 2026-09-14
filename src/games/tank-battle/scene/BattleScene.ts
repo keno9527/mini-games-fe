@@ -200,4 +200,8 @@ export class BattleScene implements Scene {
   static getFieldSize(): number {
     return FIELD_PIXELS
   }
+
+  isPaused(): boolean {
+    return this.phase === BattlePhase.PAUSED
+  }
 }
