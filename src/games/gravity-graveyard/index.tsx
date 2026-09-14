@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Lightning,
+  Magnet,
+  Rewind,
+} from '@phosphor-icons/react'
 import { createRecord } from '@/api'
 import {
   getGameProgression,
@@ -14,6 +23,7 @@ import {
   type RunState,
   type Vec2,
 } from '@/games/gravity-graveyard/engine'
+import './gravity-graveyard.css'
 
 interface Props {
   userId?: string
@@ -21,6 +31,7 @@ interface Props {
 }
 
 type BodyKind = 'wreck' | 'asteroid' | 'projectile' | 'heretic' | 'cathedral'
+type MoveDirection = 'up' | 'down' | 'left' | 'right'
 
 interface GraveBody {
   id: number
@@ -240,6 +251,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
   const startTimeRef = useRef(0)
   const submittedRef = useRef(false)
   const keysRef = useRef(new Set<string>())
+  const touchDirectionsRef = useRef(new Set<MoveDirection>())
   const pointerRef = useRef<Vec2>({ x: W / 2, y: H / 2 })
   const playerRef = useRef<PlayerBody>(initialPlayer())
   const bodiesRef = useRef<GraveBody[]>([])
@@ -267,6 +279,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
   const [selectedShip, setSelectedShip] = useState(SHIPS[0].id)
   const [choirOn, setChoirOn] = useState(false)
   const [endingChoice, setEndingChoice] = useState('')
+  const [touchAnchorMode, setTouchAnchorMode] = useState<'pull' | 'repel'>('pull')
 
   const stars = useMemo(seededStars, [])
   const actCopy = ACT_COPY[run.act]
@@ -610,22 +623,30 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     (event: React.PointerEvent<HTMLCanvasElement>) => {
       const point = pointerPosition(event)
       pointerRef.current = point
-      placeAnchor(event.button === 2 ? 'repel' : 'pull', point)
+      const mode =
+        event.pointerType === 'touch' ? touchAnchorMode : event.button === 2 ? 'repel' : 'pull'
+      placeAnchor(mode, point)
     },
-    [placeAnchor, pointerPosition],
+    [placeAnchor, pointerPosition, touchAnchorMode],
   )
+
+  const setTouchDirection = useCallback((direction: MoveDirection, active: boolean) => {
+    if (active) touchDirectionsRef.current.add(direction)
+    else touchDirectionsRef.current.delete(direction)
+  }, [])
 
   const performDash = useCallback(() => {
     if (runRef.current.phase !== 'active') return
     const player = playerRef.current
     const dashCost = hasModule('black-vespers') ? 22 : 32
     if (player.dashCooldown > 0 || energyRef.current < dashCost) return
+    const touch = touchDirectionsRef.current
     let dx =
-      Number(keysRef.current.has('d') || keysRef.current.has('arrowright')) -
-      Number(keysRef.current.has('a') || keysRef.current.has('arrowleft'))
+      Number(keysRef.current.has('d') || keysRef.current.has('arrowright') || touch.has('right')) -
+      Number(keysRef.current.has('a') || keysRef.current.has('arrowleft') || touch.has('left'))
     let dy =
-      Number(keysRef.current.has('s') || keysRef.current.has('arrowdown')) -
-      Number(keysRef.current.has('w') || keysRef.current.has('arrowup'))
+      Number(keysRef.current.has('s') || keysRef.current.has('arrowdown') || touch.has('down')) -
+      Number(keysRef.current.has('w') || keysRef.current.has('arrowup') || touch.has('up'))
     if (dx === 0 && dy === 0) {
       dx = Math.cos(player.angle)
       dy = Math.sin(player.angle)
@@ -648,6 +669,25 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     }
   }, [emitParticles, hasModule])
 
+  const recoverAnchor = useCallback(() => {
+    if (runRef.current.phase !== 'active') return
+    const recovered = anchorsRef.current.pop()
+    if (recovered && selectedTool === 'severance-bell') {
+      bodiesRef.current = bodiesRef.current.map((body) => {
+        const dx = body.x - recovered.x
+        const dy = body.y - recovered.y
+        const dist = Math.hypot(dx, dy)
+        if (dist === 0 || dist > 155 || body.kind === 'cathedral') return body
+        return { ...body, vx: body.vx + (dx / dist) * 165, vy: body.vy + (dy / dist) * 165 }
+      })
+      emitParticles(recovered.x, recovered.y, '#c96b73', 20)
+      messageRef.current = '断轨钟释放斥力回声'
+    } else {
+      messageRef.current = recovered ? '圣印已回收' : '没有可回收的圣印'
+    }
+    syncHud()
+  }, [emitParticles, selectedTool, syncHud])
+
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase()
@@ -661,32 +701,22 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       keysRef.current.add(key)
       if (event.repeat) return
       if (key === ' ') performDash()
-      if (key === 'q' && runRef.current.phase === 'active') {
-        const recovered = anchorsRef.current.pop()
-        if (recovered && selectedTool === 'severance-bell') {
-          bodiesRef.current = bodiesRef.current.map((body) => {
-            const dx = body.x - recovered.x
-            const dy = body.y - recovered.y
-            const dist = Math.hypot(dx, dy)
-            if (dist === 0 || dist > 155 || body.kind === 'cathedral') return body
-            return { ...body, vx: body.vx + (dx / dist) * 165, vy: body.vy + (dy / dist) * 165 }
-          })
-          emitParticles(recovered.x, recovered.y, '#c96b73', 20)
-          messageRef.current = '断轨钟释放斥力回声'
-        } else {
-          messageRef.current = '圣印已回收'
-        }
-        syncHud()
-      }
+      if (key === 'q') recoverAnchor()
     }
     const keyUp = (event: KeyboardEvent) => keysRef.current.delete(event.key.toLowerCase())
+    const releaseInput = () => {
+      keysRef.current.clear()
+      touchDirectionsRef.current.clear()
+    }
     window.addEventListener('keydown', keyDown)
     window.addEventListener('keyup', keyUp)
+    window.addEventListener('blur', releaseInput)
     return () => {
       window.removeEventListener('keydown', keyDown)
       window.removeEventListener('keyup', keyUp)
+      window.removeEventListener('blur', releaseInput)
     }
-  }, [emitParticles, performDash, selectedTool, syncHud])
+  }, [performDash, recoverAnchor])
 
   const update = useCallback(
     (dt: number) => {
@@ -696,12 +726,13 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
 
       const player = playerRef.current
       const keys = keysRef.current
+      const touch = touchDirectionsRef.current
       const inputX =
-        Number(keys.has('d') || keys.has('arrowright')) -
-        Number(keys.has('a') || keys.has('arrowleft'))
+        Number(keys.has('d') || keys.has('arrowright') || touch.has('right')) -
+        Number(keys.has('a') || keys.has('arrowleft') || touch.has('left'))
       const inputY =
-        Number(keys.has('s') || keys.has('arrowdown')) -
-        Number(keys.has('w') || keys.has('arrowup'))
+        Number(keys.has('s') || keys.has('arrowdown') || touch.has('down')) -
+        Number(keys.has('w') || keys.has('arrowup') || touch.has('up'))
       const inputLength = Math.hypot(inputX, inputY) || 1
       const shipMotion =
         selectedShip === 'pilgrim-wing'
@@ -1188,8 +1219,8 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
         : '你献出葬仪舰作为第三枚引力锚。圣轨与旗舰同时稳定，而你的名字进入了最后一份记录。'
 
   return (
-    <section className="relative overflow-hidden rounded-[26px] border border-[#80613b]/50 bg-[#070608] text-[#eee7d8] shadow-[0_28px_80px_rgba(0,0,0,.55)]">
-      <div className="relative border-b border-[#80613b]/35 px-5 py-4 sm:px-7">
+    <section className="gravity-graveyard relative overflow-hidden rounded-[26px] border border-[#80613b]/50 bg-[#070608] text-[#eee7d8] shadow-[0_28px_80px_rgba(0,0,0,.55)]">
+      <div className="gravity-header relative border-b border-[#80613b]/35 px-5 py-4 sm:px-7">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_-20%,rgba(128,30,43,.4),transparent_55%)]" />
         <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -1215,7 +1246,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
         </div>
       </div>
 
-      <div className="relative">
+      <div className="gravity-stage relative" data-phase={run.phase}>
         <canvas
           ref={canvasRef}
           width={W}
@@ -1224,12 +1255,12 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
           onPointerDown={onPointerDown}
           onContextMenu={(event) => event.preventDefault()}
           aria-label="引力墓场游戏区域"
-          className="block aspect-[12/7] w-full cursor-crosshair bg-black outline-none"
+          className="gravity-canvas block aspect-[12/7] w-full cursor-crosshair bg-black outline-none"
         />
 
         {run.phase === 'active' && (
           <>
-            <div className="pointer-events-none absolute left-4 top-4 max-w-[52%] rounded-xl border border-[#8c6a40]/45 bg-[#080609]/80 px-4 py-3 backdrop-blur-md sm:left-6 sm:top-6">
+            <div className="gravity-desktop-hud pointer-events-none absolute left-4 top-4 max-w-[52%] rounded-xl border border-[#8c6a40]/45 bg-[#080609]/80 px-4 py-3 backdrop-blur-md sm:left-6 sm:top-6">
               <div className="text-[10px] font-bold uppercase tracking-[.24em] text-[#c6a35c]">
                 {ACT_COPY[hud.run.act].title}
               </div>
@@ -1238,7 +1269,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
                 {hud.message}
               </div>
             </div>
-            <div className="pointer-events-none absolute right-4 top-4 w-44 rounded-xl border border-[#8c6a40]/45 bg-[#080609]/80 p-3 text-[10px] backdrop-blur-md sm:right-6 sm:top-6 sm:w-52">
+            <div className="gravity-desktop-hud pointer-events-none absolute right-4 top-4 w-44 rounded-xl border border-[#8c6a40]/45 bg-[#080609]/80 p-3 text-[10px] backdrop-blur-md sm:right-6 sm:top-6 sm:w-52">
               <div className="mb-1 flex justify-between tracking-[.16em] text-[#c7b794]">
                 <span>葬仪进度</span>
                 <span>{Math.round(hud.run.ritual)}%</span>
@@ -1269,7 +1300,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
                 </div>
               )}
             </div>
-            <div className="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#8c6a40]/35 bg-[#080609]/75 px-4 py-2 text-[9px] uppercase tracking-[.14em] text-[#b7aa94] backdrop-blur-md sm:text-[10px]">
+            <div className="gravity-desktop-hud pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full border border-[#8c6a40]/35 bg-[#080609]/75 px-4 py-2 text-[9px] uppercase tracking-[.14em] text-[#b7aa94] backdrop-blur-md sm:text-[10px]">
               <span>
                 <b className="text-[#e5c87d]">WASD</b> 惯性航行
               </span>
@@ -1290,11 +1321,75 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
                 <b className="text-[#e5c87d]">Q</b> 回收
               </span>
             </div>
+            <div className="gravity-mobile-play">
+              <div className="gravity-mobile-hud">
+                <div className="gravity-mobile-objective">
+                  <strong>{ACT_COPY[hud.run.act].title}</strong>
+                  <span>{ACT_COPY[hud.run.act].objective}</span>
+                </div>
+                <div className="gravity-mobile-stats">
+                  <span>
+                    进度 <b>{Math.round(hud.run.ritual)}%</b>
+                  </span>
+                  <span>
+                    舰体 <b>{Math.round(hud.run.hull)}</b>
+                  </span>
+                  <span>
+                    相位 <b>{Math.round(hud.energy)}</b>
+                  </span>
+                </div>
+              </div>
+              <p className="gravity-touch-hint">
+                当前圣印：{touchAnchorMode === 'pull' ? '牵引' : '斥力'}。点击上方星图放置
+              </p>
+              <div className="gravity-touch-controls" aria-label="引力墓场触控操作">
+                <div className="gravity-touch-dpad" aria-label="航行方向">
+                  <TouchDirection action="up" label="向上航行" onAction={setTouchDirection}>
+                    <ArrowUp size={26} weight="bold" aria-hidden="true" />
+                  </TouchDirection>
+                  <TouchDirection action="left" label="向左航行" onAction={setTouchDirection}>
+                    <ArrowLeft size={26} weight="bold" aria-hidden="true" />
+                  </TouchDirection>
+                  <TouchDirection action="down" label="向下航行" onAction={setTouchDirection}>
+                    <ArrowDown size={26} weight="bold" aria-hidden="true" />
+                  </TouchDirection>
+                  <TouchDirection action="right" label="向右航行" onAction={setTouchDirection}>
+                    <ArrowRight size={26} weight="bold" aria-hidden="true" />
+                  </TouchDirection>
+                </div>
+                <div className="gravity-touch-actions">
+                  <button
+                    type="button"
+                    aria-pressed={touchAnchorMode === 'pull'}
+                    onClick={() => setTouchAnchorMode('pull')}
+                  >
+                    <Magnet size={22} weight="bold" aria-hidden="true" />
+                    牵引
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={touchAnchorMode === 'repel'}
+                    onClick={() => setTouchAnchorMode('repel')}
+                  >
+                    <Magnet size={22} weight="bold" className="rotate-180" aria-hidden="true" />
+                    斥力
+                  </button>
+                  <button type="button" onClick={performDash}>
+                    <Lightning size={22} weight="fill" aria-hidden="true" />
+                    相位
+                  </button>
+                  <button type="button" onClick={recoverAnchor}>
+                    <Rewind size={22} weight="bold" aria-hidden="true" />
+                    回收
+                  </button>
+                </div>
+              </div>
+            </div>
           </>
         )}
 
         {run.phase === 'briefing' && (
-          <div className="absolute inset-0 flex items-end bg-[#030304]/35">
+          <div className="gravity-briefing absolute inset-0 flex items-end bg-[#030304]/35">
             <img
               src="/covers/gravity-graveyard.png"
               alt="教堂星舰构成的引力墓场"
@@ -1302,7 +1397,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#070608] via-[#070608]/75 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#070608] via-transparent to-[#070608]/25" />
-            <div className="relative max-w-xl px-7 pb-8 sm:px-10 sm:pb-11">
+            <div className="gravity-briefing-content relative max-w-xl px-7 pb-8 sm:px-10 sm:pb-11">
               <div className="mb-3 text-[10px] font-bold uppercase tracking-[.36em] text-[#d2ae62]">
                 Burial order 7193
               </div>
@@ -1311,10 +1406,10 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
                 <br />
                 给生者真相。
               </h3>
-              <p className="mt-4 max-w-md text-sm leading-6 text-[#c7baa5]">
+              <p className="gravity-briefing-copy mt-4 max-w-md text-sm leading-6 text-[#c7baa5]">
                 你是圣轨教会的星骸葬仪师。教会说，不稳定核心一旦脱轨就会摧毁殖民航道，葬仪是唯一的封存方式。但这片“死寂”墓场，正在向你发送生命信号。
               </p>
-              <div className="mt-4 grid max-w-md grid-cols-2 gap-2 text-[10px] text-[#a99b86]">
+              <div className="gravity-loadout mt-4 grid max-w-md grid-cols-2 gap-2 text-[10px] text-[#a99b86]">
                 <label className="rounded-lg border border-[#79603c]/55 bg-black/35 px-3 py-2">
                   葬仪舰
                   <select
@@ -1352,8 +1447,8 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
                 >
                   接受葬仪
                 </button>
-                <span className="text-[11px] text-[#9f927e]">
-                  桌面端 · 键鼠 · 单局约 10–15 分钟
+                <span className="gravity-device-copy text-[11px] text-[#9f927e]">
+                  键鼠 / 触控 · 单局约 10–15 分钟
                 </span>
               </div>
             </div>
@@ -1500,7 +1595,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
         )}
       </div>
 
-      <div className="grid gap-3 border-t border-[#80613b]/30 bg-[#0b0809] px-5 py-4 text-xs text-[#9d9280] sm:grid-cols-[1fr_auto] sm:px-7">
+      <div className="gravity-footer grid gap-3 border-t border-[#80613b]/30 bg-[#0b0809] px-5 py-4 text-xs text-[#9d9280] sm:grid-cols-[1fr_auto] sm:px-7">
         <p>
           <span className="mr-2 text-[#c5a25d]">葬仪原则</span>
           {actCopy.subtitle}
@@ -1510,5 +1605,42 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
         </p>
       </div>
     </section>
+  )
+}
+
+interface TouchDirectionProps {
+  action: MoveDirection
+  label: string
+  onAction: (direction: MoveDirection, active: boolean) => void
+  children: ReactNode
+}
+
+function TouchDirection({ action, label, onAction, children }: TouchDirectionProps) {
+  const pointers = useRef(new Set<number>())
+  const release = (pointerId: number) => {
+    pointers.current.delete(pointerId)
+    if (pointers.current.size === 0) onAction(action, false)
+  }
+
+  useEffect(() => () => onAction(action, false), [action, onAction])
+
+  return (
+    <button
+      type="button"
+      className={`gravity-touch-direction gravity-touch-${action}`}
+      aria-label={label}
+      onContextMenu={(event) => event.preventDefault()}
+      onPointerDown={(event) => {
+        event.preventDefault()
+        pointers.current.add(event.pointerId)
+        event.currentTarget.setPointerCapture(event.pointerId)
+        onAction(action, true)
+      }}
+      onPointerUp={(event) => release(event.pointerId)}
+      onPointerCancel={(event) => release(event.pointerId)}
+      onLostPointerCapture={(event) => release(event.pointerId)}
+    >
+      {children}
+    </button>
   )
 }
