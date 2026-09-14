@@ -1,4 +1,4 @@
-import type { InputSnapshot } from '@/games/tank-battle/types.ts'
+import type { InputSnapshot, TankBattleHoldAction } from '@/games/tank-battle/types.ts'
 
 const KEY_UP = new Set(['ArrowUp', 'KeyW'])
 const KEY_DOWN = new Set(['ArrowDown', 'KeyS'])
@@ -25,6 +25,7 @@ const PREVENT_DEFAULT_CODES = new Set([
  */
 export class InputManager {
   private readonly pressed = new Set<string>()
+  private readonly heldActions = new Set<TankBattleHoldAction>()
   private pausePending = false
   private confirmPending = false
   private firstInteractionHandler: (() => void) | null = null
@@ -49,17 +50,38 @@ export class InputManager {
 
   getSnapshot(): InputSnapshot {
     const snapshot: InputSnapshot = {
-      up: this.isAnyPressed(KEY_UP),
-      down: this.isAnyPressed(KEY_DOWN),
-      left: this.isAnyPressed(KEY_LEFT),
-      right: this.isAnyPressed(KEY_RIGHT),
-      fire: this.isAnyPressed(KEY_FIRE),
+      up: this.heldActions.has('up') || this.isAnyPressed(KEY_UP),
+      down: this.heldActions.has('down') || this.isAnyPressed(KEY_DOWN),
+      left: this.heldActions.has('left') || this.isAnyPressed(KEY_LEFT),
+      right: this.heldActions.has('right') || this.isAnyPressed(KEY_RIGHT),
+      fire: this.heldActions.has('fire') || this.isAnyPressed(KEY_FIRE),
       pauseEdge: this.pausePending,
       confirmEdge: this.confirmPending,
     }
     this.pausePending = false
     this.confirmPending = false
     return snapshot
+  }
+
+  /** 触控按钮与键盘共用同一份持续输入快照。 */
+  setHeldAction(action: TankBattleHoldAction, active: boolean): void {
+    this.notifyFirstInteraction()
+    if (active) this.heldActions.add(action)
+    else this.heldActions.delete(action)
+  }
+
+  requestPause(): void {
+    this.notifyFirstInteraction()
+    this.pausePending = true
+  }
+
+  requestConfirm(): void {
+    this.notifyFirstInteraction()
+    this.confirmPending = true
+  }
+
+  releaseHeldActions(): void {
+    this.heldActions.clear()
   }
 
   private isAnyPressed(codes: ReadonlySet<string>): boolean {
@@ -76,11 +98,7 @@ export class InputManager {
       event.preventDefault()
     }
 
-    if (this.firstInteractionHandler !== null) {
-      const handler = this.firstInteractionHandler
-      this.firstInteractionHandler = null
-      handler()
-    }
+    this.notifyFirstInteraction()
 
     // repeat 事件不触发边沿动作，但仍要保持按下态
     if (!event.repeat) {
@@ -101,5 +119,13 @@ export class InputManager {
 
   private readonly onBlur = (): void => {
     this.pressed.clear()
+    this.releaseHeldActions()
+  }
+
+  private notifyFirstInteraction(): void {
+    if (this.firstInteractionHandler === null) return
+    const handler = this.firstInteractionHandler
+    this.firstInteractionHandler = null
+    handler()
   }
 }

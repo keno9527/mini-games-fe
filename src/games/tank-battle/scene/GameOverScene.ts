@@ -22,6 +22,7 @@ export class GameOverScene implements Scene {
   private blinkPhase = 0
   /** 入场后的输入锁定帧数，避免死亡瞬间的按键立即重开 */
   private inputLockTicks = 0
+  private restartPending = false
 
   constructor(callbacks: GameOverSceneCallbacks, getStats: () => GameOverStats) {
     this.callbacks = callbacks
@@ -31,13 +32,16 @@ export class GameOverScene implements Scene {
   onEnter(): void {
     this.blinkPhase = 0
     this.inputLockTicks = 45
+    this.restartPending = false
   }
 
   update(input: InputSnapshot): void {
     this.blinkPhase = (this.blinkPhase + 1) % 60
 
     if (this.inputLockTicks > 0) {
+      this.restartPending ||= input.confirmEdge
       this.inputLockTicks -= 1
+      if (this.inputLockTicks === 0 && this.restartPending) this.callbacks.onRestart()
       return
     }
     if (input.confirmEdge) {
@@ -76,7 +80,7 @@ export class GameOverScene implements Scene {
     )
 
     if (this.inputLockTicks <= 0 && this.blinkPhase < 40) {
-      drawCentered(context, 'PRESS SPACE TO RETRY', 160, COLORS.TEXT_PRIMARY, 1)
+      drawCentered(context, 'PRESS START TO RETRY', 160, COLORS.TEXT_PRIMARY, 1)
     }
   }
 }

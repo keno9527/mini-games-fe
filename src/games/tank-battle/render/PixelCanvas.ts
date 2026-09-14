@@ -35,10 +35,19 @@ export class PixelCanvas {
     return this.scale
   }
 
-  /** 按广场分配的容器宽度计算最大的整数缩放倍数 */
+  /** 桌面保持整数倍像素缩放；窄屏优先利用可用宽度。 */
   private readonly resize = (): void => {
-    const availableWidth = this.container.clientWidth || window.innerWidth
-    this.scale = Math.max(1, Math.floor(availableWidth / CANVAS_WIDTH))
+    const style = window.getComputedStyle?.(this.container)
+    const horizontalPadding = style
+      ? (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0)
+      : 0
+    const availableWidth = Math.max(
+      1,
+      (this.container.clientWidth || window.innerWidth) - horizontalPadding,
+    )
+    const fitScale = availableWidth / CANVAS_WIDTH
+    const compact = window.matchMedia?.('(max-width: 700px)').matches ?? false
+    this.scale = compact ? fitScale : Math.max(1, Math.floor(fitScale))
 
     this.canvas.width = CANVAS_WIDTH
     this.canvas.height = CANVAS_HEIGHT

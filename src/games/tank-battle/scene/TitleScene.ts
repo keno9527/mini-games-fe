@@ -54,7 +54,7 @@ export class TitleScene implements Scene {
 
     // 闪烁的开始提示
     if (this.blinkPhase < 40) {
-      drawCentered(context, 'PRESS SPACE TO START', 160, COLORS.TEXT_PRIMARY, 1)
+      drawCentered(context, 'PRESS START', 160, COLORS.TEXT_PRIMARY, 1)
     }
 
     drawCentered(context, 'PROTECT THE EAGLE', 184, COLORS.BASE_EAGLE, 1)
