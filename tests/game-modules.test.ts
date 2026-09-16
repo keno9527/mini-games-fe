@@ -60,6 +60,29 @@ test('tank battle high score is injected and kept inside the game session', asyn
   assert.equal(world.highScore, 550)
 })
 
+test('tank battle touch input supports moving and firing together', async () => {
+  const { InputManager } = await import('../src/games/tank-battle/core/InputManager.ts')
+  const input = new InputManager()
+
+  input.setHeldAction('left', true)
+  input.setHeldAction('fire', true)
+  assert.deepEqual(input.getSnapshot(), {
+    up: false,
+    down: false,
+    left: true,
+    right: false,
+    fire: true,
+    pauseEdge: false,
+    confirmEdge: false,
+  })
+
+  input.setHeldAction('left', false)
+  input.releaseHeldActions()
+  input.requestPause()
+  assert.equal(input.getSnapshot().pauseEdge, true)
+  assert.equal(input.getSnapshot().pauseEdge, false)
+})
+
 test('tank battle runtime releases browser resources when unmounted', async () => {
   type Listener = (...args: unknown[]) => void
   const windowListeners = new Map<string, Set<Listener>>()

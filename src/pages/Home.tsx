@@ -3,7 +3,6 @@ import { getGames, getPlayRanking } from '@/api'
 import GameCard from '@/components/GameCard'
 import GameLaunchLink from '@/components/GameLaunchLink'
 import { GameCardSkeleton } from '@/components/Skeleton'
-import { getGamePresentation } from '@/features/games/catalog'
 import type { Game, PlayRankItem } from '@/types'
 
 export default function Home() {
@@ -25,140 +24,57 @@ export default function Home() {
   const top5 = ranking.slice(0, 5)
 
   return (
-    <main className="relative mx-auto max-w-7xl px-5 pb-12 pt-7 md:px-6">
-      <div className="pixel-hero mb-7 overflow-hidden rounded-lg border-4 border-white bg-[#5fc9ff] px-6 py-7 shadow-[0_5px_0_#94cde7,0_14px_32px_rgba(28,96,142,0.18)] md:px-8">
-        <div className="relative z-10 grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
-          <div>
-            <p className="mb-3 inline-flex rounded-md bg-white/95 px-3 py-1 font-pixel text-[9px] tracking-wider text-[#0c63bf] shadow-[0_3px_0_rgba(19,86,138,0.18)]">
-              MINI GAMES
-            </p>
-            <h1
-              className="font-pixel text-3xl leading-tight text-white md:text-5xl"
-              style={{ textShadow: '3px 3px 0 #0b62b8, 6px 6px 0 rgba(0,0,0,0.16)' }}
-            >
-              游戏广场
-            </h1>
-            <p className="mt-4 max-w-2xl font-game text-base font-extrabold leading-7 text-[#164976] md:text-lg">
-              发现好玩小游戏，挑战高分，冲击排行榜。
-            </p>
-          </div>
-          <div className="hidden min-w-48 justify-self-end md:block">
-            <div className="rounded-lg border-4 border-white bg-[#ffd343] px-5 py-4 text-right shadow-[0_5px_0_#bc7a00]">
-              <div className="font-pixel text-[10px] leading-5 text-[#15456f]">PLAY NOW</div>
-              <div className="mt-2 font-game text-3xl font-black text-[#18324d]">
-                {games.length || '--'}
-              </div>
-              <div className="font-game text-sm font-extrabold text-[#5d6f7e]">款游戏</div>
-            </div>
-          </div>
+    <main className="plaza-library">
+      <header className="library-heading">
+        <div>
+          <p className="library-eyebrow">闲暇时刻 · 玩一局</p>
+          <h1>发现下一份乐趣</h1>
+          <p>挑一款喜欢的游戏，慢慢来，也可以挑战自己。</p>
         </div>
-      </div>
-
-      {/* Loading */}
+        <span className="library-count">{games.length || '—'} 款游戏</span>
+      </header>
       {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <div className="library-grid">
+          {Array.from({ length: 6 }, (_, i) => (
             <GameCardSkeleton key={i} />
           ))}
         </div>
       )}
-
-      {/* Error */}
       {error && (
-        <div className="rounded-lg border-4 border-white bg-white px-6 py-14 text-center shadow-[0_5px_0_#9ac6df]">
-          <div className="mb-4 font-pixel text-xl tracking-wider text-[#ff4f63]">数据加载失败</div>
-          <p className="mb-3 font-game text-lg font-bold text-[#47637d]">{error}</p>
-          <code className="inline-block rounded-md border-2 border-[#7ec7ee] bg-[#eef9ff] px-4 py-2 font-mono-crt text-sm tracking-wider text-[#0c63bf]">
-            $ npm run dev
-          </code>
-        </div>
+        <p role="alert" className="library-error">
+          {error}
+        </p>
       )}
-
-      {/* Main content */}
       {!loading && !error && (
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-          {/* Left: games */}
-          <div className="min-w-0">
-            {/* Header */}
-            <div className="mb-6 flex items-center justify-between gap-4">
-              <h2 className="font-game text-2xl font-black text-[#18324d]">游戏列表</h2>
-              <span className="rounded-md border-2 border-white bg-white px-3 py-1 font-game text-sm font-black text-[#0c63bf] shadow-[0_3px_0_#b6d8e8]">
-                {games.length} 款
-              </span>
-            </div>
-
-            {/* Games grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {games.map((game) => (
-                <GameCard key={game.id} game={game} />
-              ))}
-            </div>
+        <>
+          <div className="library-section-heading">
+            <h2>全部游戏</h2>
+            <span>即点即玩 · 进度保存在本机</span>
           </div>
-
-          {/* Right: ranking sidebar */}
-          <aside className="w-full">
-            <div className="sticky top-24 rounded-lg border-4 border-white bg-white p-5 shadow-[0_5px_0_#9ac6df,0_12px_24px_rgba(34,91,130,0.16)]">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <h3 className="font-game text-xl font-black text-[#18324d]">热门排行榜</h3>
-                <span className="rounded-md bg-[#e9f5ff] px-2 py-1 font-pixel text-[8px] text-[#0c63bf]">
-                  TOP 5
-                </span>
-              </div>
-
-              {top5.length === 0 ? (
-                <div className="rounded-lg border-2 border-dashed border-[#b6d8e8] bg-[#f4fbff] px-4 py-8 text-center">
-                  <p className="font-game text-sm font-extrabold text-[#58708b]">暂无排行记录</p>
-                </div>
-              ) : (
-                <ol className="space-y-3">
-                  {top5.map((item, idx) => {
-                    const { coverGradient, icon } = getGamePresentation(item.gameId)
-                    const rankingContent = (
-                      <>
-                        <span
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gradient-to-br text-lg ${coverGradient}`}
-                          style={{ imageRendering: 'pixelated' }}
-                          aria-hidden
-                        >
-                          {icon}
-                        </span>
-                        <span
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md font-pixel text-[9px] ${
-                            idx === 0
-                              ? 'bg-[#ffd343] text-[#18324d]'
-                              : idx === 1
-                                ? 'bg-[#8dd7ff] text-[#18324d]'
-                                : idx === 2
-                                  ? 'bg-[#ff9b5a] text-white'
-                                  : 'bg-[#e9f5ff] text-[#47637d]'
-                          }`}
-                        >
-                          {idx + 1}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate font-game text-sm font-black text-[#24435f] transition-colors group-hover:text-[#0c63bf]">
-                          {item.gameName}
-                        </span>
-                        <span className="shrink-0 rounded-md bg-[#edf7e6] px-2 py-1 font-game text-xs font-black text-[#2e8a33]">
-                          {item.playCount}
-                        </span>
-                      </>
-                    )
-                    const rankingClassName =
-                      'group flex items-center gap-3 rounded-lg border-2 border-[#e5f3fb] bg-[#f7fcff] p-2 transition-all hover:border-[#8fd0f1] hover:bg-white'
-
-                    return (
-                      <li key={item.gameId}>
-                        <GameLaunchLink gameId={item.gameId} className={rankingClassName}>
-                          {rankingContent}
-                        </GameLaunchLink>
-                      </li>
-                    )
-                  })}
-                </ol>
-              )}
-            </div>
-          </aside>
-        </div>
+          <div className="library-grid">
+            {games.map((game) => (
+              <GameCard key={game.id} game={game} />
+            ))}
+          </div>
+          <section className="library-popular" aria-labelledby="popular-title">
+            <h2 id="popular-title">热门排行榜</h2>
+            {top5.length === 0 ? (
+              <p>暂无排行记录，开始一局吧。</p>
+            ) : (
+              <ol>
+                {top5.map((item, i) => (
+                  <li key={item.gameId}>
+                    <GameLaunchLink gameId={item.gameId}>
+                      <span>{String(i + 1).padStart(2, '0')}</span>
+                      <strong>{item.gameName}</strong>
+                      <small>{item.playCount} 次游玩</small>
+                    </GameLaunchLink>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        </>
       )}
     </main>
   )

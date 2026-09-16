@@ -259,6 +259,7 @@
 .ms-board-scroll {
   overflow: auto;
   overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   border: 2px solid #6c7158;
   border-radius: 3px;
   background: #bac0aa;
@@ -270,7 +271,7 @@
   grid-template-columns: repeat(var(--ms-columns), minmax(0, 1fr));
   gap: 3px;
   padding: 4px;
-  width: var(--ms-board-width);
+  width: calc(var(--ms-columns) * var(--ms-cell-size, 34px));
   min-width: 100%;
   background: #bdc1ad;
   box-shadow: inset 0 2px 4px #34412c40;
@@ -451,6 +452,9 @@
   font-size: 10px;
   color: #716b58;
 }
+.ms-board-nav {
+  display: none;
+}
 .ms-sidebar {
   min-width: 0;
 }
@@ -621,6 +625,9 @@
   }
 }
 @container (max-width: 420px) {
+  .ms-game {
+    padding-inline: 8px;
+  }
   .ms-heading {
     padding-bottom: 16px;
   }
@@ -663,6 +670,10 @@
   .ms-mode-bar {
     order: 1;
     margin-bottom: 12px;
+    position: sticky;
+    top: 8px;
+    z-index: 4;
+    box-shadow: 0 4px 12px #3b392424;
   }
   .ms-mode-bar button {
     padding: 8px;
@@ -672,15 +683,16 @@
     padding-right: 2px;
   }
   .ms-board-frame {
-    order: 2;
-    padding: 11px;
+    order: 3;
+    padding: 8px;
   }
   .ms-board-caption {
-    order: 3;
+    order: 4;
     font-size: 9px;
     margin-bottom: 0;
   }
   .ms-board {
+    --ms-cell-size: 30px;
     gap: 2px;
     padding: 3px;
   }
@@ -692,5 +704,33 @@
   }
   .ms-footer span:last-child {
     display: none;
+  }
+  .ms-board-nav {
+    position: sticky;
+    top: 57px;
+    z-index: 3;
+    order: 2;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    padding: 4px;
+    margin: -7px 0 8px;
+    border: 1px solid #d7ceb8;
+    border-radius: 6px;
+    background: #e8e3d4;
+    box-shadow: 0 4px 12px #3b39241c;
+  }
+  .ms-board-nav button {
+    min-height: 32px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #716b58;
+    font-size: 10px;
+  }
+  .ms-board-nav button[aria-pressed='true'] {
+    border-color: #d1c5a8;
+    color: #35563e;
+    background: #faf7e9;
+    box-shadow: 0 1px 3px #68563812;
   }
 }

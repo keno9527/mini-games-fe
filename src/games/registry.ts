@@ -3,6 +3,7 @@ import twentyFourPoints from '@/games/24points/manifest.ts'
 import breakout from '@/games/breakout/manifest.ts'
 import gomoku from '@/games/gomoku/manifest.ts'
 import gravityGraveyard from '@/games/gravity-graveyard/manifest.ts'
+import laserMirror from '@/games/laser-mirror/manifest.ts'
 import memory from '@/games/memory/manifest.ts'
 import minesweeper from '@/games/minesweeper/manifest.ts'
 import snake from '@/games/snake/manifest.ts'
@@ -17,6 +18,7 @@ const gameManifests: readonly GameManifest[] = [
   xiangqi,
   tankBattle,
   gravityGraveyard,
+  laserMirror,
   minesweeper,
   snake,
   twentyFourPoints,

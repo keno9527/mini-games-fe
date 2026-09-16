@@ -241,6 +241,176 @@
   color: var(--gs-muted);
   padding-top: 20px;
 }
+/* Cool glass, cyan light, and compact optical controls. */
+.laser-room {
+  --gs-bg: #071827;
+  --gs-panel: #0d2637;
+  --gs-text: #e6fbff;
+  --gs-muted: #8db1be;
+  --gs-line: #24556a;
+  --gs-accent: #18c7bd;
+  --gs-on-accent: #03191a;
+  background: radial-gradient(circle at 70% 12%, #17627a55, transparent 38%), var(--gs-bg);
+}
+.laser-level-count {
+  color: #6ee7df;
+  font:
+    600 13px 'SFMono-Regular',
+    Consolas,
+    monospace;
+}
+.laser-levels {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(36px, 1fr));
+  width: 100%;
+  gap: 6px;
+}
+.laser-levels button {
+  min-height: 46px;
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  border: 1px solid var(--gs-line);
+  border-radius: 6px;
+  color: var(--gs-text);
+  background: var(--gs-panel);
+}
+.laser-levels button[aria-pressed='true'] {
+  border-color: #6ee7df;
+  box-shadow:
+    inset 0 0 0 1px #6ee7df,
+    0 0 14px #18c7bd44;
+}
+.laser-levels button:disabled {
+  opacity: 0.35;
+}
+.laser-levels small {
+  color: #ffd36e;
+  font-size: 8px;
+}
+.laser-layout {
+  grid-template-columns: minmax(0, 1fr) 160px;
+}
+.laser-board-wrap {
+  overflow-x: auto;
+  padding: 5px;
+}
+.laser-board {
+  width: min(100%, 560px);
+  min-width: calc(var(--laser-cols) * 44px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(var(--laser-cols), minmax(44px, 1fr));
+  border: 1px solid #28718b;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #03111b;
+  box-shadow:
+    inset 0 0 38px #000a,
+    0 12px 32px #0005;
+}
+.laser-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  min-width: 44px;
+  min-height: 44px;
+  overflow: hidden;
+  border-right: 1px solid #143447;
+  border-bottom: 1px solid #143447;
+  color: #dffcff;
+  background: transparent;
+}
+.laser-cell:not(:disabled) {
+  cursor: pointer;
+  background: #123044;
+}
+.laser-cell:not(:disabled):hover {
+  background: #19435a;
+}
+.laser-cell.is-energized {
+  background: #0e333d;
+  box-shadow: inset 0 0 20px #35fff044;
+}
+.laser-cell > span:not(.laser-beam) {
+  position: relative;
+  z-index: 2;
+}
+.laser-beam {
+  position: absolute;
+  z-index: 1;
+  background: #7dfff2;
+  box-shadow:
+    0 0 5px #7dfff2,
+    0 0 12px #19d3c5;
+}
+.laser-beam.is-horizontal {
+  inset: 47% 0;
+}
+.laser-beam.is-vertical {
+  inset: 0 47%;
+}
+.laser-mirror {
+  font:
+    700 clamp(24px, 5cqw, 38px) Georgia,
+    serif;
+  color: #e7fdff;
+  text-shadow: 0 0 8px #92f8ff;
+}
+.laser-emitter {
+  font-size: clamp(22px, 4cqw, 32px);
+  color: #ff9d5c;
+  text-shadow: 0 0 9px #ff6b35;
+}
+.laser-crystal {
+  font-size: clamp(17px, 3.5cqw, 27px);
+  color: #7594a3;
+}
+.laser-cell.is-lit .laser-crystal {
+  color: #fff3a6;
+  text-shadow:
+    0 0 8px #fff,
+    0 0 18px #ffd74c;
+}
+.laser-splitter {
+  font-size: clamp(22px, 4cqw, 32px);
+  color: #d39cff;
+  text-shadow: 0 0 10px #9a55ff;
+}
+.laser-wall {
+  color: #526977;
+  font-size: clamp(20px, 4cqw, 30px);
+}
+.laser-description {
+  max-width: 560px;
+  margin: 14px auto 0;
+  color: var(--gs-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+@media (max-width: 760px) {
+  .laser-levels {
+    grid-template-columns: repeat(5, minmax(44px, 1fr));
+  }
+  .laser-layout {
+    grid-template-columns: 1fr;
+  }
+  .laser-room .gs-sidebar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .laser-room .gs-panel {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 480px) {
+  .laser-room {
+    padding: 10px;
+  }
+  .laser-room .gs-sidebar {
+    grid-template-columns: 1fr 1fr;
+  }
+}
 /* Warm maple and polished stones. */
 .gomoku-room .gs-heading h2 {
   font-family: 'Songti SC', 'SimSun', serif;

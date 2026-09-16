@@ -15,8 +15,10 @@
 
 项目内置以下小游戏（位于 `src/games/`）：
 
+- 象棋残局 Xiangqi Endgames
 - 坦克大战 Tank Battle
 - 引力墓场 Gravity Graveyard
+- 折光回廊 Laser Mirror
 - 打砖块 Breakout
 - 五子棋 Gomoku
 - 记忆翻牌 Memory Card
