@@ -159,6 +159,9 @@ body {
   .game-stage {
     padding: 14px 12px 24px;
   }
+  .game-page--minesweeper .game-stage {
+    padding-inline: 6px;
+  }
 }
 
 .plaza-library {

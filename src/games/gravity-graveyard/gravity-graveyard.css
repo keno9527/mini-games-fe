@@ -1,0 +1,257 @@
+.gravity-mobile-play {
+  display: none;
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .game-page--gravity-graveyard .game-stage {
+    padding: 10px 10px calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .gravity-graveyard {
+    border-radius: 18px;
+  }
+
+  .gravity-header {
+    padding: 12px 14px;
+  }
+
+  .gravity-header > div:last-child {
+    gap: 10px;
+  }
+
+  .gravity-header h2 {
+    font-size: 21px;
+  }
+
+  .gravity-header button,
+  .gravity-header span.rounded-full {
+    padding: 7px 10px;
+    font-size: 10px;
+  }
+
+  .gravity-stage[data-phase='briefing'] {
+    min-height: 570px;
+  }
+
+  .gravity-stage[data-phase='interlude'],
+  .gravity-stage[data-phase='ending'] {
+    min-height: 720px;
+  }
+
+  .gravity-stage[data-phase='victory'],
+  .gravity-stage[data-phase='defeat'] {
+    min-height: 470px;
+  }
+
+  .gravity-stage[data-phase='interlude'] > .absolute,
+  .gravity-stage[data-phase='ending'] > .absolute {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding-top: 30px;
+    padding-bottom: 30px;
+  }
+
+  .gravity-canvas {
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .gravity-desktop-hud {
+    display: none;
+  }
+
+  .gravity-mobile-play {
+    display: block;
+    border-top: 1px solid rgb(128 97 59 / 35%);
+    background: #0b0809;
+  }
+
+  .gravity-mobile-hud {
+    display: grid;
+    gap: 10px;
+    padding: 11px 13px 9px;
+  }
+
+  .gravity-mobile-objective {
+    display: grid;
+    gap: 3px;
+  }
+
+  .gravity-mobile-objective strong {
+    color: #d5b66e;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+  }
+
+  .gravity-mobile-objective span {
+    color: #d5cbb9;
+    font-size: 12px;
+  }
+
+  .gravity-mobile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    color: #988c7a;
+    font-size: 10px;
+  }
+
+  .gravity-mobile-stats span {
+    border: 1px solid rgb(128 97 59 / 35%);
+    border-radius: 7px;
+    background: #100c0d;
+    padding: 6px 7px;
+    text-align: center;
+  }
+
+  .gravity-mobile-stats b {
+    color: #ead9b1;
+  }
+
+  .gravity-touch-hint {
+    padding: 0 13px 8px;
+    color: #a99b86;
+    font-size: 10px;
+  }
+
+  .gravity-touch-controls {
+    display: grid;
+    grid-template-columns: minmax(168px, 1.1fr) minmax(132px, 0.9fr);
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px 14px;
+    border-top: 1px solid rgb(128 97 59 / 25%);
+  }
+
+  .gravity-touch-controls button {
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    border: 1px solid #72583a;
+    background: #1a1212;
+    color: #dfcfad;
+    box-shadow: inset 0 -3px 0 #080607;
+  }
+
+  .gravity-touch-controls button:active {
+    transform: translateY(2px);
+    background: #28191a;
+    box-shadow: inset 0 -1px 0 #080607;
+  }
+
+  .gravity-touch-controls button:focus-visible {
+    outline: 3px solid #d2ae62;
+    outline-offset: 2px;
+  }
+
+  .gravity-touch-dpad {
+    display: grid;
+    grid-template: repeat(2, 56px) / repeat(3, 56px);
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .gravity-touch-direction {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    min-height: 56px;
+    border-radius: 10px;
+  }
+
+  .gravity-touch-up {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .gravity-touch-left {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .gravity-touch-down {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .gravity-touch-right {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .gravity-touch-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .gravity-touch-actions button {
+    min-height: 52px;
+    border-radius: 9px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 10px;
+  }
+
+  .gravity-touch-actions button[aria-pressed='true'] {
+    border-color: #d2ae62;
+    background: #6f5424;
+    color: #fff0c7;
+  }
+
+  .gravity-briefing {
+    overflow-y: auto;
+  }
+
+  .gravity-briefing-content {
+    width: 100%;
+    padding: 24px 20px 26px;
+  }
+
+  .gravity-briefing-content h3 {
+    font-size: 31px;
+  }
+
+  .gravity-briefing-copy {
+    font-size: 12px;
+    line-height: 1.75;
+  }
+
+  .gravity-loadout {
+    grid-template-columns: 1fr;
+  }
+
+  .gravity-loadout label {
+    min-width: 0;
+  }
+
+  .gravity-device-copy {
+    flex-basis: 100%;
+  }
+
+  .gravity-footer {
+    padding: 11px 14px;
+  }
+}
+
+@media (max-width: 370px) {
+  .gravity-touch-controls {
+    grid-template-columns: 164px minmax(120px, 1fr);
+    gap: 7px;
+    padding-inline: 8px;
+  }
+
+  .gravity-touch-dpad {
+    grid-template: repeat(2, 53px) / repeat(3, 53px);
+  }
+
+  .gravity-touch-direction {
+    min-width: 53px;
+    min-height: 53px;
+  }
+}

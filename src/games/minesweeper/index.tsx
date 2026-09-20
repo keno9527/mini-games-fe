@@ -66,8 +66,10 @@ function Minefield({ userId, gameId }: GameComponentProps) {
   const [lastCell, setLastCell] = useState<number | null>(null)
   const [focusCell, setFocusCell] = useState(0)
   const [message, setMessage] = useState('')
+  const [boardPosition, setBoardPosition] = useState(0)
   const startTime = useRef(0)
   const cellRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const boardScrollRef = useRef<HTMLDivElement | null>(null)
   const record = useGameRecord({ userId, gameId })
   const cfg = CONFIGS[difficulty]
   const ended = status === 'won' || status === 'lost'
@@ -94,7 +96,16 @@ function Minefield({ userId, gameId }: GameComponentProps) {
     setLastCell(null)
     setFocusCell(0)
     setMessage('')
+    setBoardPosition(0)
     record.reset()
+  }
+
+  const moveBoardTo = (position: number) => {
+    const scroll = boardScrollRef.current
+    if (!scroll) return
+    const maxScroll = scroll.scrollWidth - scroll.clientWidth
+    scroll.scrollTo({ left: maxScroll * (position / 2), behavior: 'smooth' })
+    setBoardPosition(position)
   }
 
   const flag = (r: number, c: number) => {
@@ -249,10 +260,17 @@ function Minefield({ userId, gameId }: GameComponentProps) {
             <span className="ms-screw bottom-right" />
             <div
               className="ms-board-scroll"
+              ref={boardScrollRef}
               tabIndex={difficulty === '简单' ? -1 : 0}
               role="region"
               aria-label="雷区，大棋盘可左右滚动"
               key={difficulty}
+              onScroll={(event) => {
+                if (difficulty !== '复杂') return
+                const { clientWidth, scrollLeft, scrollWidth } = event.currentTarget
+                const maxScroll = scrollWidth - clientWidth
+                setBoardPosition(maxScroll > 0 ? Math.round((scrollLeft / maxScroll) * 2) : 0)
+              }}
             >
               <div
                 className={`ms-board ${difficulty === '简单' ? 'ms-board-small' : ''}`}
@@ -261,7 +279,6 @@ function Minefield({ userId, gameId }: GameComponentProps) {
                 style={
                   {
                     '--ms-columns': cfg.cols,
-                    '--ms-board-width': `${cfg.cols * 34}px`,
                   } as CSSProperties
                 }
               >
@@ -379,6 +396,20 @@ function Minefield({ userId, gameId }: GameComponentProps) {
                     : '也可右键插旗'}
             </span>
           </div>
+          {difficulty === '复杂' && (
+            <div className="ms-board-nav" role="group" aria-label="棋盘区域快速定位">
+              {['左侧', '中部', '右侧'].map((label, position) => (
+                <button
+                  type="button"
+                  key={label}
+                  aria-pressed={boardPosition === position}
+                  onClick={() => moveBoardTo(position)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <aside className="ms-sidebar">
