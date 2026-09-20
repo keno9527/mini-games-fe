@@ -1,3 +1,7 @@
+.game-page--tank-battle .game-stage {
+  max-width: 1450px;
+}
+
 .tank-touch-controls,
 .tank-touch-help {
   display: none;
@@ -162,146 +166,6 @@
   }
 }
 
-.tank-controller-setup {
-  padding: 16px;
-  border-bottom: 2px solid #343434;
-  background: #161918;
-  color: #e9e8dc;
-  font-size: 13px;
-  line-height: 1.7;
-}
-.tank-mode-row {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.tank-mode-row legend {
-  margin-bottom: 6px;
-  color: #babdb4;
-}
-.tank-mode-row button {
-  padding: 8px 12px;
-  border: 1px solid #72766b;
-  border-radius: 6px;
-  margin-right: 6px;
-}
-.tank-mode-row button[aria-pressed='true'],
-.tank-session-action {
-  background: #e0bd5a;
-  color: #171a14;
-}
-.tank-controller-setup button:disabled,
-.tank-controller-setup select:disabled {
-  opacity: 0.5;
-}
-.tank-controller-setup button:focus-visible,
-.tank-controller-setup select:focus-visible {
-  outline: 3px solid #e0bd5a;
-  outline-offset: 3px;
-}
-.tank-player-bindings {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
-  gap: 12px;
-  margin: 14px 0;
-}
-.tank-player-bindings label {
-  display: grid;
-  min-width: 0;
-  gap: 6px;
-}
-.tank-player-bindings select {
-  width: 100%;
-  min-width: 0;
-  padding: 10px;
-  background: #252a26;
-  color: #f1f2e9;
-  border: 1px solid #686f64;
-  border-radius: 6px;
-}
-.tank-player-one {
-  color: #e0bd5a;
-}
-.tank-player-two {
-  color: #70cef2;
-}
-.tank-controller-setup p {
-  margin-top: 8px;
-  color: #b8c0b5;
-}
-.tank-controls-guide {
-  margin-top: 8px;
-}
-.tank-controls-guide summary {
-  cursor: pointer;
-  color: #e0bd5a;
-}
-.tank-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 2px solid #343434;
-  background: #171713;
-  color: #f6f1df;
-}
-.tank-mode {
-  display: grid;
-  gap: 6px;
-}
-.tank-eyebrow {
-  color: #c9ae62;
-  font: 11px monospace;
-  letter-spacing: 2px;
-}
-.tank-toolbar select {
-  max-width: 100%;
-  background: #171713;
-  color: #f6f1df;
-  font-size: 14px;
-  padding: 6px 4px;
-  border: 1px solid #626252;
-  border-radius: 4px;
-}
-.tank-toolbar-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.tank-toolbar button {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 8px 12px;
-  border: 1px solid #626252;
-  border-radius: 4px;
-  font-size: 13px;
-  background: #282820;
-}
-.tank-toolbar button:hover {
-  background: #39392c;
-}
-.tank-toolbar button:focus-visible,
-.tank-toolbar select:focus-visible,
-.tank-field-guide summary:focus-visible {
-  outline: 2px solid #f4c542;
-  outline-offset: 3px;
-}
-.tank-toolbar :disabled {
-  opacity: 0.5;
-}
-.tank-practice-note {
-  padding: 8px 16px;
-  background: #28230f;
-  color: #d7c994;
-  font-size: 12px;
-}
 .tank-field-guide {
   padding: 14px 16px;
   border-top: 2px solid #343434;
@@ -346,4 +210,370 @@
   .tank-toolbar {
     padding: 12px;
   }
+}
+
+.tank-battle-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 42px 16px 16px;
+  background: #000;
+  min-height: 260px;
+}
+.tank-battle-canvas {
+  display: block;
+  image-rendering: pixelated;
+  max-width: 100%;
+}
+.tank-battle-stage.is-title {
+  padding: 0;
+}
+.is-title > .tank-battle-canvas {
+  position: absolute;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0;
+  pointer-events: none;
+}
+.tank-title-screen {
+  width: 100%;
+  min-height: 620px;
+  border: 16px solid #626262;
+  box-shadow: inset 0 0 0 3px #92928c;
+  padding: 44px 12px 0;
+  color: #d5d5d0;
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+.tank-title-heading {
+  text-align: center;
+}
+.tank-title-heading img {
+  display: block;
+  width: 76%;
+  height: auto;
+  aspect-ratio: 9 / 1;
+  object-fit: cover;
+  margin: 0 auto;
+}
+.tank-title-heading h2 {
+  font-size: clamp(28px, 3.7vw, 52px);
+  letter-spacing: 0.2em;
+  margin: 18px 0 38px;
+  font-weight: 900;
+}
+.tank-menu-content {
+  display: grid;
+  grid-template-columns: 0.85fr 1fr;
+  max-width: 940px;
+  margin: 0 auto 32px;
+  min-height: 315px;
+}
+.tank-mode-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 14px;
+  padding: 8px 44px 8px 60px;
+  border-right: 2px solid #30302f;
+}
+.tank-mode-menu button {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  min-height: 58px;
+  padding: 4px 8px;
+  font-size: clamp(20px, 2.3vw, 32px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+.tank-menu-pointer {
+  visibility: hidden;
+}
+.tank-mode-menu button[aria-pressed='true'] {
+  color: #f2cf64;
+}
+.tank-mode-menu button[aria-pressed='true'] .tank-menu-pointer {
+  visibility: visible;
+}
+.tank-menu-sprite {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+.tank-join-panel {
+  text-align: center;
+  padding: 4px 16px 0 36px;
+}
+.tank-join-panel h3 {
+  font-size: clamp(20px, 2.2vw, 30px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.tank-menu-players {
+  display: flex;
+  justify-content: center;
+  margin: 24px auto;
+  max-width: 340px;
+}
+.tank-menu-players > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 24px;
+}
+.tank-menu-players > div + div {
+  border-left: 2px solid #333;
+}
+.tank-menu-players strong {
+  color: #deded8;
+  font-size: 24px;
+  margin-top: 4px;
+}
+.tank-player-one {
+  color: #f2cf64;
+}
+.tank-player-two {
+  color: #70cef2;
+}
+.tank-join-message p {
+  font-size: clamp(16px, 2vw, 28px);
+  line-height: 1.6;
+}
+.tank-join-message small {
+  display: block;
+  color: #aaa;
+  font-size: 20px;
+  margin-top: 8px;
+}
+.tank-menu-start {
+  display: inline-block;
+  border: 1px solid #8b7942;
+  color: #f2cf64;
+  padding: 8px 24px;
+  margin-top: 18px;
+  font-size: 16px;
+  min-height: 42px;
+}
+.tank-menu-start:disabled {
+  display: none;
+}
+.tank-menu-link {
+  display: block;
+  margin: 12px auto 0;
+  color: #c8c8c3;
+  text-decoration: underline;
+  font-size: 13px;
+}
+.tank-menu-scenery {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 96px;
+  image-rendering: pixelated;
+}
+.tank-menu-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 12px;
+  font-size: 20px;
+}
+.tank-menu-footer > span {
+  display: flex;
+  align-items: center;
+}
+.tank-menu-footer svg {
+  width: 18px;
+}
+.tank-confirm-hint {
+  margin-left: 24px;
+}
+.tank-title-screen button:focus-visible,
+.tank-title-screen select:focus-visible,
+.tank-pause-screen button:focus-visible,
+.tank-game-actions button:focus-visible {
+  outline: 2px solid #f2cf64;
+  outline-offset: 4px;
+}
+.tank-title-screen button:hover:not(:disabled),
+.tank-pause-screen button:hover:not(:disabled) {
+  color: #ffe79b;
+  background: #17170f;
+}
+.tank-stage-select {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin: 12px 0;
+}
+.tank-stage-select button {
+  padding: 10px;
+  border: 1px solid #555;
+}
+.tank-stage-select button:disabled {
+  opacity: 0.3;
+}
+.tank-stage-select select {
+  background: #111;
+  border: 1px solid #666;
+  color: #f2cf64;
+  padding: 6px;
+}
+.tank-connection-hint {
+  font-size: 13px;
+  color: #f2cf64;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.tank-game-actions {
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #deded8;
+}
+.tank-game-actions button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border: 1px solid #626252;
+  background: #171713;
+}
+.tank-pause-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #070909f5;
+  color: #deded8;
+  padding: 20px;
+  text-align: center;
+}
+.tank-pause-screen h2 {
+  color: #f2cf64;
+  font-size: 30px;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+.tank-pause-screen .tank-menu-players {
+  width: 100%;
+  margin: 14px auto;
+}
+.tank-pause-screen small {
+  color: #a0a09c;
+  margin-top: 8px;
+}
+.tank-pause-actions {
+  display: grid;
+  gap: 8px;
+  width: min(100%, 270px);
+  margin: 22px 0;
+}
+.tank-pause-actions button {
+  min-height: 38px;
+  border: 1px solid transparent;
+}
+.tank-pause-actions .is-selected {
+  border-color: #8b7942;
+  color: #f2cf64;
+}
+.tank-pause-actions button:disabled {
+  opacity: 0.4;
+}
+.tank-pause-help {
+  color: #9b9b94;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+@media (max-width: 700px) {
+  .tank-title-screen {
+    border-width: 7px;
+    padding: 24px 8px 0;
+    min-height: 0;
+  }
+  .tank-title-heading img {
+    width: 98%;
+  }
+  .tank-title-heading h2 {
+    font-size: 28px;
+    margin: 18px 0 24px;
+  }
+  .tank-menu-content {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    margin-bottom: 24px;
+  }
+  .tank-mode-menu {
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid #333;
+    padding: 0 0 16px;
+    gap: 6px;
+    justify-content: space-around;
+  }
+  .tank-mode-menu button {
+    font-size: 16px;
+    letter-spacing: 0;
+    min-height: 44px;
+    padding: 4px;
+    gap: 0;
+  }
+  .tank-menu-pointer {
+    display: none;
+  }
+  .tank-mode-menu button[aria-pressed='true'] {
+    border-bottom: 2px solid #f2cf64;
+  }
+  .tank-join-panel {
+    padding: 22px 0 0;
+  }
+  .tank-menu-players {
+    margin: 20px auto;
+  }
+  .tank-menu-players > div {
+    font-size: 17px;
+  }
+  .tank-join-message small {
+    font-size: 13px;
+  }
+  .tank-menu-footer {
+    font-size: 12px;
+    padding: 8px 0;
+    min-height: 48px;
+  }
+  .tank-confirm-hint {
+    margin-left: 8px;
+  }
+  .tank-menu-scenery {
+    max-height: none;
+  }
+  .tank-pause-screen {
+    position: absolute;
+    padding: 12px;
+  }
+  .tank-battle-stage:has(.tank-pause-screen) {
+    min-height: 510px;
+  }
+  .tank-pause-screen h2 {
+    font-size: 24px;
+  }
+}
+.tank-player-waiting {
+  color: #b8b8b2;
 }

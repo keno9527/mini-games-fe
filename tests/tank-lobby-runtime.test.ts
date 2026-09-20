@@ -1,0 +1,164 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import {
+  mountTankBattle,
+  type TankBattleControllers,
+  type TankBattleMenu,
+  type TankBattleUiState,
+} from '../src/games/tank-battle/runtime.ts'
+
+function pad(index: number, buttons: number[] = []): Gamepad {
+  return {
+    index,
+    id: `pad-${index}`,
+    mapping: 'standard',
+    connected: true,
+    axes: [0, 0],
+    buttons: Array.from({ length: 17 }, (_, i) => ({
+      pressed: buttons.includes(i),
+      touched: false,
+      value: buttons.includes(i) ? 1 : 0,
+    })),
+  } as Gamepad
+}
+
+test('runtime joins without auto-start, reserves P1 confirmation, pauses on loss and restores the missing role', () => {
+  const globals = [
+    'window',
+    'document',
+    'navigator',
+    'requestAnimationFrame',
+    'cancelAnimationFrame',
+  ] as const
+  const originals = globals.map(
+    (key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
+  )
+  const callbacks = new Map<number, FrameRequestCallback>()
+  let sequence = 0
+  let now = performance.now()
+  let pads: Gamepad[] = []
+  const install = (key: string, value: unknown) =>
+    Object.defineProperty(globalThis, key, { configurable: true, value })
+  install(
+    'window',
+    Object.assign(new EventTarget(), { isSecureContext: true, innerWidth: 1200, innerHeight: 900 }),
+  )
+  install('document', Object.assign(new EventTarget(), { hidden: false, hasFocus: () => true }))
+  install('navigator', { getGamepads: () => pads })
+  install('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    callbacks.set(++sequence, callback)
+    return sequence
+  })
+  install('cancelAnimationFrame', (id: number) => callbacks.delete(id))
+  const context = new Proxy(
+    {},
+    {
+      get: (_, key) => (key === 'measureText' ? () => ({ width: 10 }) : () => {}),
+      set: () => true,
+    },
+  )
+  const canvas = Object.assign(new EventTarget(), {
+    style: {},
+    getContext: () => context,
+  }) as unknown as HTMLCanvasElement
+  const stage = { clientWidth: 1000, getBoundingClientRect: () => ({ top: 100 }) } as HTMLElement
+  let state: TankBattleUiState = 'title'
+  let controllers: TankBattleControllers | undefined
+  let menu: TankBattleMenu | undefined
+  const handle = mountTankBattle(canvas, stage, {
+    onStateChange: (next) => {
+      state = next
+    },
+    onControllersChange: (next) => {
+      controllers = next
+    },
+    onMenuChange: (next) => {
+      menu = next
+    },
+  })
+  const frames = (count = 4) => {
+    for (let i = 0; i < count; i++) {
+      now += 17
+      const scheduled = [...callbacks.values()]
+      callbacks.clear()
+      scheduled.forEach((callback) => callback(now))
+    }
+  }
+  const send = (...next: Gamepad[]) => {
+    pads = next
+    frames()
+  }
+  try {
+    handle.selectMode('coop')
+    handle.confirm()
+    frames()
+    assert.equal(state, 'title')
+    send(pad(0), pad(1))
+    send(pad(0, [0]), pad(1))
+    assert.deepEqual(controllers?.bindings, [0, null])
+    assert.equal(state, 'title')
+    send(pad(0), pad(1))
+    send(pad(0), pad(1, [0]))
+    assert.deepEqual(controllers?.bindings, [0, 1])
+    assert.equal(controllers?.canPlay, true)
+    assert.equal(state, 'title', 'P2 joining must not start the game')
+    send(pad(0), pad(1))
+    send(pad(0), pad(1, [0]))
+    assert.equal(state, 'title', 'P2 cannot confirm the start')
+    send(pad(0), pad(1))
+    send(pad(0, [0]), pad(1))
+    assert.equal(state, 'playing')
+    send(pad(0), pad(1))
+    send(pad(1))
+    assert.equal(state, 'paused')
+    assert.deepEqual(controllers?.bindings, [null, 1])
+    send(pad(0), pad(1))
+    assert.equal(controllers?.canPlay, false)
+    send(pad(0, [0]), pad(1))
+    assert.deepEqual(controllers?.bindings, [0, 1])
+    assert.equal(state, 'paused', 'joining does not automatically resume')
+    send(pad(0), pad(1))
+    send(pad(0, [0]), pad(1))
+    assert.equal(state, 'playing')
+    send(pad(0), pad(1))
+    send(pad(0), pad(1, [9]))
+    assert.equal(state, 'paused', 'either player can pause')
+    send(pad(0), pad(1))
+    // Navigate the pause menu with P1, toggle sound, and return to the title.
+    send(pad(0, [13]), pad(1))
+    send(pad(0), pad(1))
+    send(pad(0, [0]), pad(1))
+    assert.equal(menu?.soundEnabled, false)
+    send(pad(0), pad(1))
+    send(pad(0, [13]), pad(1))
+    send(pad(0), pad(1))
+    send(pad(0, [13]), pad(1))
+    send(pad(0), pad(1))
+    send(pad(0, [0]), pad(1))
+    assert.equal(state, 'title')
+    assert.equal(menu?.mode, 'coop')
+    handle.selectMode('practice')
+    handle.setPracticeStage(34)
+    assert.deepEqual(controllers?.bindings, [0, null])
+    handle.confirm()
+    frames()
+    assert.equal(state, 'playing')
+    handle.togglePause()
+    frames()
+    handle.returnToTitle()
+    assert.equal(menu?.practiceStage, 34)
+    handle.selectMode('single')
+    send()
+    assert.equal(controllers?.canPlay, false)
+    handle.useKeyboard()
+    handle.confirm()
+    frames()
+    assert.equal(state, 'playing')
+  } finally {
+    handle.destroy()
+    for (const [key, descriptor] of originals) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor)
+      else Reflect.deleteProperty(globalThis, key)
+    }
+  }
+})

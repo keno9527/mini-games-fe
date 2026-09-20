@@ -17,12 +17,12 @@ import {
   type TankBattleHandle,
   type TankBattleUiState,
   type TankBattleControllers,
+  type TankBattleMenu,
 } from '@/games/tank-battle/runtime.ts'
-import { LEVELS } from '@/games/tank-battle/data/levels.ts'
+import { TankMenu, TankPauseMenu } from './TankMenu.tsx'
 import { POWERUP_SPRITES } from '@/games/tank-battle/data/sprites.ts'
 import { POWERUP_PALETTE } from '@/games/tank-battle/render/palette.ts'
 import { PowerUpKind, type TankBattleHoldAction } from '@/games/tank-battle/types.ts'
-import type { PlayerCount, PlayerSlot } from '@/features/gamepad/players.ts'
 import './tank-battle.css'
 
 export default function TankBattle({ userId, gameId }: GameComponentProps) {
@@ -31,14 +31,17 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
   const gameRef = useRef<TankBattleHandle | null>(null)
   const [ready, setReady] = useState(false)
   const [uiState, setUiState] = useState<TankBattleUiState>('title')
-  const [playerCount, setPlayerCount] = useState<PlayerCount>(1)
+  const [menu, setMenu] = useState<TankBattleMenu>({
+    mode: 'single',
+    practiceStage: 0,
+    pauseSelection: 0,
+    soundEnabled: true,
+  })
   const [controllers, setControllers] = useState<TankBattleControllers>({
     snapshot: { status: 'waiting', devices: [] },
     bindings: [null, null],
     canPlay: true,
   })
-  const [soundEnabled, setSoundEnabled] = useState(true)
-  const [practiceStage, setPracticeStage] = useState('campaign')
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -64,6 +67,7 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
         initialHighScore,
         onStateChange: setUiState,
         onControllersChange: setControllers,
+        onMenuChange: setMenu,
         onGameOver: (result) => {
           if (!userId || result.practice) return
           createRecord(userId, {
@@ -75,7 +79,6 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
         },
       })
       gameRef.current = game
-      setPlayerCount(1)
       setReady(true)
     }
 
@@ -94,274 +97,167 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
 
   return (
     <section className="tank-battle-shell overflow-hidden rounded-lg border-4 border-[#4d4d4d] bg-black shadow-[0_8px_0_#050505]">
-      <div className="tank-toolbar">
-        <div className="tank-mode">
-          <span className="tank-eyebrow">BATTLE CITY · 1985</span>
-          <label>
-            <span className="sr-only">战役或关卡练习</span>
-            <select
-              aria-label="战役或关卡练习"
-              disabled={!ready || inBattle}
-              value={practiceStage}
-              onChange={(event) => {
-                setPracticeStage(event.target.value)
-                gameRef.current?.setPracticeStage(
-                  event.target.value === 'campaign' ? null : Number(event.target.value),
-                )
-              }}
-            >
-              <option value="campaign">经典战役 · 35 关</option>
-              {LEVELS.map((_, index) => (
-                <option key={index} value={index}>
-                  关卡练习 · 第 {index + 1} 关
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div className="tank-toolbar-actions">
-          <button
-            type="button"
-            disabled={!ready || !controllers.canPlay}
-            onClick={() => {
-              if (inBattle) gameRef.current?.togglePause()
-              else gameRef.current?.confirm()
-              canvasRef.current?.focus({ preventScroll: true })
-            }}
-          >
-            {uiState === 'playing' ? (
-              <Pause size={18} aria-hidden="true" />
-            ) : (
-              <Play size={18} aria-hidden="true" />
-            )}
-            {uiState === 'playing'
-              ? '暂停'
-              : uiState === 'paused'
-                ? '继续'
-                : uiState === 'gameOver'
-                  ? '再来一局'
-                  : '开始游戏'}
-          </button>
-          <button
-            type="button"
-            aria-label={soundEnabled ? '关闭音效' : '开启音效'}
-            aria-pressed={soundEnabled}
-            disabled={!ready}
-            onClick={() => {
-              gameRef.current?.setSoundEnabled(!soundEnabled)
-              setSoundEnabled(!soundEnabled)
-            }}
-          >
-            {soundEnabled ? (
-              <SpeakerHigh size={18} aria-hidden="true" />
-            ) : (
-              <SpeakerSlash size={18} aria-hidden="true" />
-            )}
-            {soundEnabled ? '音效开' : '静音'}
-          </button>
-          {uiState === 'paused' && (
-            <button type="button" onClick={() => gameRef.current?.returnToTitle()}>
-              返回标题
-            </button>
-          )}
-        </div>
-      </div>
-      {practiceStage !== 'campaign' && (
-        <p className="tank-practice-note">单关练习 · 三条生命 · 战绩不计入排行榜</p>
-      )}
-      <div className="tank-controller-setup">
-        <div className="tank-mode-row">
-          <fieldset disabled={!ready || inBattle}>
-            <legend>游玩人数</legend>
-            {([1, 2] as const).map((count) => (
-              <button
-                key={count}
-                type="button"
-                aria-pressed={playerCount === count}
-                onClick={() => {
-                  gameRef.current?.setPlayerCount(count)
-                  setPlayerCount(count)
-                }}
-              >
-                {count === 1 ? '单人作战' : '双人合作'}
-              </button>
-            ))}
-          </fieldset>
-        </div>
-        <div className="tank-player-bindings">
-          {Array.from({ length: playerCount }, (_, slot) => (
-            <label key={slot}>
-              <span className={slot === 0 ? 'tank-player-one' : 'tank-player-two'}>
-                P{slot + 1} · {slot === 0 ? '金色坦克' : '蓝色坦克'}
-              </span>
-              <select
-                aria-label={`P${slot + 1} 手柄`}
-                disabled={!ready || uiState === 'playing'}
-                value={
-                  controllers.bindings[slot] ??
-                  (playerCount === 1 && !controllers.canPlay ? 'disconnected' : '')
-                }
-                onChange={(event) => {
-                  gameRef.current?.bindGamepad(
-                    slot as PlayerSlot,
-                    event.target.value === '' ? null : Number(event.target.value),
-                  )
-                }}
-              >
-                {playerCount === 1 &&
-                  !controllers.canPlay &&
-                  controllers.bindings[slot] === null && (
-                    <option value="disconnected" disabled>
-                      手柄已断开，请重选或切回键盘 / 触控
-                    </option>
-                  )}
-                {controllers.bindings[slot] !== null &&
-                  !controllers.snapshot.devices.some(
-                    (device) => device.index === controllers.bindings[slot],
-                  ) && (
-                    <option value={controllers.bindings[slot]!} disabled>
-                      #{controllers.bindings[slot]} · 暂停读取
-                    </option>
-                  )}
-                <option value="">
-                  {playerCount === 1 ? '键盘 / 触控（或选择手柄）' : '请选择手柄'}
-                </option>
-                {controllers.snapshot.devices.map((device) => (
-                  <option
-                    key={device.index}
-                    value={device.index}
-                    disabled={
-                      device.mapping !== 'standard' ||
-                      controllers.bindings.some(
-                        (index, other) => other !== slot && index === device.index,
-                      )
-                    }
-                  >
-                    #{device.index} · {device.id || '未命名手柄'}
-                    {device.mapping !== 'standard' ? '（暂不支持此映射）' : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
-        </div>
-        <p role="status">
-          {!controllers.canPlay
-            ? '请连接并分配所需手柄，再开始或继续游戏；断连后需重新选择。'
-            : playerCount === 2
-              ? '两人合作守基地，各有 3 条初始生命；一人出局后队友可继续。共享得分，队友之间无伤害。'
-              : '单人可使用手柄、键盘或触控。'}
-        </p>
-        <details className="tank-controls-guide">
-          <summary>连接与操作说明</summary>
-          <p>
-            连接后按一下手柄按钮让设备出现，再选择 P1 / P2。方向键 / 左摇杆移动，A / × 或 RT / R2
-            开火，A / × 开始，Menu / Options 暂停。
-          </p>
-          <p>
-            绑定或返回页面后先松开手柄按键和摇杆，再操作。键盘与触控控制
-            P1；双人模式需两个标准映射手柄。基地仍会受到己方炮火伤害。
-          </p>
-        </details>
-        {controllers.snapshot.status === 'insecure' && <p>手柄需要 HTTPS 或 localhost 地址。</p>}
-        {controllers.snapshot.status === 'unsupported' && (
-          <p>此浏览器未提供 Gamepad API；单人仍可使用键盘或触控。</p>
-        )}
-        {controllers.snapshot.status === 'error' && (
-          <p>手柄读取失败，请检查浏览器权限；恢复后手动继续。</p>
-        )}
-      </div>
       <div
         ref={stageRef}
-        className="tank-battle-stage flex min-h-[240px] w-full items-center justify-center overflow-auto bg-black p-3 md:p-5"
+        className={`tank-battle-stage ${uiState === 'title' ? 'is-title' : ''}`}
+        onKeyDown={(event) => {
+          if (uiState !== 'title' && uiState !== 'paused') return
+          if ((event.target as HTMLElement).tagName === 'SELECT') return
+          const action = (
+            { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' } as const
+          )[event.key as 'ArrowUp']
+          if (!action) return
+          event.preventDefault()
+          event.stopPropagation()
+          if (!event.repeat) gameRef.current?.menuAction(action)
+          canvasRef.current?.focus({ preventScroll: true })
+        }}
       >
         <canvas
           ref={canvasRef}
           tabIndex={0}
-          className="tank-battle-canvas block max-w-none [image-rendering:pixelated]"
+          className="tank-battle-canvas"
           aria-label="坦克大战游戏画布"
         />
-      </div>
-      <div className="tank-battle-help grid gap-2 border-t-2 border-[#343434] bg-[#111] px-4 py-3 font-mono-crt text-sm tracking-wide text-[#d8d8d8] md:grid-cols-2">
-        <p className="tank-keyboard-help">移动：方向键 / WASD</p>
-        <p className="tank-keyboard-help">开始：Enter · 开火：空格 / J · 暂停：P / Esc</p>
-        <p className="tank-touch-help">左侧方向键移动，右侧按键开火</p>
-      </div>
-      <div className="tank-touch-controls" aria-label="坦克大战触控操作">
-        {!inBattle ? (
-          <button
-            type="button"
-            className="tank-touch-start"
-            disabled={!ready || !controllers.canPlay}
-            onClick={() => gameRef.current?.confirm()}
-          >
-            <Play size={24} weight="fill" aria-hidden="true" />
-            {uiState === 'gameOver' ? '重新挑战' : '开始游戏'}
-          </button>
-        ) : (
-          <>
-            <div className="tank-touch-dpad" aria-label="移动方向">
-              <HoldButton
-                action="up"
-                label="向上移动"
-                disabled={uiState === 'paused' || !controllers.canPlay}
-                onAction={setHeldAction}
-              >
-                <ArrowUp size={28} weight="bold" aria-hidden="true" />
-              </HoldButton>
-              <HoldButton
-                action="left"
-                label="向左移动"
-                disabled={uiState === 'paused' || !controllers.canPlay}
-                onAction={setHeldAction}
-              >
-                <ArrowLeft size={28} weight="bold" aria-hidden="true" />
-              </HoldButton>
-              <HoldButton
-                action="down"
-                label="向下移动"
-                disabled={uiState === 'paused' || !controllers.canPlay}
-                onAction={setHeldAction}
-              >
-                <ArrowDown size={28} weight="bold" aria-hidden="true" />
-              </HoldButton>
-              <HoldButton
-                action="right"
-                label="向右移动"
-                disabled={uiState === 'paused' || !controllers.canPlay}
-                onAction={setHeldAction}
-              >
-                <ArrowRight size={28} weight="bold" aria-hidden="true" />
-              </HoldButton>
-            </div>
-            <div className="tank-touch-actions">
-              <HoldButton
-                action="fire"
-                label="持续开火"
-                disabled={uiState === 'paused' || !controllers.canPlay}
-                onAction={setHeldAction}
-                fire
-              >
-                <Crosshair size={34} weight="bold" aria-hidden="true" />
-                <span>开火</span>
-              </HoldButton>
-              <button
-                type="button"
-                className="tank-touch-pause"
-                disabled={!controllers.canPlay}
-                onClick={() => gameRef.current?.togglePause()}
-              >
-                {uiState === 'paused' ? (
-                  <Play size={20} weight="fill" aria-hidden="true" />
-                ) : (
-                  <Pause size={20} weight="fill" aria-hidden="true" />
-                )}
-                {uiState === 'paused' ? '继续' : '暂停'}
-              </button>
-            </div>
-          </>
+        {uiState === 'title' && (
+          <TankMenu
+            menu={menu}
+            controllers={controllers}
+            ready={ready}
+            game={gameRef.current}
+            focusGame={() => canvasRef.current?.focus({ preventScroll: true })}
+          />
+        )}
+        {uiState === 'paused' && (
+          <TankPauseMenu
+            menu={menu}
+            controllers={controllers}
+            ready={ready}
+            game={gameRef.current}
+            focusGame={() => canvasRef.current?.focus({ preventScroll: true })}
+          />
+        )}
+        {uiState === 'playing' && (
+          <div className="tank-game-actions">
+            {menu.mode === 'practice' && <span>练习 · 第 {menu.practiceStage + 1} 关</span>}
+            <button
+              type="button"
+              aria-label="暂停游戏"
+              onClick={() => {
+                gameRef.current?.togglePause()
+                canvasRef.current?.focus({ preventScroll: true })
+              }}
+            >
+              <Pause size={18} /> 暂停
+            </button>
+            <button
+              type="button"
+              aria-label={menu.soundEnabled ? '关闭音效' : '开启音效'}
+              onClick={() => gameRef.current?.setSoundEnabled(!menu.soundEnabled)}
+            >
+              {menu.soundEnabled ? <SpeakerHigh size={18} /> : <SpeakerSlash size={18} />}
+            </button>
+          </div>
+        )}
+        {uiState === 'gameOver' && (
+          <div className="tank-game-actions">
+            <button
+              type="button"
+              disabled={!controllers.canPlay}
+              onClick={() => gameRef.current?.confirm()}
+            >
+              再来一局
+            </button>
+            <button type="button" onClick={() => gameRef.current?.returnToTitle()}>
+              返回标题
+            </button>
+          </div>
         )}
       </div>
+      {uiState !== 'title' && (
+        <>
+          <div className="tank-battle-help grid gap-2 border-t-2 border-[#343434] bg-[#111] px-4 py-3 font-mono-crt text-sm tracking-wide text-[#d8d8d8] md:grid-cols-2">
+            <p className="tank-keyboard-help">移动：方向键 / WASD</p>
+            <p className="tank-keyboard-help">开始：Enter · 开火：空格 / J · 暂停：P / Esc</p>
+            <p className="tank-touch-help">左侧方向键移动，右侧按键开火</p>
+          </div>
+          <div className="tank-touch-controls" aria-label="坦克大战触控操作">
+            {!inBattle ? (
+              <button
+                type="button"
+                className="tank-touch-start"
+                disabled={!ready || !controllers.canPlay}
+                onClick={() => gameRef.current?.confirm()}
+              >
+                <Play size={24} weight="fill" aria-hidden="true" />
+                {uiState === 'gameOver' ? '重新挑战' : '开始游戏'}
+              </button>
+            ) : (
+              <>
+                <div className="tank-touch-dpad" aria-label="移动方向">
+                  <HoldButton
+                    action="up"
+                    label="向上移动"
+                    disabled={uiState === 'paused' || !controllers.canPlay}
+                    onAction={setHeldAction}
+                  >
+                    <ArrowUp size={28} weight="bold" aria-hidden="true" />
+                  </HoldButton>
+                  <HoldButton
+                    action="left"
+                    label="向左移动"
+                    disabled={uiState === 'paused' || !controllers.canPlay}
+                    onAction={setHeldAction}
+                  >
+                    <ArrowLeft size={28} weight="bold" aria-hidden="true" />
+                  </HoldButton>
+                  <HoldButton
+                    action="down"
+                    label="向下移动"
+                    disabled={uiState === 'paused' || !controllers.canPlay}
+                    onAction={setHeldAction}
+                  >
+                    <ArrowDown size={28} weight="bold" aria-hidden="true" />
+                  </HoldButton>
+                  <HoldButton
+                    action="right"
+                    label="向右移动"
+                    disabled={uiState === 'paused' || !controllers.canPlay}
+                    onAction={setHeldAction}
+                  >
+                    <ArrowRight size={28} weight="bold" aria-hidden="true" />
+                  </HoldButton>
+                </div>
+                <div className="tank-touch-actions">
+                  <HoldButton
+                    action="fire"
+                    label="持续开火"
+                    disabled={uiState === 'paused' || !controllers.canPlay}
+                    onAction={setHeldAction}
+                    fire
+                  >
+                    <Crosshair size={34} weight="bold" aria-hidden="true" />
+                    <span>开火</span>
+                  </HoldButton>
+                  <button
+                    type="button"
+                    className="tank-touch-pause"
+                    disabled={!controllers.canPlay}
+                    onClick={() => gameRef.current?.togglePause()}
+                  >
+                    {uiState === 'paused' ? (
+                      <Play size={20} weight="fill" aria-hidden="true" />
+                    ) : (
+                      <Pause size={20} weight="fill" aria-hidden="true" />
+                    )}
+                    {uiState === 'paused' ? '继续' : '暂停'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
       <details className="tank-field-guide">
         <summary>道具与作战指南</summary>
         <p>守住老鹰，消灭每关 20 辆敌军。击中红色闪烁坦克会出现道具，拾取获得 500 分。</p>

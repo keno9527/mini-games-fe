@@ -35,7 +35,7 @@ interface TankPalette {
  * 按字符矩阵绘制精灵。
  * 字符 ' ' 为透明，其余字符查 palette 取色；未定义的字符跳过。
  */
-function drawMatrix(
+export function drawMatrix(
   context: CanvasRenderingContext2D,
   matrix: readonly string[],
   originX: number,

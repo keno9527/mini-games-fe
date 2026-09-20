@@ -140,7 +140,7 @@ export class SceneManager {
   }
 
   returnToTitle(): void {
-    if (!this.isPaused()) return
+    if (!this.isPaused() && this.currentKind !== SceneKind.GAME_OVER) return
     this.audio.stopAll()
     this.switchTo(SceneKind.TITLE)
   }
