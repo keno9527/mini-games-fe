@@ -76,11 +76,14 @@ export function drawHud(context: CanvasRenderingContext2D, world: World): void {
       COLORS.TEXT_DIM,
     )
   }
-  drawHudNumber(context, '1P', x, 128)
-  drawMiniTank(context, x, 139, COLORS.PLAYER_TREAD)
-  drawHudNumber(context, String(Math.min(99, world.playerLives)), x + 8, 139)
-  if (world.player && world.player.star > 0)
-    drawText(context, `ST${world.player.star}`, x, 153, COLORS.TEXT_DIM)
+  world.players.forEach((player, slot) => {
+    const y = world.players.length === 1 ? 128 : 122 + slot * 30
+    drawHudNumber(context, `${slot + 1}P`, x, y)
+    drawMiniTank(context, x, y + 11, slot === 0 ? COLORS.PLAYER_TREAD : '#4cb9e7')
+    drawHudNumber(context, String(Math.min(99, player.lives)), x + 8, y + 11)
+    if (player.tank && player.tank.star > 0)
+      drawText(context, `ST${player.tank.star}`, x, y + 25, COLORS.TEXT_DIM)
+  })
   context.fillStyle = COLORS.TEXT_DIM
   context.fillRect(x, 184, 2, 18)
   context.fillStyle = COLORS.BRICK_MAIN
@@ -106,7 +109,7 @@ export function drawHud(context: CanvasRenderingContext2D, world: World): void {
   const effects: readonly (readonly [string, number])[] = [
     ['STOP', world.freezeTicks],
     ['WALL', world.shovelTicks],
-    ['SHLD', world.player?.shieldTicks ?? 0],
+    ['SHLD', Math.max(0, ...world.getPlayerTanks().map((player) => player.shieldTicks))],
   ]
   let effectX = FIELD_OFFSET_X + 92
   for (const [label, ticks] of effects) {

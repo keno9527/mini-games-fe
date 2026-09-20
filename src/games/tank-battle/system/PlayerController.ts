@@ -18,8 +18,9 @@ export function updatePlayer(
   world: World,
   input: InputSnapshot,
   playSound: (effect: SoundEffect) => void,
+  slot = 0,
 ): void {
-  const player = world.player
+  const player = world.players[slot]?.tank ?? null
   if (player === null || !player.alive) {
     return
   }
@@ -27,7 +28,7 @@ export function updatePlayer(
   const direction = resolveDirection(input)
   const moveContext = {
     terrain: world.terrain,
-    otherTanks: world.enemies,
+    otherTanks: [...world.enemies, ...world.getPlayerTanks()],
     baseRect: world.base.destroyed ? null : world.base.getRect(),
   }
 

@@ -19,6 +19,7 @@ import { updatePowerUps, updatePowerUpTimers } from '@/games/tank-battle/system/
 import { updateSpawning } from '@/games/tank-battle/system/SpawnManager.ts'
 import { LevelOutcome, type World } from '@/games/tank-battle/system/World.ts'
 import { EnemyKind, SoundEffect, type InputSnapshot } from '@/games/tank-battle/types.ts'
+import { idleControls } from '@/features/gamepad/players.ts'
 import type { Scene } from '@/games/tank-battle/scene/Scene.ts'
 
 /** 战斗场景内部阶段 */
@@ -52,6 +53,13 @@ export class BattleScene implements Scene {
   private elapsedTicks = 0
   /** 水面波纹等环境动画的相位，与逻辑帧同步递增 */
   private animationPhase = 0
+
+  suspend(): void {
+    if (this.phase === BattlePhase.PAUSED) return
+    this.resumePhase = this.phase
+    this.phase = BattlePhase.PAUSED
+    this.audio.stopAll()
+  }
 
   constructor(world: World, audio: AudioEngine, callbacks: BattleSceneCallbacks) {
     this.world = world
@@ -117,8 +125,10 @@ export class BattleScene implements Scene {
     }
 
     this.elapsedTicks += 1
-    const previousLives = this.world.playerLives
+    const previousLives = this.world.players.map((player) => player.lives)
     updatePlayer(this.world, input, playSound)
+    if (this.world.players.length === 2)
+      updatePlayer(this.world, input.player2 ?? idleControls(), playSound, 1)
     updateEnemyAi(this.world)
     updateBullets(this.world, playSound)
     updatePowerUps(this.world, playSound)
@@ -129,14 +139,16 @@ export class BattleScene implements Scene {
     this.world.removeDeadEntities()
     this.world.checkLevelCleared()
 
-    if (this.world.playerLives > previousLives) this.audio.play(SoundEffect.EXTRA_LIFE)
-    if (this.world.player?.moving && this.elapsedTicks % 6 === 0) this.audio.play(SoundEffect.MOTOR)
+    if (this.world.players.some((player, slot) => player.lives > previousLives[slot]))
+      this.audio.play(SoundEffect.EXTRA_LIFE)
+    if (this.world.getPlayerTanks().some((player) => player.moving) && this.elapsedTicks % 6 === 0)
+      this.audio.play(SoundEffect.MOTOR)
     this.handleOutcome()
   }
 
   /** 推进所有实体的自有计时器 */
   private tickEntityTimers(): void {
-    this.world.player?.tickTimers()
+    for (const player of this.world.getPlayerTanks()) player.tickTimers()
     for (const enemy of this.world.enemies) {
       enemy.tickTimers()
     }

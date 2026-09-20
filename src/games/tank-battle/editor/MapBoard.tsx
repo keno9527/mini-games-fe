@@ -158,8 +158,8 @@ export function MapBoard({ terrain, brush, active, onBegin, onPaint, onEnd }: Ma
               >
                 {lock === '敌军出生点'
                   ? '敌'
-                  : lock === '玩家出生点'
-                    ? '我'
+                  : lock?.startsWith('玩家 ')
+                    ? `${lock[3]}P`
                     : lock === '老鹰基地'
                       ? ''
                       : lock

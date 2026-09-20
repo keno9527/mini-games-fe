@@ -78,6 +78,8 @@ export interface InputSnapshot {
   readonly pauseEdge: boolean
   /** 确认键（开始游戏 / 重开）边沿触发 */
   readonly confirmEdge: boolean
+  /** P2 独立输入；未提供时保持静止。 */
+  readonly player2?: InputSnapshot
 }
 
 /** 需要支持长按的玩家操作，由键盘与触控共享。 */

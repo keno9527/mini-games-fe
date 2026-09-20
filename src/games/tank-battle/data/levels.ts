@@ -13,7 +13,14 @@ export const ENEMY_SPAWN_CELLS: readonly (readonly [number, number])[] = [
   [6, 0],
   [12, 0],
 ]
-export const PLAYER_SPAWN_CELL: readonly [number, number] = [4, 12]
+
+/** 玩家出生点（格坐标） */
+export const PLAYER_SPAWN_CELLS: readonly (readonly [number, number])[] = [
+  [4, 12],
+  [8, 12],
+]
+
+/** 老鹰基地所在格坐标 */
 export const BASE_CELL: readonly [number, number] = [6, 12]
 export const BASE_WALL_CELLS: readonly (readonly [number, number])[] = [
   [5, 11],

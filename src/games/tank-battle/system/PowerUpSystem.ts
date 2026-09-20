@@ -67,20 +67,17 @@ export function updatePowerUps(world: World, playSound: (effect: SoundEffect) =>
     powerUp.tickTimers()
   }
 
-  const player = world.player
-  if (player === null || !player.alive) {
-    return
-  }
-
-  const playerRect = player.getRect()
-  for (const powerUp of world.powerUps) {
-    if (!powerUp.alive || !rectsIntersect(playerRect, powerUp.getRect())) {
-      continue
+  for (const player of world.getPlayerTanks()) {
+    const playerRect = player.getRect()
+    for (const powerUp of world.powerUps) {
+      if (!powerUp.alive || !rectsIntersect(playerRect, powerUp.getRect())) {
+        continue
+      }
+      powerUp.alive = false
+      applyPowerUpEffect(world, powerUp.kind, playSound, player.playerSlot)
+      world.addScore(POWERUP_SCORE)
+      playSound(powerUp.kind === PowerUpKind.TANK ? SoundEffect.EXTRA_LIFE : SoundEffect.PICKUP)
     }
-    powerUp.alive = false
-    applyPowerUpEffect(world, powerUp.kind, playSound)
-    world.addScore(POWERUP_SCORE)
-    playSound(powerUp.kind === PowerUpKind.TANK ? SoundEffect.EXTRA_LIFE : SoundEffect.PICKUP)
   }
 }
 
@@ -89,15 +86,17 @@ function applyPowerUpEffect(
   world: World,
   kind: PowerUpKind,
   playSound: (effect: SoundEffect) => void,
+  slot: number,
 ): void {
+  const player = world.players[slot]
   switch (kind) {
     case PowerUpKind.GRENADE:
       destroyAllEnemies(world, playSound)
       break
 
     case PowerUpKind.HELMET:
-      if (world.player !== null) {
-        world.player.shieldTicks = HELMET_SHIELD_TICKS
+      if (player.tank !== null) {
+        player.tank.shieldTicks = HELMET_SHIELD_TICKS
       }
       break
 
@@ -107,11 +106,11 @@ function applyPowerUpEffect(
       break
 
     case PowerUpKind.STAR:
-      world.player?.upgrade()
+      player.tank?.upgrade()
       break
 
     case PowerUpKind.TANK:
-      world.playerLives += 1
+      player.lives += 1
       break
 
     case PowerUpKind.TIMER:

@@ -12,6 +12,7 @@ export class PixelCanvas {
   private readonly canvas: HTMLCanvasElement
   private readonly container: HTMLElement
   private scale = 1
+  private observer: ResizeObserver | undefined
 
   constructor(canvas: HTMLCanvasElement, container: HTMLElement) {
     this.canvas = canvas
@@ -25,10 +26,15 @@ export class PixelCanvas {
 
     this.resize()
     window.addEventListener('resize', this.resize)
+    if (typeof ResizeObserver !== 'undefined' && container.parentElement) {
+      this.observer = new ResizeObserver(this.resize)
+      this.observer.observe(container.parentElement)
+    }
   }
 
   dispose(): void {
     window.removeEventListener('resize', this.resize)
+    this.observer?.disconnect()
   }
 
   getScale(): number {
@@ -46,14 +52,10 @@ export class PixelCanvas {
       (this.container.clientWidth || window.innerWidth) - horizontalPadding,
     )
     const fitScale = availableWidth / CANVAS_WIDTH
+    const top = this.container.getBoundingClientRect?.().top ?? 0
+    const heightScale = Math.max(1, (window.innerHeight - Math.max(0, top) - 90) / CANVAS_HEIGHT)
     const compact = window.matchMedia?.('(max-width: 700px)').matches ?? false
-    const availableHeight = Math.max(
-      CANVAS_HEIGHT,
-      window.innerHeight - Math.max(0, this.container.getBoundingClientRect().top) - 90,
-    )
-    this.scale = compact
-      ? fitScale
-      : Math.max(1, Math.floor(Math.min(fitScale, Math.max(2, availableHeight / CANVAS_HEIGHT))))
+    this.scale = compact ? fitScale : Math.max(1, Math.floor(Math.min(fitScale, Math.max(2, heightScale))))
 
     this.canvas.width = CANVAS_WIDTH
     this.canvas.height = CANVAS_HEIGHT

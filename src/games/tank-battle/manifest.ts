@@ -4,7 +4,7 @@ export default {
   game: {
     id: 'tank-battle',
     name: '坦克大战',
-    description: '重返经典 35 关，守护老鹰基地，击中闪烁坦克获取六种道具，迎战四类敌军。',
+    description: '单人作战或双手柄双人合作，重返经典 35 关，守护老鹰基地，收集六种道具迎战敌军。',
     tags: ['动作', '街机', '经典'],
     difficulties: ['经典战役'],
   },

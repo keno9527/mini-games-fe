@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/prepare-sites-worker.mjs",
     "preview": "vite preview",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --tsconfig tsconfig.app.json --test tests/*.test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{js,ts,json,md}\"",

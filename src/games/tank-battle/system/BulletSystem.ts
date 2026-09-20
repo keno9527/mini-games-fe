@@ -143,24 +143,25 @@ function resolveBulletCollisions(
       return
     }
   } else {
-    const player = world.player
-    if (
-      player !== null &&
-      player.alive &&
-      !player.isSpawning() &&
-      rectsIntersect(rect, player.getRect())
-    ) {
-      bullet.alive = false
-      if (player.isInvulnerable()) {
-        // 护盾生效：子弹消失但玩家无损
-        world.addExplosionAt(rect.x + rect.width / 2, rect.y + rect.height / 2, false)
+    for (const player of world.getPlayerTanks()) {
+      if (
+        player !== null &&
+        player.alive &&
+        !player.isSpawning() &&
+        rectsIntersect(rect, player.getRect())
+      ) {
+        bullet.alive = false
+        if (player.isInvulnerable()) {
+          // 护盾生效：子弹消失但玩家无损
+          world.addExplosionAt(rect.x + rect.width / 2, rect.y + rect.height / 2, false)
+          return
+        }
+        if (player.takeHit()) {
+          world.onPlayerDestroyed(player.playerSlot)
+          playSound(SoundEffect.EXPLODE_BIG)
+        }
         return
       }
-      if (player.takeHit()) {
-        world.onPlayerDestroyed()
-        playSound(SoundEffect.EXPLODE_BIG)
-      }
-      return
     }
   }
 

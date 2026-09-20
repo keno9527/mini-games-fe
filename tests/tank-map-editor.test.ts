@@ -70,7 +70,7 @@ test('fast strokes fill every intermediate cell and never overwrite protected ar
   assert.equal(diagonal[0][0], '.')
   for (let i = 1; i < 13; i += 1) assert.equal(diagonal[i][i], '#')
   const base = paintLine(before, [0, 12], [12, 12], '~')
-  for (const x of [4, 5, 6, 7]) assert.equal(base[12][x], '.')
+  for (const x of [4, 5, 6, 7, 8]) assert.equal(base[12][x], '.')
 })
 
 test('JSON round trip preserves all supported half walls and wave order, and assigns a new local identity', () => {
@@ -152,7 +152,7 @@ test('custom world deep-copies its source and resets damage without touching aut
   const terrain = paintLine(map.terrain, [1, 1], [1, 1], '#')
   const source = { ...map, terrain }
   const original = JSON.stringify(source)
-  const world = new World(1, 0, source)
+  const world = new World(1, 0, 1, source)
   world.loadLevel(0)
   assert.equal(world.terrain.getKind(1, 1), TerrainKind.BRICK)
   world.terrain.clearSpawnCell(1, 1)
@@ -167,32 +167,41 @@ test('custom world deep-copies its source and resets damage without touching aut
   assert.equal(world.terrain.getKind(1, 1), TerrainKind.BRICK)
 })
 
-test('custom game ends after one map, retries that map and never reports a campaign score', () => {
-  const source = createMap()
-  const results: TankBattleResult[] = []
-  const audio = { play() {}, stopAll() {} } as unknown as AudioEngine
-  const manager = new SceneManager(audio, 1, {
-    customLevel: source,
-    initialHighScore: 9000,
-    onGameOver: (result) => results.push(result),
+for (const playerCount of [1, 2] as const) {
+  test(`custom ${playerCount}-player game ends after one map, retries that map and never reports a campaign score`, () => {
+    const source = createMap()
+    const results: TankBattleResult[] = []
+    const audio = { play() {}, stopAll() {} } as unknown as AudioEngine
+    const manager = new SceneManager(audio, 1, {
+      customLevel: source,
+      initialHighScore: 9000,
+      onGameOver: (result) => results.push(result),
+    })
+    manager.setPlayerCount(playerCount)
+    manager.update({ ...idle, confirmEdge: true })
+    const inspect = manager as unknown as { world: World }
+    for (let i = 0; i < LEVEL_INTRO_TICKS; i += 1) manager.update(idle)
+    assert.equal(inspect.world.players.length, playerCount)
+    assert.deepEqual(
+      inspect.world.players.map((player) => player.lives),
+      Array(playerCount).fill(3),
+    )
+    inspect.world.score = 700
+    inspect.world.highScore = 700
+    inspect.world.outcome = LevelOutcome.CLEARED
+    manager.update(idle)
+    for (let i = 0; i < LEVEL_CLEAR_TICKS; i += 1) manager.update(idle)
+    assert.equal(manager.getCurrentKind(), SceneKind.GAME_OVER)
+    assert.equal(results.length, 1)
+    assert.equal(results[0].practice, true)
+    assert.equal(results[0].victory, true)
+    assert.equal(results[0].highScore, 700)
+    for (let i = 0; i < 46; i += 1) manager.update(idle)
+    manager.update({ ...idle, confirmEdge: true })
+    assert.equal(manager.getCurrentKind(), SceneKind.BATTLE)
+    assert.equal(inspect.world.players.length, playerCount)
+    assert.equal(inspect.world.highScore, 0)
+    assert.equal(inspect.world.terrain.getKind(1, 1), TerrainKind.EMPTY)
+    assert.equal(inspect.world.pendingEnemies.length, 20)
   })
-  manager.update({ ...idle, confirmEdge: true })
-  const inspect = manager as unknown as { world: World }
-  for (let i = 0; i < LEVEL_INTRO_TICKS; i += 1) manager.update(idle)
-  inspect.world.score = 700
-  inspect.world.highScore = 700
-  inspect.world.outcome = LevelOutcome.CLEARED
-  manager.update(idle)
-  for (let i = 0; i < LEVEL_CLEAR_TICKS; i += 1) manager.update(idle)
-  assert.equal(manager.getCurrentKind(), SceneKind.GAME_OVER)
-  assert.equal(results.length, 1)
-  assert.equal(results[0].practice, true)
-  assert.equal(results[0].victory, true)
-  assert.equal(results[0].highScore, 700)
-  for (let i = 0; i < 46; i += 1) manager.update(idle)
-  manager.update({ ...idle, confirmEdge: true })
-  assert.equal(manager.getCurrentKind(), SceneKind.BATTLE)
-  assert.equal(inspect.world.highScore, 0)
-  assert.equal(inspect.world.terrain.getKind(1, 1), TerrainKind.EMPTY)
-  assert.equal(inspect.world.pendingEnemies.length, 20)
-})
+}

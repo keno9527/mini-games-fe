@@ -1,5 +1,4 @@
 import { LEVELS } from '@/games/tank-battle/data/levels.ts'
-import { PLAYER_INITIAL_LIVES } from '@/games/tank-battle/constants.ts'
 import type { AudioEngine } from '@/games/tank-battle/core/AudioEngine.ts'
 import { resetEntityIds } from '@/games/tank-battle/core/ids.ts'
 import { World } from '@/games/tank-battle/system/World.ts'
@@ -51,6 +50,15 @@ export class SceneManager {
   private finalScore = 0
   private finalHighScore = 0
   private finalLevel = 1
+  private playerCount: 1 | 2 = 1
+
+  setPlayerCount(count: 1 | 2): void {
+    if (this.currentKind !== SceneKind.BATTLE) this.playerCount = count
+  }
+
+  suspend(): void {
+    if (this.currentKind === SceneKind.BATTLE) this.battleScene.suspend()
+  }
 
   constructor(audio: AudioEngine, seed: number, options: SceneManagerOptions = {}) {
     this.customLevel = options.customLevel
@@ -61,7 +69,12 @@ export class SceneManager {
       : undefined
     this.audio = audio
     this.onGameOver = options.onGameOver
-    this.world = new World(seed, this.customLevel ? 0 : options.initialHighScore, this.customLevel)
+    this.world = new World(
+      seed,
+      this.customLevel ? 0 : options.initialHighScore,
+      this.playerCount,
+      this.customLevel,
+    )
     this.campaignHighScore = options.initialHighScore ?? 0
 
     this.titleScene = new TitleScene(
@@ -94,8 +107,7 @@ export class SceneManager {
     const highScore = this.practiceStage === null && !this.customLevel ? this.campaignHighScore : 0
 
     resetEntityIds()
-    this.world = new World(Date.now() >>> 0, highScore, this.customLevel)
-    this.world.playerLives = PLAYER_INITIAL_LIVES
+    this.world = new World(Date.now() >>> 0, highScore, this.playerCount, this.customLevel)
     this.world.score = 0
     this.world.levelIndex = this.practiceStage ?? 0
     this.runTicks = 0

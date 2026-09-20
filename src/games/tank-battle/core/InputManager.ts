@@ -125,9 +125,15 @@ export class InputManager {
     this.pressed.delete(event.code)
   }
 
-  private readonly onBlur = (): void => {
+  clear(): void {
     this.pressed.clear()
     this.releaseHeldActions()
+    this.pausePending = false
+    this.confirmPending = false
+  }
+
+  private readonly onBlur = (): void => {
+    this.clear()
   }
 
   private notifyFirstInteraction(): void {

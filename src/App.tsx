@@ -3,6 +3,7 @@ import Header from '@/components/Header'
 import Home from '@/pages/Home'
 import GameDetail from '@/pages/GameDetail'
 import Profile from '@/pages/Profile'
+import GamepadTest from '@/pages/GamepadTest'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/game/:id" element={<GameDetail />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/gamepad" element={<GamepadTest />} />
         </Routes>
       </div>
     </HashRouter>

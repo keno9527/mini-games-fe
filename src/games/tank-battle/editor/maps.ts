@@ -9,7 +9,7 @@ import {
   BASE_WALL_CELLS,
   ENEMY_SPAWN_CELLS,
   LEVELS,
-  PLAYER_SPAWN_CELL,
+  PLAYER_SPAWN_CELLS,
 } from '@/games/tank-battle/data/levels.ts'
 import { TerrainGrid } from '@/games/tank-battle/system/TerrainGrid.ts'
 import { EnemyKind, type LevelData } from '@/games/tank-battle/types.ts'
@@ -58,7 +58,8 @@ export const WAVE_PRESETS = {
 
 export function protectedCell(x: number, y: number): string | null {
   if (BASE_CELL[0] === x && BASE_CELL[1] === y) return '老鹰基地'
-  if (PLAYER_SPAWN_CELL[0] === x && PLAYER_SPAWN_CELL[1] === y) return '玩家出生点'
+  const playerSlot = PLAYER_SPAWN_CELLS.findIndex(([cx, cy]) => cx === x && cy === y)
+  if (playerSlot >= 0) return `玩家 ${playerSlot + 1} 出生点`
   if (ENEMY_SPAWN_CELLS.some(([cx, cy]) => cx === x && cy === y)) return '敌军出生点'
   if (BASE_WALL_CELLS.some(([cx, cy]) => cx === x && cy === y)) return '基地围墙'
   return null
@@ -118,7 +119,7 @@ export function mapWarnings(level: LevelData): MapIssue[] {
   if (validateLevel(level).length) return []
   const terrain = new TerrainGrid(level.terrain)
   const warnings: MapIssue[] = []
-  for (const [x, y] of [PLAYER_SPAWN_CELL, ...ENEMY_SPAWN_CELLS]) {
+  for (const [x, y] of [...PLAYER_SPAWN_CELLS, ...ENEMY_SPAWN_CELLS]) {
     const blocked = [
       [0, -8],
       [8, 0],
@@ -141,7 +142,7 @@ export function mapWarnings(level: LevelData): MapIssue[] {
   // 假设普通砖已清除，钢墙和水仍不可穿过。基地围墙保留以避免穿越基地。
   const open = new TerrainGrid(level.terrain.map((row) => row.replace(/[#><v^]/g, '.')))
   const size = (FIELD_PIXELS - CELL_SIZE) / 8 + 1
-  const start = [PLAYER_SPAWN_CELL[0] * 2, PLAYER_SPAWN_CELL[1] * 2]
+  const start = [PLAYER_SPAWN_CELLS[0][0] * 2, PLAYER_SPAWN_CELLS[0][1] * 2]
   const visited = new Set<string>([start.join(',')])
   const queue = [start]
   for (let i = 0; i < queue.length; i += 1) {

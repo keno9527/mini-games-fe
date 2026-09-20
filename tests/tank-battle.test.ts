@@ -137,13 +137,13 @@ test('movement rejects terrain and base collisions without applying the turn sna
 test('active input takes over residual ice momentum without double movement', () => {
   const world = new World(1)
   world.terrain.load(emptyMap())
-  world.player = tank(32, 32)
-  world.player.slideTicks = 8
-  world.player.slideDirection = Direction.LEFT
+  world.players[0].tank = tank(32, 32)
+  world.players[0].tank.slideTicks = 8
+  world.players[0].tank.slideDirection = Direction.LEFT
   updatePlayer(world, { ...idle, right: true }, () => {})
-  assert.equal(world.player.x, 33)
-  assert.equal(world.player.direction, Direction.RIGHT)
-  assert.equal(world.player.slideTicks, 0)
+  assert.equal(world.players[0].tank.x, 33)
+  assert.equal(world.players[0].tank.direction, Direction.RIGHT)
+  assert.equal(world.players[0].tank.slideTicks, 0)
 })
 
 test('releasing input on ice slides once per frame and stops at a wall', () => {
@@ -151,14 +151,14 @@ test('releasing input on ice slides once per frame and stops at a wall', () => {
   rows[2] = '..%@.........'
   const world = new World(1)
   world.terrain.load(rows)
-  world.player = tank(31, 32)
+  world.players[0].tank = tank(31, 32)
   updatePlayer(world, { ...idle, right: true }, () => {})
-  assert.equal(world.player.x, 32)
-  assert.equal(world.player.slideTicks, 12)
+  assert.equal(world.players[0].tank.x, 32)
+  assert.equal(world.players[0].tank.slideTicks, 12)
   updatePlayer(world, idle, () => {})
-  assert.equal(world.player.x, 32)
-  assert.equal(world.player.slideTicks, 0)
-  assert.equal(world.player.moving, false)
+  assert.equal(world.players[0].tank.x, 32)
+  assert.equal(world.players[0].tank.slideTicks, 0)
+  assert.equal(world.players[0].tank.moving, false)
 })
 
 test('enemy decisions use the only traversable direction, including tank obstacles', () => {
@@ -171,7 +171,7 @@ test('enemy decisions use the only traversable direction, including tank obstacl
     const enemy = tank(32, 32, EnemyKind.BASIC)
     enemy.aiDecisionTicks = 40 // A blocked path must trigger a decision before the timer expires.
     world.enemies = [enemy]
-    world.player = tank(48, 32)
+    world.players[0].tank = tank(48, 32)
     updateEnemyAi(world)
     assert.equal(enemy.direction, Direction.DOWN)
     assert.deepEqual([enemy.x, enemy.y], [32, 33])
@@ -193,7 +193,7 @@ test('steel blocks aiming bonuses while brick walls can still be targeted', () =
     enemy.direction = Direction.DOWN
     enemy.aiDecisionTicks = 40
     world.enemies = [enemy]
-    world.player = tank(32, 112)
+    world.players[0].tank = tank(32, 112)
     let probability = 0
     world.rng.chance = (chance) => {
       probability = chance
@@ -239,7 +239,7 @@ test('actual shots and armor hits trigger feedback that expires on logical ticks
   world.terrain.load(emptyMap())
   const player = tank(32, 64)
   const enemy = tank(32, 40, EnemyKind.ARMOR)
-  world.player = player
+  world.players[0].tank = player
   world.enemies = [enemy]
   assert.equal(fireBullet(world, player), true)
   assert.equal(player.muzzleFlashTicks, 5)
@@ -263,14 +263,14 @@ test('actual shots and armor hits trigger feedback that expires on logical ticks
 
 test('tread rendering changes with movement, and rendering leaves state and RNG untouched', () => {
   const world = new World(55)
-  world.player = tank(32, 32)
+  world.players[0].tank = tank(32, 32)
   const first = canvasRecorder()
-  drawTank(first.context, world.player)
-  world.player.moving = true
-  world.player.tickTimers()
-  world.player.tickTimers()
+  drawTank(first.context, world.players[0].tank)
+  world.players[0].tank.moving = true
+  world.players[0].tank.tickTimers()
+  world.players[0].tank.tickTimers()
   const second = canvasRecorder()
-  drawTank(second.context, world.player)
+  drawTank(second.context, world.players[0].tank)
   assert.notDeepEqual(second.rectangles, first.rectangles)
   const before = JSON.stringify(world)
   const frame = canvasRecorder()
@@ -296,7 +296,7 @@ test('pause freezes combat feedback and timed effects until play resumes', () =>
   const scene = new BattleScene(world, silentAudio(), { onGameOver() {} })
   scene.onEnter()
   for (let frame = 0; frame < LEVEL_INTRO_TICKS; frame += 1) scene.update(idle)
-  world.player!.muzzleFlashTicks = 5
+  world.players[0].tank!.muzzleFlashTicks = 5
   world.freezeTicks = 60
   world.shovelTicks = 120
   scene.update({ ...idle, pauseEdge: true })
@@ -305,7 +305,7 @@ test('pause freezes combat feedback and timed effects until play resumes', () =>
   assert.equal(JSON.stringify(world), before)
   scene.update({ ...idle, pauseEdge: true })
   scene.update(idle)
-  assert.equal(world.player!.muzzleFlashTicks, 4)
+  assert.equal(world.players[0].tank!.muzzleFlashTicks, 4)
   assert.equal(world.freezeTicks, 59)
   assert.equal(world.shovelTicks, 119)
 })
@@ -315,8 +315,8 @@ test('HUD counters and simultaneous effects fit the frame without covering the b
   world.loadLevel(0)
   world.freezeTicks = 600
   world.shovelTicks = 900
-  world.player!.shieldTicks = 600
-  world.player!.star = 3
+  world.players[0].tank!.shieldTicks = 600
+  world.players[0].tank!.star = 3
   const { context, rectangles } = canvasRecorder()
   drawHud(context, world)
   for (const rect of rectangles) {
@@ -413,7 +413,7 @@ test('a bonus armor tank drops on first hit only; ordinary kills never drop rand
     const player = tank(32, 64)
     const enemy = tank(32, 40, EnemyKind.ARMOR)
     enemy.bonusCarrier = carrier
-    world.player = player
+    world.players[0].tank = player
     world.enemies = [enemy]
     const sounds: SoundEffect[] = []
     for (let hit = 0; hit < 4; hit += 1) {
@@ -441,9 +441,10 @@ test('six powerups apply their effects, award 500 points, and expire on game tic
     updatePowerUps(world, () => {})
     assert.equal(world.score, 500)
     assert.equal(world.powerUps[0].alive, false)
-    if (kind === PowerUpKind.STAR) assert.equal(world.player?.star, 1)
-    if (kind === PowerUpKind.TANK) assert.equal(world.playerLives, 4)
-    if (kind === PowerUpKind.HELMET) assert.equal(world.player?.shieldTicks, HELMET_SHIELD_TICKS)
+    if (kind === PowerUpKind.STAR) assert.equal(world.players[0].tank?.star, 1)
+    if (kind === PowerUpKind.TANK) assert.equal(world.players[0].lives, 4)
+    if (kind === PowerUpKind.HELMET)
+      assert.equal(world.players[0].tank?.shieldTicks, HELMET_SHIELD_TICKS)
     if (kind === PowerUpKind.TIMER) assert.equal(world.freezeTicks, FREEZE_TICKS)
     if (kind === PowerUpKind.GRENADE) {
       assert.equal(world.enemiesKilled, 2)
@@ -470,17 +471,17 @@ test('rewards never vanish because randomized placement failed on a dense map', 
 test('star upgrades persist between stages but reset on death; 20000 awards one extra life', () => {
   const world = new World(1)
   world.loadLevel(0)
-  for (let i = 0; i < 5; i += 1) world.player!.upgrade()
-  assert.equal(world.player?.star, 3)
+  for (let i = 0; i < 5; i += 1) world.players[0].tank!.upgrade()
+  assert.equal(world.players[0].tank?.star, 3)
   world.loadLevel(1)
-  assert.equal(world.player?.star, 3)
+  assert.equal(world.players[0].tank?.star, 3)
   world.addScore(20000)
-  assert.equal(world.playerLives, 4)
+  assert.equal(world.players[0].lives, 4)
   world.addScore(20000)
-  assert.equal(world.playerLives, 4)
+  assert.equal(world.players[0].lives, 4)
   world.onPlayerDestroyed()
   for (let i = 0; i < 30; i += 1) updateSpawning(world)
-  assert.equal(world.player?.star, 0)
+  assert.equal(world.players[0].tank?.star, 0)
 })
 
 test('all 35 stages can initialize, render and simulate with valid coordinates', () => {
@@ -492,7 +493,10 @@ test('all 35 stages can initialize, render and simulate with valid coordinates',
     for (let frame = 0; frame < LEVEL_INTRO_TICKS + 600; frame += 1)
       scene.update({ ...idle, fire: true })
     renderBattlefield(canvasRecorder().context, world, 2)
-    for (const entity of [...world.enemies, ...(world.player ? [world.player] : [])]) {
+    for (const entity of [
+      ...world.enemies,
+      ...(world.players[0].tank ? [world.players[0].tank] : []),
+    ]) {
       assert.ok(Number.isFinite(entity.x) && entity.x >= 0 && entity.x <= 192)
       assert.ok(Number.isFinite(entity.y) && entity.y >= 0 && entity.y <= 192)
     }
@@ -508,10 +512,10 @@ test('campaign transitions through all 35 stages, keeps upgrades, and reports vi
     },
   })
   scene.onEnter()
-  world.player!.star = 2
+  world.players[0].tank!.star = 2
   for (let stage = 0; stage < 35; stage += 1) {
     assert.equal(world.levelIndex, stage)
-    assert.equal(world.player?.star, 2)
+    assert.equal(world.players[0].tank?.star, 2)
     for (let frame = 0; frame < LEVEL_INTRO_TICKS; frame += 1) scene.update(idle)
     world.pendingEnemies = []
     world.enemies = []
