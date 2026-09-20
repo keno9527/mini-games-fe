@@ -3,7 +3,7 @@ import { PLAYER_INITIAL_LIVES } from '@/games/tank-battle/constants.ts'
 import type { AudioEngine } from '@/games/tank-battle/core/AudioEngine.ts'
 import { resetEntityIds } from '@/games/tank-battle/core/ids.ts'
 import { World } from '@/games/tank-battle/system/World.ts'
-import { SceneKind, type InputSnapshot } from '@/games/tank-battle/types.ts'
+import { SceneKind, type LevelData, type InputSnapshot } from '@/games/tank-battle/types.ts'
 import { BattleScene } from '@/games/tank-battle/scene/BattleScene.ts'
 import { GameOverScene } from '@/games/tank-battle/scene/GameOverScene.ts'
 import type { Scene } from '@/games/tank-battle/scene/Scene.ts'
@@ -19,6 +19,7 @@ export interface TankBattleResult {
 }
 
 export interface SceneManagerOptions {
+  readonly customLevel?: LevelData
   readonly initialHighScore?: number
   readonly onGameOver?: (result: TankBattleResult) => void
 }
@@ -30,6 +31,7 @@ export interface SceneManagerOptions {
  * 避免场景之间形成循环依赖。
  */
 export class SceneManager {
+  private readonly customLevel?: LevelData
   private readonly audio: AudioEngine
   private readonly onGameOver?: (result: TankBattleResult) => void
   private practiceStage: number | null = null
@@ -51,9 +53,15 @@ export class SceneManager {
   private finalLevel = 1
 
   constructor(audio: AudioEngine, seed: number, options: SceneManagerOptions = {}) {
+    this.customLevel = options.customLevel
+      ? {
+          terrain: [...options.customLevel.terrain],
+          enemyQueue: [...options.customLevel.enemyQueue],
+        }
+      : undefined
     this.audio = audio
     this.onGameOver = options.onGameOver
-    this.world = new World(seed, options.initialHighScore)
+    this.world = new World(seed, this.customLevel ? 0 : options.initialHighScore, this.customLevel)
     this.campaignHighScore = options.initialHighScore ?? 0
 
     this.titleScene = new TitleScene(
@@ -77,16 +85,16 @@ export class SceneManager {
   private createBattleScene(): BattleScene {
     return new BattleScene(this.world, this.audio, {
       onGameOver: (victory: boolean): void => this.finishGame(victory),
-      practice: this.practiceStage !== null,
+      practice: this.practiceStage !== null || this.customLevel !== undefined,
     })
   }
 
   /** 开始新一局：重置世界状态但保留最高分 */
   private startNewGame(): void {
-    const highScore = this.practiceStage === null ? this.campaignHighScore : 0
+    const highScore = this.practiceStage === null && !this.customLevel ? this.campaignHighScore : 0
 
     resetEntityIds()
-    this.world = new World(Date.now() >>> 0, highScore)
+    this.world = new World(Date.now() >>> 0, highScore, this.customLevel)
     this.world.playerLives = PLAYER_INITIAL_LIVES
     this.world.score = 0
     this.world.levelIndex = this.practiceStage ?? 0
@@ -98,13 +106,14 @@ export class SceneManager {
 
   /** 战斗结束：快照战绩后切到结束画面 */
   private finishGame(victory: boolean): void {
-    if (this.practiceStage === null) this.campaignHighScore = this.world.highScore
+    if (this.practiceStage === null && !this.customLevel)
+      this.campaignHighScore = this.world.highScore
     this.finalVictory = victory
     this.finalScore = this.world.score
     this.finalHighScore = this.world.highScore
     this.finalLevel = this.world.levelIndex + 1
     this.onGameOver?.({
-      practice: this.practiceStage !== null,
+      practice: this.practiceStage !== null || this.customLevel !== undefined,
       victory,
       score: this.finalScore,
       highScore: this.finalHighScore,
@@ -139,7 +148,7 @@ export class SceneManager {
   }
 
   setPracticeStage(stage: number | null): void {
-    if (this.currentKind === SceneKind.BATTLE) return
+    if (this.currentKind === SceneKind.BATTLE || this.customLevel) return
     this.practiceStage =
       stage === null ? null : Math.max(0, Math.min(LEVELS.length - 1, Math.floor(stage)))
   }

@@ -21,9 +21,76 @@ import { LEVELS } from '@/games/tank-battle/data/levels.ts'
 import { POWERUP_SPRITES } from '@/games/tank-battle/data/sprites.ts'
 import { POWERUP_PALETTE } from '@/games/tank-battle/render/palette.ts'
 import { PowerUpKind, type TankBattleHoldAction } from '@/games/tank-battle/types.ts'
+import { MapEditor, MapLibrary } from '@/games/tank-battle/editor/MapEditor.tsx'
+import type { CustomMap } from '@/games/tank-battle/editor/maps.ts'
 import './tank-battle.css'
 
-export default function TankBattle({ userId, gameId }: GameComponentProps) {
+export default function TankBattle(props: GameComponentProps) {
+  const [view, setView] = useState<'game' | 'editor' | 'library' | 'test' | 'custom'>('game')
+  const [editorMap, setEditorMap] = useState<CustomMap | undefined>()
+  const [customMap, setCustomMap] = useState<CustomMap | undefined>()
+  const openEditor = (map?: CustomMap) => {
+    setEditorMap(map)
+    setView('editor')
+  }
+  if (view === 'library')
+    return (
+      <MapLibrary
+        onBack={() => setView('game')}
+        onEdit={openEditor}
+        onPlay={(map) => {
+          setCustomMap(map)
+          setView('custom')
+        }}
+      />
+    )
+  return (
+    <>
+      {(view === 'editor' || view === 'test') && (
+        <div hidden={view !== 'editor'}>
+          <MapEditor
+            initialMap={editorMap}
+            active={view === 'editor'}
+            onBack={() => setView('game')}
+            onLibrary={() => setView('library')}
+            onPlay={(map) => {
+              setCustomMap(map)
+              setView('test')
+            }}
+          />
+        </div>
+      )}
+      {view !== 'editor' && (
+        <TankBattlePlayer
+          key={view}
+          {...props}
+          customMap={view === 'test' || view === 'custom' ? customMap : undefined}
+          onEditor={() => openEditor()}
+          onLibrary={() => setView('library')}
+          returnLabel={view === 'test' ? '返回编辑' : '返回我的地图'}
+          onReturn={() => setView(view === 'test' ? 'editor' : 'library')}
+        />
+      )}
+    </>
+  )
+}
+
+interface PlayerProps extends GameComponentProps {
+  customMap?: CustomMap
+  onEditor: () => void
+  onLibrary: () => void
+  onReturn: () => void
+  returnLabel: string
+}
+function TankBattlePlayer({
+  userId,
+  gameId,
+  customMap,
+  onEditor,
+  onLibrary,
+  onReturn,
+  returnLabel,
+}: PlayerProps) {
   const stageRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef<TankBattleHandle | null>(null)
@@ -53,6 +120,7 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
 
       if (cancelled) return
       game = mountTankBattle(canvas, stage, {
+        customLevel: customMap,
         initialHighScore,
         onStateChange: setUiState,
         onGameOver: (result) => {
@@ -67,6 +135,7 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
       })
       gameRef.current = game
       setReady(true)
+      if (customMap) game.confirm()
     }
 
     void startGame()
@@ -75,7 +144,7 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
       gameRef.current = null
       game?.destroy()
     }
-  }, [gameId, userId])
+  }, [gameId, userId, customMap])
 
   const setHeldAction = useCallback((action: TankBattleHoldAction, active: boolean) => {
     gameRef.current?.setHeldAction(action, active)
@@ -91,8 +160,8 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
             <span className="sr-only">战役或关卡练习</span>
             <select
               aria-label="战役或关卡练习"
-              disabled={!ready || inBattle}
-              value={practiceStage}
+              disabled={!ready || inBattle || Boolean(customMap)}
+              value={customMap ? 'custom' : practiceStage}
               onChange={(event) => {
                 setPracticeStage(event.target.value)
                 gameRef.current?.setPracticeStage(
@@ -100,6 +169,7 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
                 )
               }}
             >
+              {customMap && <option value="custom">自定义 · {customMap.name}</option>}
               <option value="campaign">经典战役 · 35 关</option>
               {LEVELS.map((_, index) => (
                 <option key={index} value={index}>
@@ -110,6 +180,17 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
           </label>
         </div>
         <div className="tank-toolbar-actions">
+          {!customMap && !inBattle && (
+            <>
+              <button disabled={!ready} onClick={onEditor}>
+                地图编辑
+              </button>
+              <button disabled={!ready} onClick={onLibrary}>
+                我的地图
+              </button>
+            </>
+          )}
+          {customMap && <button onClick={onReturn}>{returnLabel}</button>}
           <button
             type="button"
             disabled={!ready}
@@ -149,15 +230,18 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
             )}
             {soundEnabled ? '音效开' : '静音'}
           </button>
-          {uiState === 'paused' && (
+          {uiState === 'paused' && !customMap && (
             <button type="button" onClick={() => gameRef.current?.returnToTitle()}>
               返回标题
             </button>
           )}
         </div>
       </div>
-      {practiceStage !== 'campaign' && (
-        <p className="tank-practice-note">单关练习 · 三条生命 · 战绩不计入排行榜</p>
+      {(customMap || practiceStage !== 'campaign') && (
+        <p className="tank-practice-note">
+          {customMap ? `自定义地图 · ${customMap.name}` : '单关练习'} · 三条生命 · 战绩不计入排行榜
+          {customMap && ' · 试玩破坏不会写回原稿'}
+        </p>
       )}
       <div
         ref={stageRef}

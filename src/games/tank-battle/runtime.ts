@@ -3,7 +3,7 @@ import { GameLoop } from '@/games/tank-battle/core/GameLoop.ts'
 import { InputManager } from '@/games/tank-battle/core/InputManager.ts'
 import { PixelCanvas } from '@/games/tank-battle/render/PixelCanvas.ts'
 import { SceneManager, type TankBattleResult } from '@/games/tank-battle/scene/SceneManager.ts'
-import { SceneKind, type TankBattleHoldAction } from '@/games/tank-battle/types.ts'
+import { SceneKind, type LevelData, type TankBattleHoldAction } from '@/games/tank-battle/types.ts'
 
 export type TankBattleUiState = 'title' | 'playing' | 'paused' | 'gameOver'
 
@@ -18,6 +18,7 @@ export interface TankBattleHandle {
 }
 
 export interface TankBattleOptions {
+  readonly customLevel?: LevelData
   readonly initialHighScore?: number
   readonly onGameOver?: (result: TankBattleResult) => void
   readonly onStateChange?: (state: TankBattleUiState) => void
