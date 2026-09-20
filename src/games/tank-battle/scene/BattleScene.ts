@@ -16,6 +16,7 @@ import { updatePowerUps, updatePowerUpTimers } from '@/games/tank-battle/system/
 import { updateSpawning } from '@/games/tank-battle/system/SpawnManager.ts'
 import { LevelOutcome, type World } from '@/games/tank-battle/system/World.ts'
 import { SoundEffect, type InputSnapshot } from '@/games/tank-battle/types.ts'
+import { idleControls } from '@/features/gamepad/players.ts'
 import type { Scene } from '@/games/tank-battle/scene/Scene.ts'
 
 /** 战斗场景内部阶段 */
@@ -46,6 +47,11 @@ export class BattleScene implements Scene {
   private phaseTicks = 0
   /** 水面波纹等环境动画的相位，与逻辑帧同步递增 */
   private animationPhase = 0
+  private suspended = false
+
+  suspend(): void {
+    if (!this.isPaused()) this.suspended = true
+  }
 
   constructor(world: World, audio: AudioEngine, callbacks: BattleSceneCallbacks) {
     this.world = world
@@ -54,6 +60,7 @@ export class BattleScene implements Scene {
   }
 
   onEnter(): void {
+    this.suspended = false
     this.startLevel(this.world.levelIndex)
   }
 
@@ -66,6 +73,10 @@ export class BattleScene implements Scene {
   }
 
   update(input: InputSnapshot): void {
+    if (this.suspended) {
+      if (input.pauseEdge) this.suspended = false
+      return
+    }
     this.animationPhase += 1
 
     switch (this.phase) {
@@ -110,6 +121,8 @@ export class BattleScene implements Scene {
     }
 
     updatePlayer(this.world, input, playSound)
+    if (this.world.players.length === 2)
+      updatePlayer(this.world, input.player2 ?? idleControls(), playSound, 1)
     updateEnemyAi(this.world)
     updateBullets(this.world, playSound)
     updatePowerUps(this.world, playSound)
@@ -125,7 +138,7 @@ export class BattleScene implements Scene {
 
   /** 推进所有实体的自有计时器 */
   private tickEntityTimers(): void {
-    this.world.player?.tickTimers()
+    for (const player of this.world.getPlayerTanks()) player.tickTimers()
     for (const enemy of this.world.enemies) {
       enemy.tickTimers()
     }
@@ -164,6 +177,11 @@ export class BattleScene implements Scene {
   render(context: CanvasRenderingContext2D): void {
     renderBattlefield(context, this.world, Math.floor(this.animationPhase / 8))
 
+    if (this.suspended) {
+      drawDimOverlay(context, 0.5)
+      drawCenteredBanner(context, ['PAUSE'], COLORS.TEXT_HIGHLIGHT)
+      return
+    }
     switch (this.phase) {
       case BattlePhase.INTRO: {
         // 横幕由外向内拉开，进度 0 → 1
@@ -202,6 +220,6 @@ export class BattleScene implements Scene {
   }
 
   isPaused(): boolean {
-    return this.phase === BattlePhase.PAUSED
+    return this.suspended || this.phase === BattlePhase.PAUSED
   }
 }

@@ -10,7 +10,7 @@ export default function Header() {
       <div className="plaza-header-inner">
         <Link to="/" className="plaza-brand" aria-label="游戏广场首页">
           <SquaresFour size={28} weight="duotone" aria-hidden="true" />
-          <span>游戏广场</span>
+          <span className="max-[480px]:hidden">游戏广场</span>
         </Link>
         <nav aria-label="主导航">
           <Link to="/" aria-current={pathname === '/' ? 'page' : undefined}>
@@ -18,6 +18,9 @@ export default function Header() {
           </Link>
           <Link to="/profile" aria-current={pathname === '/profile' ? 'page' : undefined}>
             {currentUser?.name ?? '我的'}
+          </Link>
+          <Link to="/gamepad" aria-current={pathname === '/gamepad' ? 'page' : undefined}>
+            手柄检测
           </Link>
         </nav>
       </div>

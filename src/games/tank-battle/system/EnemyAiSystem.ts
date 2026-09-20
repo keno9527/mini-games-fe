@@ -103,9 +103,7 @@ function buildObstacleList(world: World, self: Tank): Tank[] {
       obstacles.push(other)
     }
   }
-  if (world.player !== null) {
-    obstacles.push(world.player)
-  }
+  obstacles.push(...world.getPlayerTanks())
   return obstacles
 }
 
@@ -122,8 +120,15 @@ function decideDirection(world: World, enemy: Tank): Direction {
     return pickDirectionToward(world, enemy, baseRect)
   }
 
-  if (intentIndex === 1 && world.player !== null && world.player.alive) {
-    return pickDirectionToward(world, enemy, world.player.getRect())
+  const players = world.getPlayerTanks()
+  if (intentIndex === 1 && players.length) {
+    const target = players.reduce((best, tank) =>
+      Math.abs(tank.x - enemy.x) + Math.abs(tank.y - enemy.y) <
+      Math.abs(best.x - enemy.x) + Math.abs(best.y - enemy.y)
+        ? tank
+        : best,
+    )
+    return pickDirectionToward(world, enemy, target.getRect())
   }
 
   return world.rng.pick(ALL_DIRECTIONS) ?? Direction.DOWN
@@ -198,9 +203,7 @@ function maybeFire(world: World, enemy: Tank): void {
 /** 坦克当前朝向是否大致对准了玩家或基地 */
 function isAlignedWithTarget(enemy: Tank, world: World): boolean {
   const targets: Rect[] = []
-  if (world.player !== null && world.player.alive) {
-    targets.push(world.player.getRect())
-  }
+  targets.push(...world.getPlayerTanks().map((player) => player.getRect()))
   if (!world.base.destroyed) {
     targets.push(world.base.getRect())
   }

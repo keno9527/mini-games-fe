@@ -46,9 +46,7 @@ export function renderBattlefield(
   for (const enemy of world.enemies) {
     drawTank(context, enemy)
   }
-  if (world.player !== null) {
-    drawTank(context, world.player)
-  }
+  for (const player of world.getPlayerTanks()) drawTank(context, player)
 
   // 5. 子弹
   for (const bullet of world.bullets) {

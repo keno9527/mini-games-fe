@@ -4,7 +4,7 @@ export default {
   game: {
     id: 'tank-battle',
     name: '坦克大战',
-    description: '守住老鹰基地，驾驶坦克突破砖墙与钢墙，迎战五关逐步升级的敌军攻势。',
+    description: '单人作战或双手柄双人合作，驾驶坦克守住老鹰基地，迎战五关敌军攻势。',
     tags: ['动作', '街机', '经典'],
     difficulties: ['经典战役'],
   },

@@ -65,6 +65,8 @@ function drawMatrix(
 function getTankPalette(tank: Tank): TankPalette {
   if (tank.side === TankSide.PLAYER) {
     const maxed = tank.star >= MAX_PLAYER_STAR
+    if (tank.playerSlot === 1)
+      return { body: maxed ? '#b3efff' : '#4cb9e7', tread: '#24617d', highlight: '#e0f8ff' }
     return {
       body: maxed ? COLORS.PLAYER_BODY_MAX : COLORS.PLAYER_BODY,
       tread: COLORS.PLAYER_TREAD,

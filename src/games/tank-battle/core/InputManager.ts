@@ -94,6 +94,11 @@ export class InputManager {
   }
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (
+      event.target instanceof HTMLElement &&
+      event.target.closest('input, select, textarea, button, [contenteditable=true]')
+    )
+      return
     if (PREVENT_DEFAULT_CODES.has(event.code)) {
       event.preventDefault()
     }
@@ -117,9 +122,15 @@ export class InputManager {
     this.pressed.delete(event.code)
   }
 
-  private readonly onBlur = (): void => {
+  clear(): void {
     this.pressed.clear()
     this.releaseHeldActions()
+    this.pausePending = false
+    this.confirmPending = false
+  }
+
+  private readonly onBlur = (): void => {
+    this.clear()
   }
 
   private notifyFirstInteraction(): void {

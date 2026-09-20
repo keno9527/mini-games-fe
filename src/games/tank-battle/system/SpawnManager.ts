@@ -6,7 +6,7 @@ import {
   TANK_SIZE,
 } from '@/games/tank-battle/constants.ts'
 import { rectsIntersect } from '@/games/tank-battle/core/geometry.ts'
-import { ENEMY_SPAWN_CELLS } from '@/games/tank-battle/data/levels.ts'
+import { ENEMY_SPAWN_CELLS, PLAYER_SPAWN_CELLS } from '@/games/tank-battle/data/levels.ts'
 import { Tank } from '@/games/tank-battle/entity/Tank.ts'
 import { Direction, TankSide, type Rect } from '@/games/tank-battle/types.ts'
 import type { World } from '@/games/tank-battle/system/World.ts'
@@ -93,22 +93,25 @@ function isOccupied(world: World, rect: Rect): boolean {
       return true
     }
   }
-  const player = world.player
-  if (player !== null && player.alive && rectsIntersect(rect, player.getRect())) {
-    return true
-  }
+  if (world.getPlayerTanks().some((player) => rectsIntersect(rect, player.getRect()))) return true
   return false
 }
 
 /** 玩家阵亡后的重生倒计时 */
 function updatePlayerRespawn(world: World): void {
-  if (world.player !== null || world.respawnDelayTicks <= 0) {
-    return
-  }
-
-  world.respawnDelayTicks -= 1
-  if (world.respawnDelayTicks <= 0) {
-    // 阵亡后星级归零，贴合原作惩罚
-    world.spawnPlayer(false)
-  }
+  world.players.forEach((player, slot) => {
+    if (player.tank !== null || player.respawnDelayTicks <= 0) return
+    player.respawnDelayTicks -= 1
+    if (player.respawnDelayTicks <= 0) {
+      const cell = PLAYER_SPAWN_CELLS[slot]
+      const rect = {
+        x: cell[0] * CELL_SIZE,
+        y: cell[1] * CELL_SIZE,
+        width: TANK_SIZE,
+        height: TANK_SIZE,
+      }
+      if (isOccupied(world, rect)) player.respawnDelayTicks = 1
+      else world.spawnPlayer(false, slot)
+    }
+  })
 }

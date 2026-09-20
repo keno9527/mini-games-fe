@@ -1,4 +1,3 @@
-import { PLAYER_INITIAL_LIVES } from '@/games/tank-battle/constants.ts'
 import type { AudioEngine } from '@/games/tank-battle/core/AudioEngine.ts'
 import { resetEntityIds } from '@/games/tank-battle/core/ids.ts'
 import { World } from '@/games/tank-battle/system/World.ts'
@@ -45,6 +44,15 @@ export class SceneManager {
   private finalScore = 0
   private finalHighScore = 0
   private finalLevel = 1
+  private playerCount: 1 | 2 = 1
+
+  setPlayerCount(count: 1 | 2): void {
+    if (this.currentKind !== SceneKind.BATTLE) this.playerCount = count
+  }
+
+  suspend(): void {
+    if (this.currentKind === SceneKind.BATTLE) this.battleScene.suspend()
+  }
 
   constructor(audio: AudioEngine, seed: number, options: SceneManagerOptions = {}) {
     this.audio = audio
@@ -80,8 +88,7 @@ export class SceneManager {
     const highScore = this.world.highScore
 
     resetEntityIds()
-    this.world = new World(Date.now() >>> 0, highScore)
-    this.world.playerLives = PLAYER_INITIAL_LIVES
+    this.world = new World(Date.now() >>> 0, highScore, this.playerCount)
     this.world.score = 0
     this.world.levelIndex = 0
     this.runStartedAtMs = Date.now()

@@ -1,6 +1,4 @@
-import { CELL_SIZE, FIELD_PIXELS, SIDEBAR_WIDTH, TANK_SIZE } from '@/games/tank-battle/constants.ts'
-import { TANK_SPRITES } from '@/games/tank-battle/data/sprites.ts'
-import { Direction } from '@/games/tank-battle/types.ts'
+import { CELL_SIZE, FIELD_PIXELS, SIDEBAR_WIDTH } from '@/games/tank-battle/constants.ts'
 import { drawText } from '@/games/tank-battle/render/drawSprites.ts'
 import { COLORS } from '@/games/tank-battle/render/palette.ts'
 import type { World } from '@/games/tank-battle/system/World.ts'
@@ -25,9 +23,16 @@ export function drawHud(context: CanvasRenderingContext2D, world: World): void {
   const infoY = 8 + Math.ceil(20 / ENEMY_ICONS_PER_ROW) * ENEMY_ICON_SIZE + 10
 
   // 玩家标识与剩余生命
-  drawText(context, '1P', originX + 6, infoY, COLORS.TEXT_DIM)
-  drawPlayerLifeIcon(context, originX + 6, infoY + 8)
-  drawText(context, String(world.playerLives), originX + 18, infoY + 10, COLORS.TEXT_DIM)
+  world.players.forEach((player, slot) => {
+    const y = infoY + slot * 12
+    drawText(
+      context,
+      `${slot + 1}P ${player.lives}`,
+      originX + 6,
+      y,
+      slot === 0 ? COLORS.TEXT_HIGHLIGHT : '#4cb9e7',
+    )
+  })
 
   // 关卡编号
   drawText(context, 'LV', originX + 6, infoY + 26, COLORS.TEXT_DIM)
@@ -64,26 +69,6 @@ function drawEnemyIcons(
   }
 }
 
-/** 生命图标：缩略的玩家坦克轮廓 */
-function drawPlayerLifeIcon(
-  context: CanvasRenderingContext2D,
-  originX: number,
-  originY: number,
-): void {
-  const sprite = TANK_SPRITES[Direction.UP]
-  // 按 1/2 采样绘制成 8x8 的缩略图
-  context.fillStyle = COLORS.PLAYER_BODY
-  for (let row = 0; row < TANK_SIZE; row += 2) {
-    const line = sprite[row]
-    for (let col = 0; col < TANK_SIZE; col += 2) {
-      if (line[col] === ' ') {
-        continue
-      }
-      context.fillRect(originX + col / 2, originY + row / 2, 1, 1)
-    }
-  }
-}
-
 /** 冻结 / 铲子等临时状态提示 */
 function drawStatusFlags(
   context: CanvasRenderingContext2D,
@@ -101,8 +86,9 @@ function drawStatusFlags(
     drawText(context, 'WALL', originX, lineY, COLORS.STEEL_LIGHT)
     lineY += 8
   }
-  if (world.player !== null && world.player.star > 0) {
-    drawText(context, `ST${world.player.star}`, originX, lineY, COLORS.TEXT_HIGHLIGHT)
+  const stars = world.players.map((player) => player.tank?.star ?? 0)
+  if (stars.some((star) => star > 0)) {
+    drawText(context, `S${stars.join('/')}`, originX, lineY, COLORS.TEXT_HIGHLIGHT)
   }
 }
 

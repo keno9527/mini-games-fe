@@ -6,7 +6,7 @@ import {
   SPAWN_BLINK_TICKS,
 } from '@/games/tank-battle/constants.ts'
 import { Rng } from '@/games/tank-battle/core/rng.ts'
-import { LEVELS, PLAYER_SPAWN_CELL } from '@/games/tank-battle/data/levels.ts'
+import { LEVELS, PLAYER_SPAWN_CELLS } from '@/games/tank-battle/data/levels.ts'
 import { Base } from '@/games/tank-battle/entity/Base.ts'
 import type { Bullet } from '@/games/tank-battle/entity/Bullet.ts'
 import { Explosion } from '@/games/tank-battle/entity/Explosion.ts'
@@ -28,12 +28,18 @@ export enum LevelOutcome {
  * 只持有状态与最基础的状态变更方法，不实现跨实体规则 —— 那些属于各 system。
  * 不引用任何 DOM / Canvas API，因此可以在 Node 环境直接单测。
  */
+export interface PlayerState {
+  tank: Tank | null
+  lives: number
+  respawnDelayTicks: number
+}
+
 export class World {
   readonly terrain: TerrainGrid
   readonly base = new Base()
   readonly rng: Rng
 
-  player: Tank | null = null
+  readonly players: PlayerState[]
   enemies: Tank[] = []
   bullets: Bullet[] = []
   powerUps: PowerUp[] = []
@@ -42,7 +48,6 @@ export class World {
   levelIndex = 0
   score = 0
   highScore = 0
-  playerLives = PLAYER_INITIAL_LIVES
 
   /** 本关剩余未出场的敌方队列 */
   pendingEnemies: EnemyKind[] = []
@@ -58,12 +63,14 @@ export class World {
   /** 下一个生成点的轮转索引 */
   nextSpawnPointIndex = 0
 
-  /** 玩家重生等待帧数；> 0 表示玩家已阵亡待重生 */
-  respawnDelayTicks = 0
-
   outcome: LevelOutcome = LevelOutcome.ONGOING
 
-  constructor(seed: number, initialHighScore = 0) {
+  constructor(seed: number, initialHighScore = 0, playerCount: 1 | 2 = 1) {
+    this.players = Array.from({ length: playerCount }, () => ({
+      tank: null,
+      lives: PLAYER_INITIAL_LIVES,
+      respawnDelayTicks: 0,
+    }))
     this.rng = new Rng(seed)
     this.terrain = new TerrainGrid(LEVELS[0].terrain)
     this.highScore = initialHighScore
@@ -94,38 +101,46 @@ export class World {
     this.shovelTicks = 0
     this.spawnCountdownTicks = 0
     this.nextSpawnPointIndex = 0
-    this.respawnDelayTicks = 0
     this.outcome = LevelOutcome.ONGOING
 
-    this.spawnPlayer(true)
+    this.players.forEach((player, slot) => {
+      player.respawnDelayTicks = 0
+      if (player.lives > 0) this.spawnPlayer(true, slot)
+    })
   }
 
   /** 在出生点放置玩家坦克。keepStar 为 false 时星级归零（阵亡后降级）。 */
-  spawnPlayer(keepStar: boolean): void {
-    const previousStar = keepStar ? (this.player?.star ?? 0) : 0
+  spawnPlayer(keepStar: boolean, slot = 0): void {
+    const player = this.players[slot]
+    if (!player || player.lives <= 0) return
+    const previousStar = keepStar ? (player.tank?.star ?? 0) : 0
+    const spawn = PLAYER_SPAWN_CELLS[slot]
     const tank = new Tank({
       side: TankSide.PLAYER,
-      x: PLAYER_SPAWN_CELL[0] * CELL_SIZE,
-      y: PLAYER_SPAWN_CELL[1] * CELL_SIZE,
+      x: spawn[0] * CELL_SIZE,
+      y: spawn[1] * CELL_SIZE,
       direction: Direction.UP,
       enemyKind: null,
     })
     tank.star = previousStar
     tank.shieldTicks = RESPAWN_SHIELD_TICKS
-    this.player = tank
+    tank.playerSlot = slot
+    player.tank = tank
   }
 
-  /** 玩家阵亡：扣生命并安排重生，生命耗尽则判定失败 */
-  onPlayerDestroyed(): void {
-    this.addExplosion(this.player, true)
-    this.player = null
-    this.playerLives -= 1
+  /** 每名玩家独立扣生命；全部耗尽才失败。 */
+  onPlayerDestroyed(slot = 0): void {
+    const player = this.players[slot]
+    if (!player?.tank) return
+    this.addExplosion(player.tank, true)
+    player.tank = null
+    player.lives = Math.max(0, player.lives - 1)
+    player.respawnDelayTicks = player.lives > 0 ? SPAWN_BLINK_TICKS : 0
+    if (this.players.every((entry) => entry.lives <= 0)) this.outcome = LevelOutcome.FAILED
+  }
 
-    if (this.playerLives <= 0) {
-      this.outcome = LevelOutcome.FAILED
-      return
-    }
-    this.respawnDelayTicks = SPAWN_BLINK_TICKS
+  getPlayerTanks(): Tank[] {
+    return this.players.flatMap((player) => (player.tank?.alive ? [player.tank] : []))
   }
 
   /** 基地被击毁：直接判定失败 */

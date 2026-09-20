@@ -161,3 +161,80 @@
     min-height: 56px;
   }
 }
+
+.tank-controller-setup {
+  padding: 16px;
+  border-bottom: 2px solid #343434;
+  background: #161918;
+  color: #e9e8dc;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.tank-mode-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.tank-mode-row legend {
+  margin-bottom: 6px;
+  color: #babdb4;
+}
+.tank-mode-row button {
+  padding: 8px 12px;
+  border: 1px solid #72766b;
+  border-radius: 6px;
+  margin-right: 6px;
+}
+.tank-mode-row button[aria-pressed='true'],
+.tank-session-action {
+  background: #e0bd5a;
+  color: #171a14;
+}
+.tank-controller-setup button:disabled,
+.tank-controller-setup select:disabled {
+  opacity: 0.5;
+}
+.tank-controller-setup button:focus-visible,
+.tank-controller-setup select:focus-visible {
+  outline: 3px solid #e0bd5a;
+  outline-offset: 3px;
+}
+.tank-player-bindings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+.tank-player-bindings label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+.tank-player-bindings select {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  background: #252a26;
+  color: #f1f2e9;
+  border: 1px solid #686f64;
+  border-radius: 6px;
+}
+.tank-player-one {
+  color: #e0bd5a;
+}
+.tank-player-two {
+  color: #70cef2;
+}
+.tank-controller-setup p {
+  margin-top: 8px;
+  color: #b8c0b5;
+}
+.tank-controls-guide {
+  margin-top: 8px;
+}
+.tank-controls-guide summary {
+  cursor: pointer;
+  color: #e0bd5a;
+}

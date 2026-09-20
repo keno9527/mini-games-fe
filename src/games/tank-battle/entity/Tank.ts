@@ -39,6 +39,7 @@ export class Tank {
   readonly maxArmor: number
 
   /** 玩家星级（0-3）；敌方恒为 0 */
+  playerSlot = 0
   star = 0
 
   /** 无敌剩余帧数（重生保护 / 头盔道具） */
