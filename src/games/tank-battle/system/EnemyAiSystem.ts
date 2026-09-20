@@ -1,9 +1,13 @@
-import { TANK_SIZE } from '@/games/tank-battle/constants.ts'
-import { rectsIntersect } from '@/games/tank-battle/core/geometry.ts'
+import { BULLET_SIZE, TANK_SIZE } from '@/games/tank-battle/constants.ts'
 import type { Tank } from '@/games/tank-battle/entity/Tank.ts'
 import { Direction, type Rect } from '@/games/tank-battle/types.ts'
 import { fireEnemyBullet } from '@/games/tank-battle/system/BulletSystem.ts'
-import { getDirectionVector, tryMoveTank } from '@/games/tank-battle/system/MovementSystem.ts'
+import {
+  canMoveTank,
+  getDirectionVector,
+  tryMoveTank,
+  type MoveContext,
+} from '@/games/tank-battle/system/MovementSystem.ts'
 import type { World } from '@/games/tank-battle/system/World.ts'
 
 /** 重新决策方向的间隔下限（逻辑帧） */
@@ -46,7 +50,7 @@ const ALL_DIRECTIONS: readonly Direction[] = [
  *
  * 刻意不使用 A* 等寻路算法 —— 原作的敌方 AI 本身就是「带偏好的随机游走」，
  * 引入精确寻路会让敌人过于聪明、手感失真。这里用加权随机在三种意图之间
- * 选择：趋向基地（权重最高，制造压迫感）、趋向玩家、纯随机（保底探索）。
+ * 选择：轻微趋向基地、趋向玩家、以随机游走为主的探索。
  *
  * 重新决策的时机有两个：决策计时器归零，或撞墙无法前进。
  */
@@ -74,17 +78,19 @@ export function updateEnemyAi(world: World): void {
       enemy.aiDecisionTicks -= 1
     }
 
-    const shouldRedecide = enemy.aiDecisionTicks <= 0
-    const direction = shouldRedecide ? decideDirection(world, enemy) : enemy.direction
+    const context: MoveContext = {
+      terrain: world.terrain,
+      otherTanks: buildObstacleList(world, enemy),
+      baseRect: world.base.destroyed ? null : world.base.getRect(),
+    }
+    const shouldRedecide =
+      enemy.aiDecisionTicks <= 0 || !canMoveTank(enemy, enemy.direction, context)
+    const direction = shouldRedecide ? decideDirection(world, enemy, context) : enemy.direction
     if (shouldRedecide) {
       resetDecisionTimer(world, enemy)
     }
 
-    const moved = tryMoveTank(enemy, direction, {
-      terrain: world.terrain,
-      otherTanks: buildObstacleList(world, enemy),
-      baseRect: world.base.destroyed ? null : world.base.getRect(),
-    })
+    const moved = tryMoveTank(enemy, direction, context)
 
     // 撞墙立即重新决策，否则会贴着墙抖动
     if (!moved) {
@@ -108,7 +114,11 @@ function buildObstacleList(world: World, self: Tank): Tank[] {
 }
 
 /** 按加权随机选择本次的移动方向 */
-function decideDirection(world: World, enemy: Tank): Direction {
+function decideDirection(world: World, enemy: Tank, context: MoveContext): Direction {
+  const available = ALL_DIRECTIONS.filter((direction) => canMoveTank(enemy, direction, context))
+  // 被完全围住时保留朝向，仍可开火打通砖墙。
+  if (available.length === 0) return enemy.direction
+
   const intentIndex = world.rng.pickWeightedIndex([
     WEIGHT_TOWARD_BASE,
     WEIGHT_TOWARD_PLAYER,
@@ -117,7 +127,7 @@ function decideDirection(world: World, enemy: Tank): Direction {
 
   if (intentIndex === 0) {
     const baseRect = world.base.getRect()
-    return pickDirectionToward(world, enemy, baseRect)
+    return pickDirectionToward(world, enemy, baseRect, available)
   }
 
   const players = world.getPlayerTanks()
@@ -128,10 +138,10 @@ function decideDirection(world: World, enemy: Tank): Direction {
         ? tank
         : best,
     )
-    return pickDirectionToward(world, enemy, target.getRect())
+    return pickDirectionToward(world, enemy, target.getRect(), available)
   }
 
-  return world.rng.pick(ALL_DIRECTIONS) ?? Direction.DOWN
+  return world.rng.pick(available) ?? enemy.direction
 }
 
 /**
@@ -140,7 +150,12 @@ function decideDirection(world: World, enemy: Tank): Direction {
  * 在水平与垂直两个候选轴中按距离差加权 —— 距离差大的轴优先，
  * 使坦克呈现「先走长边」的自然移动感。若首选方向被挡则退化为次选。
  */
-function pickDirectionToward(world: World, enemy: Tank, target: Rect): Direction {
+function pickDirectionToward(
+  world: World,
+  enemy: Tank,
+  target: Rect,
+  available: readonly Direction[],
+): Direction {
   const enemyCenterX = enemy.x + TANK_SIZE / 2
   const enemyCenterY = enemy.y + TANK_SIZE / 2
   const targetCenterX = target.x + target.width / 2
@@ -157,27 +172,9 @@ function pickDirectionToward(world: World, enemy: Tank, target: Rect): Direction
   const first = preferHorizontal ? horizontal : vertical
   const second = preferHorizontal ? vertical : horizontal
 
-  return canStep(world, enemy, first) ? first : second
-}
-
-/** 该方向是否至少能前进一步 */
-function canStep(world: World, enemy: Tank, direction: Direction): boolean {
-  const [dx, dy] = getDirectionVector(direction)
-  const speed = enemy.getSpec().moveSpeed
-  const candidate: Rect = {
-    x: enemy.x + dx * speed,
-    y: enemy.y + dy * speed,
-    width: TANK_SIZE,
-    height: TANK_SIZE,
-  }
-
-  if (world.terrain.blocksTank(candidate)) {
-    return false
-  }
-  if (!world.base.destroyed && rectsIntersect(candidate, world.base.getRect())) {
-    return false
-  }
-  return true
+  if (available.includes(first)) return first
+  if (available.includes(second)) return second
+  return world.rng.pick(available) ?? enemy.direction
 }
 
 function resetDecisionTimer(world: World, enemy: Tank): void {
@@ -218,19 +215,46 @@ function isAlignedWithTarget(enemy: Tank, world: World): boolean {
 
     if (dx !== 0) {
       // 水平朝向：目标需在同一水平带内，且位于朝向一侧
-      const sameRow = Math.abs(targetCenterY - enemyCenterY) < TANK_SIZE
+      const sameRow = Math.abs(targetCenterY - enemyCenterY) < (target.height + BULLET_SIZE) / 2
       const inFront = (targetCenterX - enemyCenterX) * dx > 0
-      if (sameRow && inFront) {
+      if (sameRow && inFront && hasClearSteelPath(world, enemy, target)) {
         return true
       }
     } else {
-      const sameColumn = Math.abs(targetCenterX - enemyCenterX) < TANK_SIZE
+      const sameColumn = Math.abs(targetCenterX - enemyCenterX) < (target.width + BULLET_SIZE) / 2
       const inFront = (targetCenterY - enemyCenterY) * dy > 0
-      if (sameColumn && inFront) {
+      if (sameColumn && inFront && hasClearSteelPath(world, enemy, target)) {
         return true
       }
     }
   }
 
   return false
+}
+
+/** 只排除无法打穿的钢墙；砖墙保留瞄准权重，让敌人仍能逐步开路。 */
+function hasClearSteelPath(world: World, enemy: Tank, target: Rect): boolean {
+  const [dx, dy] = getDirectionVector(enemy.direction)
+  const centerX = enemy.x + TANK_SIZE / 2
+  const centerY = enemy.y + TANK_SIZE / 2
+  const targetNearEdge =
+    dx > 0
+      ? target.x
+      : dx < 0
+        ? target.x + target.width
+        : dy > 0
+          ? target.y
+          : target.y + target.height
+  const distance = dx !== 0 ? (targetNearEdge - centerX) * dx : (targetNearEdge - centerY) * dy
+  for (let step = TANK_SIZE / 2; step < distance; step += 1) {
+    // 子弹横截面的两侧都检测，避免擦着钢墙边缘仍获得瞄准加成。
+    for (const offset of [-BULLET_SIZE / 2, BULLET_SIZE / 2 - 0.01]) {
+      const x = centerX + dx * step + (dy !== 0 ? offset : 0)
+      const y = centerY + dy * step + (dx !== 0 ? offset : 0)
+      if (world.terrain.isSteelAt(x, y)) {
+        return false
+      }
+    }
+  }
+  return true
 }

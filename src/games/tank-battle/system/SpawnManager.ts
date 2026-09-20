@@ -6,7 +6,11 @@ import {
   TANK_SIZE,
 } from '@/games/tank-battle/constants.ts'
 import { rectsIntersect } from '@/games/tank-battle/core/geometry.ts'
-import { ENEMY_SPAWN_CELLS, PLAYER_SPAWN_CELLS } from '@/games/tank-battle/data/levels.ts'
+import {
+  ENEMY_SPAWN_CELLS,
+  PLAYER_SPAWN_CELLS,
+  BONUS_ENEMY_ORDINALS,
+} from '@/games/tank-battle/data/levels.ts'
 import { Tank } from '@/games/tank-battle/entity/Tank.ts'
 import { Direction, TankSide, type Rect } from '@/games/tank-battle/types.ts'
 import type { World } from '@/games/tank-battle/system/World.ts'
@@ -53,9 +57,12 @@ export function updateSpawning(world: World): void {
     enemyKind: kind,
   })
   enemy.spawnBlinkTicks = SPAWN_BLINK_TICKS
+  enemy.bonusCarrier = BONUS_ENEMY_ORDINALS.includes(20 - world.pendingEnemies.length)
+  if (enemy.bonusCarrier) world.powerUps = []
+  world.terrain.clearSpawnCell(...spawnCell)
   world.enemies.push(enemy)
 
-  world.spawnCountdownTicks = ENEMY_SPAWN_INTERVAL_TICKS
+  world.spawnCountdownTicks = Math.max(50, ENEMY_SPAWN_INTERVAL_TICKS - (world.levelIndex + 1) * 4)
 }
 
 /**

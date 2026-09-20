@@ -82,6 +82,9 @@ export class InputManager {
 
   releaseHeldActions(): void {
     this.heldActions.clear()
+    this.pressed.clear()
+    this.pausePending = false
+    this.confirmPending = false
   }
 
   private isAnyPressed(codes: ReadonlySet<string>): boolean {
@@ -96,7 +99,7 @@ export class InputManager {
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (
       event.target instanceof HTMLElement &&
-      event.target.closest('input, select, textarea, button, [contenteditable=true]')
+      event.target.closest('input, textarea, select, button, a, [contenteditable="true"]')
     )
       return
     if (PREVENT_DEFAULT_CODES.has(event.code)) {

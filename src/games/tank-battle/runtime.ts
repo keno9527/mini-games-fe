@@ -18,6 +18,9 @@ export interface TankBattleHandle {
   setHeldAction(action: TankBattleHoldAction, active: boolean): void
   confirm(): void
   togglePause(): void
+  returnToTitle(): void
+  setSoundEnabled(enabled: boolean): void
+  setPracticeStage(stage: number | null): void
   setPlayerCount(count: PlayerCount): void
   bindGamepad(slot: PlayerSlot, index: number | null): void
 }
@@ -127,6 +130,7 @@ export function mountTankBattle(
   })
 
   const suspend = () => {
+    audio.stopAll()
     input.clear()
     sceneManager.suspend()
     syncUiState()
@@ -187,6 +191,20 @@ export function mountTankBattle(
     },
     togglePause(): void {
       input.requestPause()
+    },
+    returnToTitle(): void {
+      input.clear()
+      players.consume(0)
+      players.consume(1)
+      sceneManager.returnToTitle()
+      syncUiState()
+    },
+    setSoundEnabled(enabled: boolean): void {
+      audio.unlock()
+      audio.setEnabled(enabled)
+    },
+    setPracticeStage(stage: number | null): void {
+      sceneManager.setPracticeStage(stage)
     },
     setPlayerCount(count): void {
       if (sceneManager.getCurrentKind() === SceneKind.BATTLE) return

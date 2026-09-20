@@ -1,3 +1,4 @@
+import { LEVELS } from '@/games/tank-battle/data/levels.ts'
 import type { AudioEngine } from '@/games/tank-battle/core/AudioEngine.ts'
 import { resetEntityIds } from '@/games/tank-battle/core/ids.ts'
 import { World } from '@/games/tank-battle/system/World.ts'
@@ -8,6 +9,7 @@ import type { Scene } from '@/games/tank-battle/scene/Scene.ts'
 import { TitleScene } from '@/games/tank-battle/scene/TitleScene.ts'
 
 export interface TankBattleResult {
+  readonly practice: boolean
   readonly victory: boolean
   readonly score: number
   readonly highScore: number
@@ -29,8 +31,10 @@ export interface SceneManagerOptions {
 export class SceneManager {
   private readonly audio: AudioEngine
   private readonly onGameOver?: (result: TankBattleResult) => void
+  private practiceStage: number | null = null
   private world: World
-  private runStartedAtMs = Date.now()
+  private runTicks = 0
+  private campaignHighScore = 0
 
   private readonly titleScene: TitleScene
   private readonly gameOverScene: GameOverScene
@@ -58,6 +62,7 @@ export class SceneManager {
     this.audio = audio
     this.onGameOver = options.onGameOver
     this.world = new World(seed, options.initialHighScore)
+    this.campaignHighScore = options.initialHighScore ?? 0
 
     this.titleScene = new TitleScene(
       { onStart: (): void => this.startNewGame() },
@@ -80,18 +85,19 @@ export class SceneManager {
   private createBattleScene(): BattleScene {
     return new BattleScene(this.world, this.audio, {
       onGameOver: (victory: boolean): void => this.finishGame(victory),
+      practice: this.practiceStage !== null,
     })
   }
 
   /** 开始新一局：重置世界状态但保留最高分 */
   private startNewGame(): void {
-    const highScore = this.world.highScore
+    const highScore = this.practiceStage === null ? this.campaignHighScore : 0
 
     resetEntityIds()
     this.world = new World(Date.now() >>> 0, highScore, this.playerCount)
     this.world.score = 0
-    this.world.levelIndex = 0
-    this.runStartedAtMs = Date.now()
+    this.world.levelIndex = this.practiceStage ?? 0
+    this.runTicks = 0
 
     this.battleScene = this.createBattleScene()
     this.switchTo(SceneKind.BATTLE)
@@ -99,16 +105,18 @@ export class SceneManager {
 
   /** 战斗结束：快照战绩后切到结束画面 */
   private finishGame(victory: boolean): void {
+    if (this.practiceStage === null) this.campaignHighScore = this.world.highScore
     this.finalVictory = victory
     this.finalScore = this.world.score
     this.finalHighScore = this.world.highScore
     this.finalLevel = this.world.levelIndex + 1
     this.onGameOver?.({
+      practice: this.practiceStage !== null,
       victory,
       score: this.finalScore,
       highScore: this.finalHighScore,
       levelReached: this.finalLevel,
-      duration: Math.max(1, Math.round((Date.now() - this.runStartedAtMs) / 1000)),
+      duration: Math.max(1, Math.round(this.runTicks / 60)),
     })
     this.switchTo(SceneKind.GAME_OVER)
   }
@@ -131,6 +139,18 @@ export class SceneManager {
     this.current.onEnter()
   }
 
+  returnToTitle(): void {
+    if (!this.isPaused()) return
+    this.audio.stopAll()
+    this.switchTo(SceneKind.TITLE)
+  }
+
+  setPracticeStage(stage: number | null): void {
+    if (this.currentKind === SceneKind.BATTLE) return
+    this.practiceStage =
+      stage === null ? null : Math.max(0, Math.min(LEVELS.length - 1, Math.floor(stage)))
+  }
+
   getCurrentKind(): SceneKind {
     return this.currentKind
   }
@@ -140,6 +160,8 @@ export class SceneManager {
   }
 
   update(input: InputSnapshot): void {
+    if (this.currentKind === SceneKind.BATTLE && !this.isPaused() && !input.pauseEdge)
+      this.runTicks += 1
     this.current.update(input)
   }
 

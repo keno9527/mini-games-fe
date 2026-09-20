@@ -57,7 +57,7 @@ export class TitleScene implements Scene {
       drawCentered(context, 'PRESS START', 160, COLORS.TEXT_PRIMARY, 1)
     }
 
-    drawCentered(context, 'PROTECT THE EAGLE', 184, COLORS.BASE_EAGLE, 1)
+    drawCentered(context, '35 STAGES - PROTECT THE EAGLE', 184, COLORS.BASE_EAGLE, 1)
   }
 }
 

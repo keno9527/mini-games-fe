@@ -1,10 +1,13 @@
 import {
-  ENEMIES_PER_LEVEL,
   FIELD_PIXELS,
+  FIELD_OFFSET_X,
+  FIELD_OFFSET_Y,
   LEVEL_CLEAR_TICKS,
   LEVEL_INTRO_TICKS,
 } from '@/games/tank-battle/constants.ts'
 import type { AudioEngine } from '@/games/tank-battle/core/AudioEngine.ts'
+import { ENEMY_SPECS } from '@/games/tank-battle/data/tankSpecs.ts'
+import { drawText } from '@/games/tank-battle/render/drawSprites.ts'
 import { LEVELS } from '@/games/tank-battle/data/levels.ts'
 import { drawCenteredBanner, drawCurtain, drawDimOverlay } from '@/games/tank-battle/render/Hud.ts'
 import { COLORS } from '@/games/tank-battle/render/palette.ts'
@@ -15,7 +18,7 @@ import { updatePlayer } from '@/games/tank-battle/system/PlayerController.ts'
 import { updatePowerUps, updatePowerUpTimers } from '@/games/tank-battle/system/PowerUpSystem.ts'
 import { updateSpawning } from '@/games/tank-battle/system/SpawnManager.ts'
 import { LevelOutcome, type World } from '@/games/tank-battle/system/World.ts'
-import { SoundEffect, type InputSnapshot } from '@/games/tank-battle/types.ts'
+import { EnemyKind, SoundEffect, type InputSnapshot } from '@/games/tank-battle/types.ts'
 import { idleControls } from '@/features/gamepad/players.ts'
 import type { Scene } from '@/games/tank-battle/scene/Scene.ts'
 
@@ -28,6 +31,7 @@ enum BattlePhase {
 }
 
 interface BattleSceneCallbacks {
+  readonly practice?: boolean
   /** 全部关卡通关或玩家失败时通知外层切场景 */
   readonly onGameOver: (victory: boolean) => void
 }
@@ -45,12 +49,16 @@ export class BattleScene implements Scene {
 
   private phase: BattlePhase = BattlePhase.INTRO
   private phaseTicks = 0
+  private resumePhase = BattlePhase.FIGHTING
+  private elapsedTicks = 0
   /** 水面波纹等环境动画的相位，与逻辑帧同步递增 */
   private animationPhase = 0
-  private suspended = false
 
   suspend(): void {
-    if (!this.isPaused()) this.suspended = true
+    if (this.phase === BattlePhase.PAUSED) return
+    this.resumePhase = this.phase
+    this.phase = BattlePhase.PAUSED
+    this.audio.stopAll()
   }
 
   constructor(world: World, audio: AudioEngine, callbacks: BattleSceneCallbacks) {
@@ -60,7 +68,6 @@ export class BattleScene implements Scene {
   }
 
   onEnter(): void {
-    this.suspended = false
     this.startLevel(this.world.levelIndex)
   }
 
@@ -69,14 +76,22 @@ export class BattleScene implements Scene {
     this.world.loadLevel(levelIndex)
     this.phase = BattlePhase.INTRO
     this.phaseTicks = LEVEL_INTRO_TICKS
+    this.audio.stopAll()
     this.audio.play(SoundEffect.LEVEL_START)
   }
 
   update(input: InputSnapshot): void {
-    if (this.suspended) {
-      if (input.pauseEdge) this.suspended = false
+    if (input.pauseEdge) {
+      this.audio.stopAll()
+      if (this.phase === BattlePhase.PAUSED) this.phase = this.resumePhase
+      else {
+        this.resumePhase = this.phase
+        this.phase = BattlePhase.PAUSED
+      }
+      this.audio.play(SoundEffect.PAUSE)
       return
     }
+    if (this.phase === BattlePhase.PAUSED) return
     this.animationPhase += 1
 
     switch (this.phase) {
@@ -88,14 +103,8 @@ export class BattleScene implements Scene {
         this.updateFighting(input)
         break
 
-      case BattlePhase.PAUSED:
-        if (input.pauseEdge) {
-          this.phase = BattlePhase.FIGHTING
-        }
-        break
-
       case BattlePhase.LEVEL_CLEAR:
-        this.updateLevelClear()
+        this.updateLevelClear(input)
         break
 
       default:
@@ -111,15 +120,12 @@ export class BattleScene implements Scene {
   }
 
   private updateFighting(input: InputSnapshot): void {
-    if (input.pauseEdge) {
-      this.phase = BattlePhase.PAUSED
-      return
-    }
-
     const playSound = (effect: SoundEffect): void => {
       this.audio.play(effect)
     }
 
+    this.elapsedTicks += 1
+    const previousLives = this.world.players.map((player) => player.lives)
     updatePlayer(this.world, input, playSound)
     if (this.world.players.length === 2)
       updatePlayer(this.world, input.player2 ?? idleControls(), playSound, 1)
@@ -133,6 +139,10 @@ export class BattleScene implements Scene {
     this.world.removeDeadEntities()
     this.world.checkLevelCleared()
 
+    if (this.world.players.some((player, slot) => player.lives > previousLives[slot]))
+      this.audio.play(SoundEffect.EXTRA_LIFE)
+    if (this.world.getPlayerTanks().some((player) => player.moving) && this.elapsedTicks % 6 === 0)
+      this.audio.play(SoundEffect.MOTOR)
     this.handleOutcome()
   }
 
@@ -149,6 +159,7 @@ export class BattleScene implements Scene {
 
   private handleOutcome(): void {
     if (this.world.outcome === LevelOutcome.CLEARED) {
+      this.audio.stopAll()
       this.phase = BattlePhase.LEVEL_CLEAR
       this.phaseTicks = LEVEL_CLEAR_TICKS
       return
@@ -160,14 +171,14 @@ export class BattleScene implements Scene {
     }
   }
 
-  private updateLevelClear(): void {
+  private updateLevelClear(input: InputSnapshot): void {
     this.phaseTicks -= 1
-    if (this.phaseTicks > 0) {
-      return
-    }
+    const elapsed = LEVEL_CLEAR_TICKS - this.phaseTicks
+    if (elapsed < 240 && elapsed % 8 === 0) this.audio.play(SoundEffect.SCORE_TICK)
+    if (this.phaseTicks > 0 && !(elapsed > 240 && (input.confirmEdge || input.fire))) return
 
     const nextLevel = this.world.levelIndex + 1
-    if (nextLevel >= LEVELS.length) {
+    if (this.callbacks.practice || nextLevel >= LEVELS.length) {
       this.callbacks.onGameOver(true)
       return
     }
@@ -177,11 +188,8 @@ export class BattleScene implements Scene {
   render(context: CanvasRenderingContext2D): void {
     renderBattlefield(context, this.world, Math.floor(this.animationPhase / 8))
 
-    if (this.suspended) {
-      drawDimOverlay(context, 0.5)
-      drawCenteredBanner(context, ['PAUSE'], COLORS.TEXT_HIGHLIGHT)
-      return
-    }
+    context.save()
+    context.translate(FIELD_OFFSET_X, FIELD_OFFSET_Y)
     switch (this.phase) {
       case BattlePhase.INTRO: {
         // 横幕由外向内拉开，进度 0 → 1
@@ -196,22 +204,47 @@ export class BattleScene implements Scene {
         drawCenteredBanner(context, ['PAUSE'], COLORS.TEXT_HIGHLIGHT)
         break
 
-      case BattlePhase.LEVEL_CLEAR:
-        drawDimOverlay(context, 0.6)
-        drawCenteredBanner(
+      case BattlePhase.LEVEL_CLEAR: {
+        drawDimOverlay(context, 0.92)
+        drawText(context, `STAGE ${this.world.levelIndex + 1} CLEAR`, 46, 24, COLORS.TEXT_HIGHLIGHT)
+        drawText(context, 'TYPE    KILLS     PTS', 30, 48, COLORS.TEXT_PRIMARY)
+        const elapsed = LEVEL_CLEAR_TICKS - this.phaseTicks
+        const kinds = [EnemyKind.BASIC, EnemyKind.FAST, EnemyKind.POWER, EnemyKind.ARMOR]
+        kinds.forEach((kind, index) => {
+          const count = Math.min(
+            this.world.stageKills[kind],
+            Math.max(0, Math.floor((elapsed - index * 45) / 4)),
+          )
+          const label = ['BASIC', 'FAST ', 'POWER', 'ARMOR'][index]
+          drawText(
+            context,
+            `${label}    ${String(count).padStart(2)}    ${String(count * ENEMY_SPECS[kind].score).padStart(4)}`,
+            30,
+            68 + index * 18,
+            COLORS.TEXT_PRIMARY,
+          )
+        })
+        drawText(
           context,
-          [
-            `STAGE ${this.world.levelIndex + 1} CLEAR`,
-            `KILLED ${this.world.enemiesKilled} OF ${ENEMIES_PER_LEVEL}`,
-            `SCORE ${this.world.score}`,
-          ],
+          `TOTAL ${this.world.enemiesKilled}   SCORE ${this.world.score}`,
+          30,
+          153,
+          COLORS.TEXT_HIGHLIGHT,
+        )
+        drawText(
+          context,
+          elapsed > 240 ? 'ENTER / FIRE TO CONTINUE' : 'COUNTING...',
+          30,
+          178,
           COLORS.TEXT_PRIMARY,
         )
         break
+      }
 
       default:
         break
     }
+    context.restore()
   }
 
   /** 战场逻辑宽高，供外层布局使用 */
@@ -220,6 +253,6 @@ export class BattleScene implements Scene {
   }
 
   isPaused(): boolean {
-    return this.suspended || this.phase === BattlePhase.PAUSED
+    return this.phase === BattlePhase.PAUSED
   }
 }

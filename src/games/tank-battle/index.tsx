@@ -7,6 +7,8 @@ import {
   Crosshair,
   Pause,
   Play,
+  SpeakerHigh,
+  SpeakerSlash,
 } from '@phosphor-icons/react'
 import { createRecord, getUserStats } from '@/api'
 import type { GameComponentProps } from '@/games/manifest'
@@ -16,7 +18,10 @@ import {
   type TankBattleUiState,
   type TankBattleControllers,
 } from '@/games/tank-battle/runtime.ts'
-import type { TankBattleHoldAction } from '@/games/tank-battle/types.ts'
+import { LEVELS } from '@/games/tank-battle/data/levels.ts'
+import { POWERUP_SPRITES } from '@/games/tank-battle/data/sprites.ts'
+import { POWERUP_PALETTE } from '@/games/tank-battle/render/palette.ts'
+import { PowerUpKind, type TankBattleHoldAction } from '@/games/tank-battle/types.ts'
 import type { PlayerCount, PlayerSlot } from '@/features/gamepad/players.ts'
 import './tank-battle.css'
 
@@ -32,6 +37,8 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
     bindings: [null, null],
     canPlay: true,
   })
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [practiceStage, setPracticeStage] = useState('campaign')
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -58,7 +65,7 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
         onStateChange: setUiState,
         onControllersChange: setControllers,
         onGameOver: (result) => {
-          if (!userId) return
+          if (!userId || result.practice) return
           createRecord(userId, {
             gameId,
             score: result.score,
@@ -87,6 +94,81 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
 
   return (
     <section className="tank-battle-shell overflow-hidden rounded-lg border-4 border-[#4d4d4d] bg-black shadow-[0_8px_0_#050505]">
+      <div className="tank-toolbar">
+        <div className="tank-mode">
+          <span className="tank-eyebrow">BATTLE CITY · 1985</span>
+          <label>
+            <span className="sr-only">战役或关卡练习</span>
+            <select
+              aria-label="战役或关卡练习"
+              disabled={!ready || inBattle}
+              value={practiceStage}
+              onChange={(event) => {
+                setPracticeStage(event.target.value)
+                gameRef.current?.setPracticeStage(
+                  event.target.value === 'campaign' ? null : Number(event.target.value),
+                )
+              }}
+            >
+              <option value="campaign">经典战役 · 35 关</option>
+              {LEVELS.map((_, index) => (
+                <option key={index} value={index}>
+                  关卡练习 · 第 {index + 1} 关
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="tank-toolbar-actions">
+          <button
+            type="button"
+            disabled={!ready || !controllers.canPlay}
+            onClick={() => {
+              if (inBattle) gameRef.current?.togglePause()
+              else gameRef.current?.confirm()
+              canvasRef.current?.focus({ preventScroll: true })
+            }}
+          >
+            {uiState === 'playing' ? (
+              <Pause size={18} aria-hidden="true" />
+            ) : (
+              <Play size={18} aria-hidden="true" />
+            )}
+            {uiState === 'playing'
+              ? '暂停'
+              : uiState === 'paused'
+                ? '继续'
+                : uiState === 'gameOver'
+                  ? '再来一局'
+                  : '开始游戏'}
+          </button>
+          <button
+            type="button"
+            aria-label={soundEnabled ? '关闭音效' : '开启音效'}
+            aria-pressed={soundEnabled}
+            disabled={!ready}
+            onClick={() => {
+              gameRef.current?.setSoundEnabled(!soundEnabled)
+              setSoundEnabled(!soundEnabled)
+            }}
+          >
+            {soundEnabled ? (
+              <SpeakerHigh size={18} aria-hidden="true" />
+            ) : (
+              <SpeakerSlash size={18} aria-hidden="true" />
+            )}
+            {soundEnabled ? '音效开' : '静音'}
+          </button>
+          {uiState === 'paused' && (
+            <button type="button" onClick={() => gameRef.current?.returnToTitle()}>
+              返回标题
+            </button>
+          )}
+        </div>
+      </div>
+      {practiceStage !== 'campaign' && (
+        <p className="tank-practice-note">单关练习 · 三条生命 · 战绩不计入排行榜</p>
+      )}
       <div className="tank-controller-setup">
         <div className="tank-mode-row">
           <fieldset disabled={!ready || inBattle}>
@@ -105,23 +187,6 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
               </button>
             ))}
           </fieldset>
-          <button
-            type="button"
-            className="tank-session-action"
-            disabled={!ready || !controllers.canPlay}
-            onClick={() => {
-              if (inBattle) gameRef.current?.togglePause()
-              else gameRef.current?.confirm()
-            }}
-          >
-            {uiState === 'paused'
-              ? '继续游戏'
-              : inBattle
-                ? '暂停游戏'
-                : uiState === 'gameOver'
-                  ? '重新挑战'
-                  : '开始游戏'}
-          </button>
         </div>
         <div className="tank-player-bindings">
           {Array.from({ length: playerCount }, (_, slot) => (
@@ -219,7 +284,7 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
       </div>
       <div className="tank-battle-help grid gap-2 border-t-2 border-[#343434] bg-[#111] px-4 py-3 font-mono-crt text-sm tracking-wide text-[#d8d8d8] md:grid-cols-2">
         <p className="tank-keyboard-help">移动：方向键 / WASD</p>
-        <p className="tank-keyboard-help">开始 / 开火：空格 / J · 暂停：P / Esc</p>
+        <p className="tank-keyboard-help">开始：Enter · 开火：空格 / J · 暂停：P / Esc</p>
         <p className="tank-touch-help">左侧方向键移动，右侧按键开火</p>
       </div>
       <div className="tank-touch-controls" aria-label="坦克大战触控操作">
@@ -297,6 +362,53 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
           </>
         )}
       </div>
+      <details className="tank-field-guide">
+        <summary>道具与作战指南</summary>
+        <p>守住老鹰，消灭每关 20 辆敌军。击中红色闪烁坦克会出现道具，拾取获得 500 分。</p>
+        <div className="tank-powerup-guide">
+          {[
+            [POWERUP_SPRITES[PowerUpKind.STAR], '星星', '一星快弹、二星双发、三星破钢'],
+            [POWERUP_SPRITES[PowerUpKind.HELMET], '头盔', '短暂无敌，闪烁护盾保护坦克'],
+            [POWERUP_SPRITES[PowerUpKind.SHOVEL], '铲子', '重建基地钢墙，倒计时后恢复砖墙'],
+            [POWERUP_SPRITES[PowerUpKind.TIMER], '时钟', '冻结敌方坦克，已发射的炮弹仍在飞行'],
+            [POWERUP_SPRITES[PowerUpKind.GRENADE], '手雷', '清除已出场敌军，不增加击杀分'],
+            [POWERUP_SPRITES[PowerUpKind.TANK], '坦克', '增加一条生命'],
+          ].map(([icon, name, description]) => (
+            <div key={name as string} className="tank-guide-item">
+              <svg
+                viewBox="0 0 16 16"
+                width="32"
+                height="32"
+                aria-hidden="true"
+                shapeRendering="crispEdges"
+              >
+                {(icon as readonly string[]).flatMap((row, y) =>
+                  [...row].map((pixel, x) =>
+                    POWERUP_PALETTE[pixel] ? (
+                      <rect
+                        key={`${x}-${y}`}
+                        x={x}
+                        y={y}
+                        width="1"
+                        height="1"
+                        fill={POWERUP_PALETTE[pixel]}
+                      />
+                    ) : null,
+                  ),
+                )}
+              </svg>
+              <div>
+                <strong>{name}</strong>
+                <span>{description}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p>
+          草丛遮蔽坦克，水面阻挡移动，冰面产生滑行；普通炮弹破砖，三星炮弹破钢。阵亡后升级归零，过关保留升级。首次达到
+          20,000 分时，每位尚未出局的玩家奖励一条生命。
+        </p>
+      </details>
     </section>
   )
 }

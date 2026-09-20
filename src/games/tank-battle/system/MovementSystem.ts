@@ -21,7 +21,7 @@ export function isVertical(direction: Direction): boolean {
   return direction === Direction.UP || direction === Direction.DOWN
 }
 
-interface MoveContext {
+export interface MoveContext {
   readonly terrain: TerrainGrid
   /** 除自身外所有需要避让的坦克 */
   readonly otherTanks: readonly Tank[]
@@ -38,39 +38,32 @@ interface MoveContext {
  * @returns 是否实际发生了位移
  */
 export function tryMoveTank(tank: Tank, direction: Direction, context: MoveContext): boolean {
-  const turning = tank.direction !== direction
+  const candidate = getMoveCandidate(tank, direction)
   tank.direction = direction
-
-  if (turning) {
-    // 转向瞬间对非移动轴吸附到半格，保证后续能对齐通道
-    if (isVertical(direction)) {
-      tank.x = snapTo(tank.x, TURN_SNAP)
-    } else {
-      tank.y = snapTo(tank.y, TURN_SNAP)
-    }
-  }
-
-  const speed = tank.getSpec().moveSpeed
-  const [dx, dy] = DIRECTION_VECTORS[direction]
-  const targetX = tank.x + dx * speed
-  const targetY = tank.y + dy * speed
-
-  const candidate: Rect = {
-    x: targetX,
-    y: targetY,
-    width: TANK_SIZE,
-    height: TANK_SIZE,
-  }
 
   if (isBlocked(candidate, tank, context)) {
     tank.moving = false
     return false
   }
 
-  tank.x = targetX
-  tank.y = targetY
+  tank.x = candidate.x
+  tank.y = candidate.y
   tank.moving = true
   return true
+}
+
+/** AI 与实际移动共用同一探测，包含转向吸附且不改变实体状态。 */
+export function canMoveTank(tank: Tank, direction: Direction, context: MoveContext): boolean {
+  return !isBlocked(getMoveCandidate(tank, direction), tank, context)
+}
+
+function getMoveCandidate(tank: Tank, direction: Direction): Rect {
+  // 每次尝试都对齐非移动轴，受阻转向后下一帧也不能绕过同一吸附检查。
+  const x = isVertical(direction) ? snapTo(tank.x, TURN_SNAP) : tank.x
+  const y = !isVertical(direction) ? snapTo(tank.y, TURN_SNAP) : tank.y
+  const [dx, dy] = getDirectionVector(direction)
+  const speed = tank.getSpec().moveSpeed
+  return { x: x + dx * speed, y: y + dy * speed, width: TANK_SIZE, height: TANK_SIZE }
 }
 
 /** 候选位置是否被地形、其他坦克或基地阻挡 */
@@ -107,9 +100,9 @@ function isBlocked(candidate: Rect, self: Tank, context: MoveContext): boolean {
 export function updateIceSliding(tank: Tank, hasInput: boolean, context: MoveContext): void {
   const onIce = context.terrain.isIceAt(tank.x + TANK_SIZE / 2, tank.y + TANK_SIZE / 2)
 
-  if (onIce && hasInput) {
-    // 有输入时持续蓄积滑行惯性
-    tank.slideTicks = 12
+  if (hasInput) {
+    // 主动输入已完成本帧移动；离开冰面时清除惯性，不能再叠加一次位移。
+    tank.slideTicks = onIce && tank.moving ? 12 : 0
     tank.slideDirection = tank.direction
     return
   }

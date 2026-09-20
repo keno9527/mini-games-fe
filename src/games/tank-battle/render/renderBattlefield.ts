@@ -1,3 +1,11 @@
+import {
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  FIELD_OFFSET_X,
+  FIELD_OFFSET_Y,
+  FIELD_PIXELS,
+} from '@/games/tank-battle/constants.ts'
+import { COLORS } from '@/games/tank-battle/render/palette.ts'
 import { TerrainKind } from '@/games/tank-battle/types.ts'
 import type { World } from '@/games/tank-battle/system/World.ts'
 import {
@@ -15,7 +23,7 @@ import { drawFieldBackground, drawHud } from '@/games/tank-battle/render/Hud.ts'
  * 战场渲染器。
  *
  * 渲染顺序即层级关系，不可调换：
- *   底层地形 → 基地 → 道具 → 坦克 → 子弹 → 草地 → 爆炸 → HUD
+ *   底层地形 → 基地 → 坦克 → 子弹 → 草地 → 道具 → 爆炸 → HUD
  *
  * 草地刻意排在坦克之后 —— 原作中草地会遮蔽坦克，这是重要的战术要素。
  */
@@ -24,6 +32,13 @@ export function renderBattlefield(
   world: World,
   animationPhase: number,
 ): void {
+  context.fillStyle = COLORS.UI_BACKGROUND
+  context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+  context.save()
+  context.translate(FIELD_OFFSET_X, FIELD_OFFSET_Y)
+  context.beginPath()
+  context.rect(0, 0, FIELD_PIXELS, FIELD_PIXELS)
+  context.clip()
   drawFieldBackground(context)
 
   // 1. 底层地形（草地在此跳过）
@@ -36,11 +51,6 @@ export function renderBattlefield(
 
   // 2. 基地
   drawBase(context, world.base)
-
-  // 3. 道具（在坦克之下，被压过时仍可见边缘）
-  for (const powerUp of world.powerUps) {
-    drawPowerUp(context, powerUp)
-  }
 
   // 4. 坦克
   for (const enemy of world.enemies) {
@@ -60,11 +70,15 @@ export function renderBattlefield(
     }
   })
 
+  // Bonuses remain readable even when they appear inside a forest.
+  for (const powerUp of world.powerUps) drawPowerUp(context, powerUp)
+
   // 7. 爆炸：最顶层，草地也遮不住
   for (const explosion of world.explosions) {
     drawExplosion(context, explosion)
   }
 
   // 8. 信息栏
+  context.restore()
   drawHud(context, world)
 }

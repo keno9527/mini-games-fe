@@ -238,3 +238,112 @@
   cursor: pointer;
   color: #e0bd5a;
 }
+.tank-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 2px solid #343434;
+  background: #171713;
+  color: #f6f1df;
+}
+.tank-mode {
+  display: grid;
+  gap: 6px;
+}
+.tank-eyebrow {
+  color: #c9ae62;
+  font: 11px monospace;
+  letter-spacing: 2px;
+}
+.tank-toolbar select {
+  max-width: 100%;
+  background: #171713;
+  color: #f6f1df;
+  font-size: 14px;
+  padding: 6px 4px;
+  border: 1px solid #626252;
+  border-radius: 4px;
+}
+.tank-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tank-toolbar button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #626252;
+  border-radius: 4px;
+  font-size: 13px;
+  background: #282820;
+}
+.tank-toolbar button:hover {
+  background: #39392c;
+}
+.tank-toolbar button:focus-visible,
+.tank-toolbar select:focus-visible,
+.tank-field-guide summary:focus-visible {
+  outline: 2px solid #f4c542;
+  outline-offset: 3px;
+}
+.tank-toolbar :disabled {
+  opacity: 0.5;
+}
+.tank-practice-note {
+  padding: 8px 16px;
+  background: #28230f;
+  color: #d7c994;
+  font-size: 12px;
+}
+.tank-field-guide {
+  padding: 14px 16px;
+  border-top: 2px solid #343434;
+  background: #151515;
+  color: #bcbcb5;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.tank-field-guide summary {
+  color: #e2cd89;
+  cursor: pointer;
+}
+.tank-field-guide p {
+  margin-top: 12px;
+}
+.tank-powerup-guide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.tank-guide-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tank-guide-item svg {
+  flex: 0 0 32px;
+}
+.tank-guide-item strong {
+  display: block;
+  color: #f6f1df;
+}
+.tank-guide-item span {
+  display: block;
+  font-size: 12px;
+}
+@media (max-width: 480px) {
+  .tank-powerup-guide {
+    grid-template-columns: 1fr;
+  }
+  .tank-toolbar {
+    padding: 12px;
+  }
+}

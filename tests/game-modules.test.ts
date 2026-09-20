@@ -145,7 +145,7 @@ test('tank battle runtime releases browser resources when unmounted', async () =
     fillRect: () => undefined,
     imageSmoothingEnabled: true,
   }
-  const stage = { clientWidth: 760 }
+  const stage = { clientWidth: 760, getBoundingClientRect: () => ({ top: 160 }) }
   const canvas = {
     width: 0,
     height: 0,
@@ -179,6 +179,7 @@ test('tank battle runtime releases browser resources when unmounted', async () =
   handle.destroy()
 
   assert.equal(cancelledAnimationFrames, 1)
+  assert.equal(windowListeners.get('blur')?.size, 0)
   assert.equal(windowListeners.get('keydown')?.size, 0)
   assert.equal(windowListeners.get('resize')?.size, 0)
   assert.equal(documentListeners.get('visibilitychange')?.size, 0)
