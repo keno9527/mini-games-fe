@@ -4,7 +4,7 @@ import { Bullet } from '@/games/tank-battle/entity/Bullet.ts'
 import type { Tank } from '@/games/tank-battle/entity/Tank.ts'
 import { SoundEffect, TankSide, type Direction } from '@/games/tank-battle/types.ts'
 import { getDirectionVector } from '@/games/tank-battle/system/MovementSystem.ts'
-import { tryDropPowerUp } from '@/games/tank-battle/system/PowerUpSystem.ts'
+import { dropPowerUp } from '@/games/tank-battle/system/PowerUpSystem.ts'
 import type { World } from '@/games/tank-battle/system/World.ts'
 
 /** 开火后的冷却帧数 */
@@ -44,6 +44,7 @@ export function fireBullet(world: World, tank: Tank): boolean {
   )
 
   tank.fireCooldownTicks = FIRE_COOLDOWN_TICKS
+  tank.muzzleFlashTicks = 5
   return true
 }
 
@@ -112,11 +113,11 @@ function resolveBulletCollisions(
   const rect = bullet.getRect()
 
   // 1. 地形（含战场边界）
-  const terrainHit = world.terrain.hitByBullet(rect, bullet.power)
+  const terrainHit = world.terrain.hitByBullet(rect, bullet.power, bullet.direction)
   if (terrainHit.hit) {
     bullet.alive = false
     world.addExplosionAt(rect.x + rect.width / 2, rect.y + rect.height / 2, false)
-    playSound(SoundEffect.HIT_TERRAIN)
+    playSound(terrainHit.destroyed ? SoundEffect.HIT_TERRAIN : SoundEffect.HIT_STEEL)
     return
   }
 
@@ -180,15 +181,20 @@ function resolveBulletCollisions(
 function handleEnemyHit(world: World, enemy: Tank, playSound: (effect: SoundEffect) => void): void {
   const rect = enemy.getRect()
 
+  if (enemy.bonusCarrier) {
+    enemy.bonusCarrier = false
+    dropPowerUp(world)
+    playSound(SoundEffect.BONUS_APPEAR)
+  }
   if (!enemy.takeHit()) {
     // 重甲坦克未被击毁，仅播放命中音效
-    playSound(SoundEffect.HIT_TERRAIN)
+    playSound(SoundEffect.HIT_ARMOR)
     return
   }
 
   world.addExplosionAt(rect.x + rect.width / 2, rect.y + rect.height / 2, true)
   world.addScore(enemy.getSpec().score)
   world.enemiesKilled += 1
-  tryDropPowerUp(world)
+  if (enemy.enemyKind !== null) world.stageKills[enemy.enemyKind] += 1
   playSound(SoundEffect.EXPLODE_SMALL)
 }

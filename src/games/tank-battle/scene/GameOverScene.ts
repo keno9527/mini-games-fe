@@ -60,7 +60,7 @@ export class GameOverScene implements Scene {
       drawCentered(context, 'THE EAGLE IS SAFE', 72, COLORS.BASE_EAGLE, 1)
     } else {
       drawCentered(context, 'GAME OVER', 46, COLORS.EXPLOSION_OUTER, 2)
-      drawCentered(context, 'THE EAGLE HAS FALLEN', 72, COLORS.TEXT_PRIMARY, 1)
+      drawCentered(context, 'DEFENSE FAILED', 72, COLORS.TEXT_PRIMARY, 1)
     }
 
     drawCentered(context, `STAGE ${stats.levelReached}`, 100, COLORS.TEXT_PRIMARY, 1)

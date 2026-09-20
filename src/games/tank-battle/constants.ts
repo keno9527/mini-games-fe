@@ -18,13 +18,17 @@ export const GRID_SIZE = 13
 export const FIELD_PIXELS = CELL_SIZE * GRID_SIZE
 
 /** 右侧信息栏宽度（逻辑像素） */
-export const SIDEBAR_WIDTH = 40
+export const SIDEBAR_WIDTH = 32
+
+/** 灰色外框偏移仅用于渲染，不改变实体和碰撞坐标。 */
+export const FIELD_OFFSET_X = 16
+export const FIELD_OFFSET_Y = 16
 
 /** 画布逻辑宽度（战场 + 信息栏） */
-export const CANVAS_WIDTH = FIELD_PIXELS + SIDEBAR_WIDTH
+export const CANVAS_WIDTH = FIELD_OFFSET_X + FIELD_PIXELS + SIDEBAR_WIDTH
 
 /** 画布逻辑高度 */
-export const CANVAS_HEIGHT = FIELD_PIXELS
+export const CANVAS_HEIGHT = FIELD_PIXELS + FIELD_OFFSET_Y * 2
 
 /** 砖墙每格在单轴上切分的子块数（4x4 = 16 个子块） */
 export const BRICK_SUB = 4
@@ -66,28 +70,25 @@ export const ENEMIES_PER_LEVEL = 20
 export const MAX_ACTIVE_ENEMIES = 4
 
 /** 敌方生成间隔（逻辑帧） */
-export const ENEMY_SPAWN_INTERVAL_TICKS = 150
+export const ENEMY_SPAWN_INTERVAL_TICKS = 190
 
 /** 生成点闪烁保护时长（逻辑帧） */
-export const SPAWN_BLINK_TICKS = 90
+export const SPAWN_BLINK_TICKS = 30
 
 /** 玩家重生后的无敌时长（逻辑帧） */
-export const RESPAWN_SHIELD_TICKS = 180
+export const RESPAWN_SHIELD_TICKS = 192
 
 /** 头盔道具提供的无敌时长（逻辑帧） */
-export const HELMET_SHIELD_TICKS = 600
+export const HELMET_SHIELD_TICKS = 640
 
 /** 铲子道具的基地钢墙持续时长（逻辑帧） */
-export const SHOVEL_TICKS = 900
+export const SHOVEL_TICKS = 1280
 
 /** 计时器道具的敌方冻结时长（逻辑帧） */
-export const FREEZE_TICKS = 600
+export const FREEZE_TICKS = 640
 
 /** 场上同时存在的道具上限 */
 export const MAX_POWERUPS_ON_FIELD = 1
-
-/** 敌方坦克被击毁后掉落道具的概率 */
-export const POWERUP_DROP_CHANCE = 0.18
 
 /** 爆炸动画总时长（逻辑帧） */
 export const EXPLOSION_TICKS = 24
@@ -96,4 +97,4 @@ export const EXPLOSION_TICKS = 24
 export const LEVEL_INTRO_TICKS = 120
 
 /** 关卡结算画面的持续时长（逻辑帧） */
-export const LEVEL_CLEAR_TICKS = 180
+export const LEVEL_CLEAR_TICKS = 420

@@ -48,6 +48,9 @@ export class Tank {
 
   /** 开火冷却剩余帧数 */
   fireCooldownTicks = 0
+  /** 短时战斗反馈，仅随逻辑帧推进。 */
+  muzzleFlashTicks = 0
+  hitFlashTicks = 0
 
   /** 本帧是否发生了移动，用于履带动画 */
   moving = false
@@ -60,6 +63,9 @@ export class Tank {
 
   /** AI 重新决策的倒计时（仅敌方使用） */
   aiDecisionTicks = 0
+
+  bonusCarrier = false
+  bonusFlashTicks = 0
 
   alive = true
 
@@ -114,6 +120,7 @@ export class Tank {
     if (this.isInvulnerable()) {
       return false
     }
+    this.hitFlashTicks = 8
     this.armor -= 1
     if (this.armor <= 0) {
       this.alive = false
@@ -124,6 +131,9 @@ export class Tank {
 
   /** 每帧推进自身计时器 */
   tickTimers(): void {
+    this.bonusFlashTicks = (this.bonusFlashTicks + 1) % 32
+    if (this.muzzleFlashTicks > 0) this.muzzleFlashTicks -= 1
+    if (this.hitFlashTicks > 0) this.hitFlashTicks -= 1
     if (this.shieldTicks > 0) {
       this.shieldTicks -= 1
     }

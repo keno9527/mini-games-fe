@@ -47,7 +47,13 @@ export class PixelCanvas {
     )
     const fitScale = availableWidth / CANVAS_WIDTH
     const compact = window.matchMedia?.('(max-width: 700px)').matches ?? false
-    this.scale = compact ? fitScale : Math.max(1, Math.floor(fitScale))
+    const availableHeight = Math.max(
+      CANVAS_HEIGHT,
+      window.innerHeight - Math.max(0, this.container.getBoundingClientRect().top) - 90,
+    )
+    this.scale = compact
+      ? fitScale
+      : Math.max(1, Math.floor(Math.min(fitScale, Math.max(2, availableHeight / CANVAS_HEIGHT))))
 
     this.canvas.width = CANVAS_WIDTH
     this.canvas.height = CANVAS_HEIGHT

@@ -1,114 +1,125 @@
-import { CELL_SIZE, FIELD_PIXELS, SIDEBAR_WIDTH, TANK_SIZE } from '@/games/tank-battle/constants.ts'
-import { TANK_SPRITES } from '@/games/tank-battle/data/sprites.ts'
-import { Direction } from '@/games/tank-battle/types.ts'
+import {
+  CELL_SIZE,
+  FIELD_PIXELS,
+  FIELD_OFFSET_X,
+  FIELD_OFFSET_Y,
+  SIDEBAR_WIDTH,
+  TICKS_PER_SECOND,
+} from '@/games/tank-battle/constants.ts'
 import { drawText } from '@/games/tank-battle/render/drawSprites.ts'
 import { COLORS } from '@/games/tank-battle/render/palette.ts'
 import type { World } from '@/games/tank-battle/system/World.ts'
 
-/** 剩余敌人图标的格子尺寸 */
-const ENEMY_ICON_SIZE = 7
-
-/** 单行最多排 2 个敌人图标 */
-const ENEMY_ICONS_PER_ROW = 2
-
-/**
- * 右侧信息栏：剩余敌人数、玩家生命、关卡编号、分数与最高分。
- */
-export function drawHud(context: CanvasRenderingContext2D, world: World): void {
-  const originX = FIELD_PIXELS
-
-  context.fillStyle = COLORS.UI_BACKGROUND
-  context.fillRect(originX, 0, SIDEBAR_WIDTH, FIELD_PIXELS)
-
-  drawEnemyIcons(context, originX + 6, 8, world.getEnemiesRemaining())
-
-  const infoY = 8 + Math.ceil(20 / ENEMY_ICONS_PER_ROW) * ENEMY_ICON_SIZE + 10
-
-  // 玩家标识与剩余生命
-  drawText(context, '1P', originX + 6, infoY, COLORS.TEXT_DIM)
-  drawPlayerLifeIcon(context, originX + 6, infoY + 8)
-  drawText(context, String(world.playerLives), originX + 18, infoY + 10, COLORS.TEXT_DIM)
-
-  // 关卡编号
-  drawText(context, 'LV', originX + 6, infoY + 26, COLORS.TEXT_DIM)
-  drawText(context, String(world.levelIndex + 1), originX + 6, infoY + 34, COLORS.TEXT_DIM)
-
-  // 分数
-  drawText(context, 'SC', originX + 6, infoY + 48, COLORS.TEXT_DIM)
-  drawText(context, formatScore(world.score), originX + 6, infoY + 56, COLORS.TEXT_PRIMARY)
-
-  // 最高分
-  drawText(context, 'HI', originX + 6, infoY + 70, COLORS.TEXT_DIM)
-  drawText(context, formatScore(world.highScore), originX + 6, infoY + 78, COLORS.TEXT_HIGHLIGHT)
-
-  drawStatusFlags(context, originX + 6, infoY + 94, world)
+const MINI_TANK = [
+  '  11    ',
+  '1 11 1  ',
+  '111111  ',
+  '111111  ',
+  '111111  ',
+  '1 11 1  ',
+  '1    1  ',
+  '        ',
+]
+const HUD_FONT: Readonly<Record<string, readonly string[]>> = {
+  '0': ['01110', '11011', '11011', '11011', '11011', '11011', '01110'],
+  '1': ['00110', '01110', '00110', '00110', '00110', '00110', '01111'],
+  '2': ['01110', '11011', '00011', '00110', '01100', '11000', '11111'],
+  '3': ['11110', '00011', '00011', '01110', '00011', '00011', '11110'],
+  '4': ['00110', '01110', '11010', '11010', '11111', '00010', '00010'],
+  '5': ['11111', '11000', '11000', '11110', '00011', '00011', '11110'],
+  '6': ['01110', '11000', '11000', '11110', '11011', '11011', '01110'],
+  '7': ['11111', '00011', '00110', '00110', '01100', '01100', '01100'],
+  '8': ['01110', '11011', '11011', '01110', '11011', '11011', '01110'],
+  '9': ['01110', '11011', '11011', '01111', '00011', '00011', '01110'],
+  P: ['11110', '11011', '11011', '11110', '11000', '11000', '11000'],
 }
-
-/** 剩余敌人以小方块图标堆叠展示 */
-function drawEnemyIcons(
+function drawHudNumber(
   context: CanvasRenderingContext2D,
-  originX: number,
-  originY: number,
-  count: number,
+  text: string,
+  x: number,
+  y: number,
 ): void {
   context.fillStyle = COLORS.TEXT_DIM
-  for (let index = 0; index < count; index += 1) {
-    const col = index % ENEMY_ICONS_PER_ROW
-    const row = Math.floor(index / ENEMY_ICONS_PER_ROW)
-    context.fillRect(
-      originX + col * ENEMY_ICON_SIZE,
-      originY + row * ENEMY_ICON_SIZE,
-      ENEMY_ICON_SIZE - 2,
-      ENEMY_ICON_SIZE - 2,
+  for (const [index, char] of [...text].entries()) {
+    HUD_FONT[char]?.forEach((row, dy) =>
+      [...row].forEach((pixel, dx) => {
+        if (pixel === '1') context.fillRect(x + index * 8 + dx, y + dy, 1, 1)
+      }),
     )
   }
 }
-
-/** 生命图标：缩略的玩家坦克轮廓 */
-function drawPlayerLifeIcon(
+function drawMiniTank(
   context: CanvasRenderingContext2D,
-  originX: number,
-  originY: number,
+  x: number,
+  y: number,
+  color: string,
 ): void {
-  const sprite = TANK_SPRITES[Direction.UP]
-  // 按 1/2 采样绘制成 8x8 的缩略图
-  context.fillStyle = COLORS.PLAYER_BODY
-  for (let row = 0; row < TANK_SIZE; row += 2) {
-    const line = sprite[row]
-    for (let col = 0; col < TANK_SIZE; col += 2) {
-      if (line[col] === ' ') {
-        continue
-      }
-      context.fillRect(originX + col / 2, originY + row / 2, 1, 1)
-    }
-  }
+  context.fillStyle = color
+  MINI_TANK.forEach((row, dy) =>
+    [...row].forEach((pixel, dx) => {
+      if (pixel === '1') context.fillRect(x + dx, y + dy, 1, 1)
+    }),
+  )
 }
 
-/** 冻结 / 铲子等临时状态提示 */
-function drawStatusFlags(
-  context: CanvasRenderingContext2D,
-  originX: number,
-  originY: number,
-  world: World,
-): void {
-  let lineY = originY
+/** 原版式坦克计数、生命与关卡旗；网页辅助信息收进灰框底边。 */
+export function drawHud(context: CanvasRenderingContext2D, world: World): void {
+  const originX = FIELD_OFFSET_X + FIELD_PIXELS
+  const x = originX + 8
+  context.fillStyle = COLORS.UI_BACKGROUND
+  context.fillRect(originX, 0, SIDEBAR_WIDTH, FIELD_PIXELS + FIELD_OFFSET_Y * 2)
+  for (let index = 0; index < world.pendingEnemies.length; index += 1) {
+    drawMiniTank(
+      context,
+      x + (index % 2) * 8,
+      FIELD_OFFSET_Y + Math.floor(index / 2) * 8,
+      COLORS.TEXT_DIM,
+    )
+  }
+  drawHudNumber(context, '1P', x, 128)
+  drawMiniTank(context, x, 139, COLORS.PLAYER_TREAD)
+  drawHudNumber(context, String(Math.min(99, world.playerLives)), x + 8, 139)
+  if (world.player && world.player.star > 0)
+    drawText(context, `ST${world.player.star}`, x, 153, COLORS.TEXT_DIM)
+  context.fillStyle = COLORS.TEXT_DIM
+  context.fillRect(x, 184, 2, 18)
+  context.fillStyle = COLORS.BRICK_MAIN
+  for (let row = 0; row < 8; row += 1)
+    context.fillRect(x + 2, 184 + row, 12 - Math.floor(row / 2), 1)
+  drawHudNumber(context, String(world.levelIndex + 1), x + 5, 206)
 
-  if (world.freezeTicks > 0) {
-    drawText(context, 'STOP', originX, lineY, COLORS.SHIELD_OUTER)
-    lineY += 8
+  const bottomY = FIELD_OFFSET_Y + FIELD_PIXELS + 5
+  drawText(
+    context,
+    `SC ${String(Math.min(999999, world.score)).padStart(6, '0')}`,
+    FIELD_OFFSET_X,
+    bottomY,
+    COLORS.TEXT_DIM,
+  )
+  drawText(
+    context,
+    `HI ${String(Math.min(999999, world.highScore)).padStart(6, '0')}`,
+    FIELD_OFFSET_X + 44,
+    bottomY,
+    COLORS.TEXT_DIM,
+  )
+  const effects: readonly (readonly [string, number])[] = [
+    ['STOP', world.freezeTicks],
+    ['WALL', world.shovelTicks],
+    ['SHLD', world.player?.shieldTicks ?? 0],
+  ]
+  let effectX = FIELD_OFFSET_X + 92
+  for (const [label, ticks] of effects) {
+    if (ticks <= 0) continue
+    drawText(
+      context,
+      `${label} ${Math.ceil(ticks / TICKS_PER_SECOND)}`,
+      effectX,
+      bottomY,
+      COLORS.TEXT_DIM,
+    )
+    effectX += 32
   }
-  if (world.shovelTicks > 0) {
-    drawText(context, 'WALL', originX, lineY, COLORS.STEEL_LIGHT)
-    lineY += 8
-  }
-  if (world.player !== null && world.player.star > 0) {
-    drawText(context, `ST${world.player.star}`, originX, lineY, COLORS.TEXT_HIGHLIGHT)
-  }
-}
-
-/** 分数补零到 6 位，避免位数变化导致排版跳动 */
-function formatScore(score: number): string {
-  return String(Math.min(score, 999999)).padStart(6, '0')
 }
 
 /** 战场区域的黑色底 */

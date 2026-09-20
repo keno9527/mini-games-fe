@@ -12,6 +12,9 @@ export interface TankBattleHandle {
   setHeldAction(action: TankBattleHoldAction, active: boolean): void
   confirm(): void
   togglePause(): void
+  returnToTitle(): void
+  setSoundEnabled(enabled: boolean): void
+  setPracticeStage(stage: number | null): void
 }
 
 export interface TankBattleOptions {
@@ -79,12 +82,23 @@ export function mountTankBattle(
         sceneManager.update(input.getSnapshot())
         syncUiState()
       }
+      audio.stopAll()
       loop.stop()
     } else {
       loop.resetClock()
       loop.start()
     }
   }
+  const handleBlur = (): void => {
+    input.releaseHeldActions()
+    if (sceneManager.getCurrentKind() === SceneKind.BATTLE && !sceneManager.isPaused()) {
+      input.requestPause()
+      sceneManager.update(input.getSnapshot())
+      syncUiState()
+    }
+    audio.stopAll()
+  }
+  window.addEventListener('blur', handleBlur)
   document.addEventListener('visibilitychange', handleVisibilityChange)
 
   // 点击画布也算一次用户手势，用于解锁音频
@@ -110,6 +124,7 @@ export function mountTankBattle(
       audio.dispose()
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       canvas.removeEventListener('pointerdown', handlePointerDown)
+      window.removeEventListener('blur', handleBlur)
     },
     setHeldAction(action: TankBattleHoldAction, active: boolean): void {
       input.setHeldAction(action, active)
@@ -119,6 +134,18 @@ export function mountTankBattle(
     },
     togglePause(): void {
       input.requestPause()
+    },
+    returnToTitle(): void {
+      input.releaseHeldActions()
+      sceneManager.returnToTitle()
+      syncUiState()
+    },
+    setSoundEnabled(enabled: boolean): void {
+      audio.unlock()
+      audio.setEnabled(enabled)
+    },
+    setPracticeStage(stage: number | null): void {
+      sceneManager.setPracticeStage(stage)
     },
   }
 }

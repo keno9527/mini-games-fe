@@ -46,6 +46,13 @@ export enum PowerUpKind {
 export enum SoundEffect {
   FIRE = 'fire',
   HIT_TERRAIN = 'hitTerrain',
+  HIT_STEEL = 'hitSteel',
+  HIT_ARMOR = 'hitArmor',
+  BONUS_APPEAR = 'bonusAppear',
+  EXTRA_LIFE = 'extraLife',
+  PAUSE = 'pause',
+  SCORE_TICK = 'scoreTick',
+  MOTOR = 'motor',
   EXPLODE_SMALL = 'explodeSmall',
   EXPLODE_BIG = 'explodeBig',
   PICKUP = 'pickup',
@@ -96,7 +103,7 @@ export interface TerrainHitResult {
 export interface LevelData {
   /**
    * GRID_SIZE 行字符串，每行 GRID_SIZE 个字符：
-   * `.` 空地 / `#` 砖墙 / `@` 钢墙 / `~` 水 / `*` 草地 / `%` 冰面
+   * `.` 空地 / `#` 砖墙 / `@` 钢墙 / `~` 水 / `*` 草地 / `%` 冰面；>v<^ 为半砖，rblt 为半钢墙
    */
   readonly terrain: readonly string[]
   /** 本关敌方坦克按出场顺序的类型配额，长度应等于 ENEMIES_PER_LEVEL */

@@ -1,66 +1,83 @@
 import { SoundEffect } from '@/games/tank-battle/types.ts'
 
 interface ToneSpec {
-  /** 波形 */
-  readonly type: OscillatorType
-  /** 起始频率（Hz） */
+  readonly type: OscillatorType | 'noise'
   readonly startFrequency: number
-  /** 结束频率（Hz），用于滑音 */
   readonly endFrequency: number
-  /** 时长（秒） */
   readonly duration: number
-  /** 峰值音量（0-1） */
   readonly gain: number
+  readonly delay?: number
 }
 
-/** 每种音效的合成参数，全部为 8-bit 风格的方波/三角波滑音 */
+function note(frequency: number, delay: number, duration = 0.11): ToneSpec {
+  return {
+    type: 'square',
+    startFrequency: frequency,
+    endFrequency: frequency,
+    duration,
+    gain: 0.12,
+    delay,
+  }
+}
+
+/** Original Web Audio arrangements inspired by the FC pulse/triangle/noise channels.
+ * No ROM audio or third-party recordings are bundled. Notes are scheduled sequentially.
+ */
 const TONE_SPECS: Readonly<Record<SoundEffect, readonly ToneSpec[]>> = {
   [SoundEffect.FIRE]: [
-    { type: 'square', startFrequency: 520, endFrequency: 180, duration: 0.08, gain: 0.16 },
+    { type: 'square', startFrequency: 880, endFrequency: 110, duration: 0.075, gain: 0.14 },
   ],
   [SoundEffect.HIT_TERRAIN]: [
-    { type: 'square', startFrequency: 240, endFrequency: 90, duration: 0.06, gain: 0.12 },
+    { type: 'noise', startFrequency: 1400, endFrequency: 180, duration: 0.07, gain: 0.12 },
   ],
+  [SoundEffect.HIT_STEEL]: [note(1760, 0, 0.04), note(880, 0.04, 0.04)],
+  [SoundEffect.HIT_ARMOR]: [note(330, 0, 0.045), note(660, 0.045, 0.045)],
   [SoundEffect.EXPLODE_SMALL]: [
-    { type: 'sawtooth', startFrequency: 180, endFrequency: 40, duration: 0.22, gain: 0.2 },
+    { type: 'noise', startFrequency: 1800, endFrequency: 80, duration: 0.24, gain: 0.25 },
+    { type: 'triangle', startFrequency: 110, endFrequency: 30, duration: 0.22, gain: 0.16 },
   ],
   [SoundEffect.EXPLODE_BIG]: [
-    { type: 'sawtooth', startFrequency: 220, endFrequency: 30, duration: 0.45, gain: 0.26 },
-    { type: 'square', startFrequency: 90, endFrequency: 25, duration: 0.5, gain: 0.18 },
+    { type: 'noise', startFrequency: 2200, endFrequency: 40, duration: 0.6, gain: 0.3 },
+    { type: 'triangle', startFrequency: 160, endFrequency: 25, duration: 0.5, gain: 0.23 },
   ],
-  [SoundEffect.PICKUP]: [
-    { type: 'square', startFrequency: 620, endFrequency: 980, duration: 0.12, gain: 0.16 },
-    { type: 'square', startFrequency: 980, endFrequency: 1240, duration: 0.1, gain: 0.12 },
+  [SoundEffect.BONUS_APPEAR]: [note(1046, 0, 0.07), note(1568, 0.08, 0.12)],
+  [SoundEffect.PICKUP]: [note(659, 0), note(880, 0.11), note(1319, 0.22, 0.18)],
+  [SoundEffect.EXTRA_LIFE]: [note(523, 0), note(659, 0.1), note(784, 0.2), note(1046, 0.3, 0.3)],
+  [SoundEffect.PAUSE]: [note(659, 0, 0.06), note(880, 0.07, 0.06)],
+  [SoundEffect.SCORE_TICK]: [note(880, 0, 0.028)],
+  [SoundEffect.MOTOR]: [
+    { type: 'square', startFrequency: 55, endFrequency: 42, duration: 0.045, gain: 0.025 },
   ],
   [SoundEffect.LEVEL_START]: [
-    { type: 'triangle', startFrequency: 320, endFrequency: 520, duration: 0.18, gain: 0.18 },
-    { type: 'triangle', startFrequency: 520, endFrequency: 760, duration: 0.2, gain: 0.16 },
+    note(392, 0),
+    note(523, 0.13),
+    note(659, 0.26),
+    note(784, 0.39, 0.2),
+    note(659, 0.65),
+    note(784, 0.78),
+    note(1046, 0.91, 0.35),
+    { type: 'triangle', startFrequency: 131, endFrequency: 131, duration: 1.3, gain: 0.1 },
   ],
   [SoundEffect.GAME_OVER]: [
-    { type: 'triangle', startFrequency: 420, endFrequency: 110, duration: 0.7, gain: 0.22 },
+    note(523, 0, 0.22),
+    note(494, 0.25, 0.22),
+    note(440, 0.5, 0.22),
+    note(262, 0.75, 0.55),
   ],
 }
 
-/**
- * 程序化 8-bit 音效引擎。
- *
- * 全部音效由 Web Audio 的 OscillatorNode 实时合成，不引入任何音频文件。
- * Safari 要求 AudioContext 必须在用户手势后创建/恢复，因此 AudioContext
- * 采用惰性创建 —— 首次调用 unlock() 时才真正建立。任何失败都静默降级，
- * 不影响游戏进行。
- */
+/** Lazy, gesture-unlocked audio. All scheduled voices are stopped on pause/unmount. */
 export class AudioEngine {
   private context: AudioContext | null = null
   private masterGain: GainNode | null = null
+  private noiseBuffer: AudioBuffer | null = null
+  private readonly voices = new Map<AudioScheduledSourceNode, AudioNode[]>()
+  private readonly lastPlayed = new Map<SoundEffect, number>()
   private enabled = true
   private unavailable = false
 
-  /** 在首次用户交互时调用，建立或恢复 AudioContext */
   unlock(): void {
-    if (this.unavailable) {
-      return
-    }
-
+    if (this.unavailable) return
     try {
       if (this.context === null) {
         const AudioContextCtor = window.AudioContext ?? window.webkitAudioContext
@@ -70,57 +87,82 @@ export class AudioEngine {
         }
         this.context = new AudioContextCtor()
         this.masterGain = this.context.createGain()
-        this.masterGain.gain.value = 0.6
+        this.masterGain.gain.value = this.enabled ? 0.5 : 0
         this.masterGain.connect(this.context.destination)
+        this.noiseBuffer = this.context.createBuffer(
+          1,
+          this.context.sampleRate,
+          this.context.sampleRate,
+        )
+        const samples = this.noiseBuffer.getChannelData(0)
+        // A deterministic shift register produces a chip-like noise source.
+        let register = 1
+        for (let i = 0; i < samples.length; i += 1) {
+          const bit = (register ^ (register >> 1)) & 1
+          register = (register >> 1) | (bit << 14)
+          samples[i] = (register & 1) * 2 - 1
+        }
       }
-
-      if (this.context.state === 'suspended') {
-        void this.context.resume()
-      }
+      if (this.context.state === 'suspended') void this.context.resume().catch(() => {})
     } catch {
-      // 音频不可用时静默降级，游戏逻辑不受影响
       this.unavailable = true
     }
   }
 
   setEnabled(enabled: boolean): void {
     this.enabled = enabled
+    if (!enabled) this.stopAll()
+    if (this.masterGain !== null) this.masterGain.gain.value = enabled ? 0.5 : 0
   }
 
   isEnabled(): boolean {
     return this.enabled
   }
 
+  stopAll(): void {
+    for (const [source, nodes] of this.voices) {
+      source.onended = null
+      try {
+        source.stop()
+      } catch {
+        /* A voice may already have ended. */
+      }
+      source.disconnect()
+      for (const node of nodes) node.disconnect()
+    }
+    this.voices.clear()
+    this.lastPlayed.clear()
+  }
+
   dispose(): void {
+    this.stopAll()
     const context = this.context
     this.context = null
     this.masterGain = null
-
-    if (context !== null) {
-      void context.close().catch((): void => {
-        // 页面卸载期间关闭失败不应影响广场路由切换。
-      })
-    }
+    this.noiseBuffer = null
+    if (context !== null) void context.close().catch(() => {})
   }
 
   play(effect: SoundEffect): void {
-    if (!this.enabled || this.unavailable) {
-      return
-    }
-
     const context = this.context
-    const masterGain = this.masterGain
-    if (context === null || masterGain === null || context.state !== 'running') {
+    const destination = this.masterGain
+    if (
+      !this.enabled ||
+      this.unavailable ||
+      context === null ||
+      destination === null ||
+      context.state !== 'running'
+    )
       return
-    }
-
+    const now = context.currentTime
+    // Simultaneous hits share one sound and bounded polyphony avoids clipping.
+    if (now - (this.lastPlayed.get(effect) ?? -Infinity) < 0.035 || this.voices.size >= 24) return
+    this.lastPlayed.set(effect, now)
     try {
-      const startTime = context.currentTime
-      for (const spec of TONE_SPECS[effect]) {
-        this.playTone(context, masterGain, spec, startTime)
-      }
+      for (const spec of TONE_SPECS[effect])
+        this.playTone(context, destination, spec, now + (spec.delay ?? 0))
     } catch {
-      // 单次播放失败不影响后续
+      // Audio failure must not stop the game loop.
     }
   }
 
@@ -128,26 +170,42 @@ export class AudioEngine {
     context: AudioContext,
     destination: GainNode,
     spec: ToneSpec,
-    startTime: number,
+    start: number,
   ): void {
-    const oscillator = context.createOscillator()
     const gain = context.createGain()
-
-    oscillator.type = spec.type
-    oscillator.frequency.setValueAtTime(spec.startFrequency, startTime)
-    oscillator.frequency.exponentialRampToValueAtTime(
-      Math.max(1, spec.endFrequency),
-      startTime + spec.duration,
-    )
-
-    // 快速起音 + 指数衰减，模拟 FC 音源的包络
-    gain.gain.setValueAtTime(0.0001, startTime)
-    gain.gain.exponentialRampToValueAtTime(spec.gain, startTime + 0.01)
-    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + spec.duration)
-
-    oscillator.connect(gain)
+    let source: AudioScheduledSourceNode
+    const nodes: AudioNode[] = [gain]
+    if (spec.type === 'noise') {
+      const noise = context.createBufferSource()
+      noise.buffer = this.noiseBuffer
+      noise.loop = true
+      const filter = context.createBiquadFilter()
+      filter.type = 'lowpass'
+      filter.frequency.setValueAtTime(spec.startFrequency, start)
+      filter.frequency.exponentialRampToValueAtTime(spec.endFrequency, start + spec.duration)
+      noise.connect(filter)
+      filter.connect(gain)
+      nodes.push(filter)
+      source = noise
+    } else {
+      const oscillator = context.createOscillator()
+      oscillator.type = spec.type
+      oscillator.frequency.setValueAtTime(spec.startFrequency, start)
+      oscillator.frequency.exponentialRampToValueAtTime(spec.endFrequency, start + spec.duration)
+      oscillator.connect(gain)
+      source = oscillator
+    }
+    gain.gain.setValueAtTime(0.0001, start)
+    gain.gain.exponentialRampToValueAtTime(spec.gain, start + 0.005)
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + spec.duration)
     gain.connect(destination)
-    oscillator.start(startTime)
-    oscillator.stop(startTime + spec.duration + 0.02)
+    this.voices.set(source, nodes)
+    source.onended = () => {
+      this.voices.delete(source)
+      source.disconnect()
+      for (const node of nodes) node.disconnect()
+    }
+    source.start(start)
+    source.stop(start + spec.duration + 0.01)
   }
 }

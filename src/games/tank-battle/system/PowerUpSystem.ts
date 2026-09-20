@@ -2,8 +2,6 @@ import {
   FREEZE_TICKS,
   GRID_SIZE,
   HELMET_SHIELD_TICKS,
-  MAX_POWERUPS_ON_FIELD,
-  POWERUP_DROP_CHANCE,
   SHOVEL_TICKS,
 } from '@/games/tank-battle/constants.ts'
 import { rectsIntersect } from '@/games/tank-battle/core/geometry.ts'
@@ -13,38 +11,27 @@ import { PowerUpKind, SoundEffect } from '@/games/tank-battle/types.ts'
 import type { World } from '@/games/tank-battle/system/World.ts'
 
 /** 所有道具种类，用于随机抽取 */
+// $E8FA: star and grenade each occupy two of the eight random slots.
 const ALL_KINDS: readonly PowerUpKind[] = [
-  PowerUpKind.GRENADE,
   PowerUpKind.HELMET,
+  PowerUpKind.TIMER,
   PowerUpKind.SHOVEL,
   PowerUpKind.STAR,
+  PowerUpKind.GRENADE,
   PowerUpKind.TANK,
-  PowerUpKind.TIMER,
+  PowerUpKind.GRENADE,
+  PowerUpKind.STAR,
 ]
 
 /** 随机寻找空地的最大尝试次数，超出则放弃本次掉落 */
 const MAX_PLACEMENT_ATTEMPTS = 40
 
-/**
- * 敌方坦克被击毁时尝试掉落道具。
- *
- * 同屏道具数达到上限时不再掉落 —— 原作也是场上最多一个。
- */
-export function tryDropPowerUp(world: World): void {
-  if (world.powerUps.length >= MAX_POWERUPS_ON_FIELD) {
-    return
-  }
-  if (!world.rng.chance(POWERUP_DROP_CHANCE)) {
-    return
-  }
-
+/** A flashing carrier drops one bonus on its first hit ($E7D1). */
+export function dropPowerUp(world: World): void {
   const cell = findFreeCell(world)
-  if (cell === null) {
-    return
-  }
-
+  if (cell === null) return
   const kind = world.rng.pick(ALL_KINDS) ?? PowerUpKind.STAR
-  world.powerUps.push(new PowerUp(kind, cell[0], cell[1]))
+  world.powerUps = [new PowerUp(kind, cell[0], cell[1])]
 }
 
 /** 随机找一个可放置道具的空地格 */
@@ -61,6 +48,13 @@ function findFreeCell(world: World): readonly [number, number] | null {
       continue
     }
     return [cellX, cellY]
+  }
+  // Dense maps still receive their earned reward; scan instead of losing the drop.
+  for (let y = 0; y < GRID_SIZE; y += 1) {
+    for (let x = 0; x < GRID_SIZE; x += 1) {
+      if (world.terrain.isCellFree(x, y) && !(x === world.base.cellX && y === world.base.cellY))
+        return [x, y]
+    }
   }
   return null
 }
@@ -86,7 +80,7 @@ export function updatePowerUps(world: World, playSound: (effect: SoundEffect) =>
     powerUp.alive = false
     applyPowerUpEffect(world, powerUp.kind, playSound)
     world.addScore(POWERUP_SCORE)
-    playSound(SoundEffect.PICKUP)
+    playSound(powerUp.kind === PowerUpKind.TANK ? SoundEffect.EXTRA_LIFE : SoundEffect.PICKUP)
   }
 }
 
@@ -133,7 +127,7 @@ function applyPowerUpEffect(
 function destroyAllEnemies(world: World, playSound: (effect: SoundEffect) => void): void {
   let destroyedAny = false
   for (const enemy of world.enemies) {
-    if (!enemy.alive) {
+    if (!enemy.alive || enemy.isSpawning()) {
       continue
     }
     enemy.alive = false

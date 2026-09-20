@@ -5,8 +5,13 @@ import {
   FIELD_PIXELS,
   GRID_SIZE,
 } from '@/games/tank-battle/constants.ts'
-import { BASE_WALL_CELLS } from '@/games/tank-battle/data/levels.ts'
-import { TerrainKind, type Rect, type TerrainHitResult } from '@/games/tank-battle/types.ts'
+import { BASE_WALL_CELLS, BASE_WALL_MASKS } from '@/games/tank-battle/data/levels.ts'
+import {
+  Direction,
+  TerrainKind,
+  type Rect,
+  type TerrainHitResult,
+} from '@/games/tank-battle/types.ts'
 
 /** 一格砖墙全部子块存活时的掩码（16 位全 1） */
 const FULL_BRICK_MASK = (1 << (BRICK_SUB * BRICK_SUB)) - 1
@@ -19,6 +24,25 @@ const CHAR_TO_KIND: Readonly<Record<string, TerrainKind>> = {
   '~': TerrainKind.WATER,
   '*': TerrainKind.TREE,
   '%': TerrainKind.ICE,
+  '>': TerrainKind.BRICK,
+  v: TerrainKind.BRICK,
+  '<': TerrainKind.BRICK,
+  '^': TerrainKind.BRICK,
+  r: TerrainKind.STEEL,
+  b: TerrainKind.STEEL,
+  l: TerrainKind.STEEL,
+  t: TerrainKind.STEEL,
+}
+
+const PARTIAL_MASKS: Readonly<Record<string, number>> = {
+  '>': 0xcccc,
+  v: 0xff00,
+  '<': 0x3333,
+  '^': 0x00ff,
+  r: 0xcccc,
+  b: 0xff00,
+  l: 0x3333,
+  t: 0x00ff,
 }
 
 /**
@@ -32,7 +56,7 @@ const CHAR_TO_KIND: Readonly<Record<string, TerrainKind>> = {
  */
 export class TerrainGrid {
   private readonly kinds: TerrainKind[] = []
-  private readonly brickMasks: number[] = []
+  private readonly wallMasks: number[] = []
 
   /** 铲子道具生效期间，基地围墙被临时替换为钢墙，此标记用于避免重复保存/还原 */
   private shovelActive = false
@@ -44,7 +68,7 @@ export class TerrainGrid {
   /** 载入关卡地形，重置全部状态 */
   load(terrain: readonly string[]): void {
     this.kinds.length = 0
-    this.brickMasks.length = 0
+    this.wallMasks.length = 0
     this.shovelActive = false
 
     for (let row = 0; row < GRID_SIZE; row += 1) {
@@ -52,14 +76,16 @@ export class TerrainGrid {
       for (let col = 0; col < GRID_SIZE; col += 1) {
         const kind = CHAR_TO_KIND[line[col] ?? '.'] ?? TerrainKind.EMPTY
         this.kinds.push(kind)
-        this.brickMasks.push(kind === TerrainKind.BRICK ? FULL_BRICK_MASK : 0)
+        this.wallMasks.push(
+          kind === TerrainKind.BRICK || kind === TerrainKind.STEEL
+            ? (PARTIAL_MASKS[line[col]] ?? FULL_BRICK_MASK)
+            : 0,
+        )
       }
     }
 
     // 基地围墙由数据统一铺设，不依赖关卡矩阵是否写对
-    for (const [cellX, cellY] of BASE_WALL_CELLS) {
-      this.setCell(cellX, cellY, TerrainKind.BRICK)
-    }
+    this.setBaseWalls(TerrainKind.BRICK)
   }
 
   private index(cellX: number, cellY: number): number {
@@ -77,11 +103,11 @@ export class TerrainGrid {
     return this.kinds[this.index(cellX, cellY)]
   }
 
-  getBrickMask(cellX: number, cellY: number): number {
+  getWallMask(cellX: number, cellY: number): number {
     if (!this.inBounds(cellX, cellY)) {
       return 0
     }
-    return this.brickMasks[this.index(cellX, cellY)]
+    return this.wallMasks[this.index(cellX, cellY)]
   }
 
   private setCell(cellX: number, cellY: number, kind: TerrainKind): void {
@@ -90,7 +116,8 @@ export class TerrainGrid {
     }
     const idx = this.index(cellX, cellY)
     this.kinds[idx] = kind
-    this.brickMasks[idx] = kind === TerrainKind.BRICK ? FULL_BRICK_MASK : 0
+    this.wallMasks[idx] =
+      kind === TerrainKind.BRICK || kind === TerrainKind.STEEL ? FULL_BRICK_MASK : 0
   }
 
   /** 该地形是否阻挡坦克移动 */
@@ -129,7 +156,7 @@ export class TerrainGrid {
         if (!this.kindBlocksTank(kind)) {
           continue
         }
-        if (kind !== TerrainKind.BRICK) {
+        if (kind === TerrainKind.WATER) {
           return true
         }
         if (this.brickSubBlocks(cellX, cellY, rect)) {
@@ -142,7 +169,7 @@ export class TerrainGrid {
 
   /** 砖墙格内是否有存活子块与矩形重叠 */
   private brickSubBlocks(cellX: number, cellY: number, rect: Rect): boolean {
-    const mask = this.getBrickMask(cellX, cellY)
+    const mask = this.getWallMask(cellX, cellY)
     if (mask === 0) {
       return false
     }
@@ -176,7 +203,7 @@ export class TerrainGrid {
    * @param rect 子弹当前像素矩形
    * @param power 子弹威力，>= 2 可击穿钢墙
    */
-  hitByBullet(rect: Rect, power: number): TerrainHitResult {
+  hitByBullet(rect: Rect, power: number, direction: Direction = Direction.UP): TerrainHitResult {
     // 越界即命中边界，但不破坏任何东西
     if (
       rect.x < 0 ||
@@ -193,42 +220,73 @@ export class TerrainGrid {
     const maxCellY = Math.floor((rect.y + rect.height - 1) / CELL_SIZE)
 
     let hit = false
+    for (let y = minCellY; y <= maxCellY; y += 1) {
+      for (let x = minCellX; x <= maxCellX; x += 1) {
+        if (this.kindBlocksBullet(this.getKind(x, y)) && this.brickSubBlocks(x, y, rect)) hit = true
+      }
+    }
+    if (!hit) return { hit: false, destroyed: false }
+
+    // A hit removes a tank-width strip, so repeated shots open a traversable passage.
+    // Brick depth is 4px; upgraded shells and steel quadrants use 8px.
+    const vertical = direction === Direction.UP || direction === Direction.DOWN
     let destroyed = false
-
-    for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
-      for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
-        const kind = this.getKind(cellX, cellY)
-        if (!this.kindBlocksBullet(kind)) {
-          continue
-        }
-
-        if (kind === TerrainKind.STEEL) {
-          hit = true
-          if (power >= 2) {
-            this.setCell(cellX, cellY, TerrainKind.EMPTY)
-            destroyed = true
+    for (const kind of [TerrainKind.BRICK, TerrainKind.STEEL]) {
+      if (kind === TerrainKind.STEEL && power < 2) continue
+      const depth = kind === TerrainKind.STEEL || power >= 2 ? 8 : 4
+      const impact =
+        direction === Direction.UP
+          ? rect.y
+          : direction === Direction.DOWN
+            ? rect.y + rect.height - 1
+            : direction === Direction.LEFT
+              ? rect.x
+              : rect.x + rect.width - 1
+      const damage: Rect = vertical
+        ? {
+            x: Math.floor((rect.x + rect.width / 2 - 8) / 8) * 8,
+            y: Math.floor(impact / depth) * depth,
+            width: 16,
+            height: depth,
           }
-          continue
-        }
-
-        // 砖墙：只有真正打到存活子块才算命中
-        if (this.brickSubBlocks(cellX, cellY, rect)) {
-          hit = true
-          // 子弹沿行进方向会打穿整格的一条带，用扩展后的矩形做破坏范围
-          if (this.clearBrickSubBlocks(cellX, cellY, rect)) {
-            destroyed = true
+        : {
+            x: Math.floor(impact / depth) * depth,
+            y: Math.floor((rect.y + rect.height / 2 - 8) / 8) * 8,
+            width: depth,
+            height: 16,
           }
+      for (
+        let y = Math.max(0, Math.floor(damage.y / CELL_SIZE));
+        y <= Math.min(GRID_SIZE - 1, Math.floor((damage.y + damage.height - 1) / CELL_SIZE));
+        y += 1
+      ) {
+        for (
+          let x = Math.max(0, Math.floor(damage.x / CELL_SIZE));
+          x <= Math.min(GRID_SIZE - 1, Math.floor((damage.x + damage.width - 1) / CELL_SIZE));
+          x += 1
+        ) {
+          if (this.getKind(x, y) === kind)
+            destroyed = this.clearBrickSubBlocks(x, y, damage) || destroyed
         }
       }
     }
-
     return { hit, destroyed }
+  }
+
+  /** Read-only ray probe respects empty halves of steel blocks. */
+  isSteelAt(x: number, y: number): boolean {
+    const cellX = Math.floor(x / CELL_SIZE)
+    const cellY = Math.floor(y / CELL_SIZE)
+    return (
+      this.getKind(cellX, cellY) === TerrainKind.STEEL &&
+      this.brickSubBlocks(cellX, cellY, { x, y, width: 0.01, height: 0.01 })
+    )
   }
 
   /** 清除砖墙格内与矩形重叠的子块。返回是否有子块被清除。 */
   private clearBrickSubBlocks(cellX: number, cellY: number, rect: Rect): boolean {
     const idx = this.index(cellX, cellY)
-    let mask = this.brickMasks[idx]
+    let mask = this.wallMasks[idx]
     const original = mask
 
     const cellOriginX = cellX * CELL_SIZE
@@ -253,7 +311,7 @@ export class TerrainGrid {
       }
     }
 
-    this.brickMasks[idx] = mask
+    this.wallMasks[idx] = mask
     if (mask === 0) {
       this.kinds[idx] = TerrainKind.EMPTY
     }
@@ -275,13 +333,8 @@ export class TerrainGrid {
 
   /** 铲子道具生效：基地围墙临时变钢墙 */
   applyShovel(): void {
-    if (this.shovelActive) {
-      return // 已生效，时长刷新由调用方负责
-    }
     this.shovelActive = true
-    for (const [cellX, cellY] of BASE_WALL_CELLS) {
-      this.setCell(cellX, cellY, TerrainKind.STEEL)
-    }
+    this.setBaseWalls(TerrainKind.STEEL)
   }
 
   /**
@@ -293,9 +346,19 @@ export class TerrainGrid {
       return
     }
     this.shovelActive = false
-    for (const [cellX, cellY] of BASE_WALL_CELLS) {
-      this.setCell(cellX, cellY, TerrainKind.BRICK)
-    }
+    this.setBaseWalls(TerrainKind.BRICK)
+  }
+
+  /** The original spawn handler clears the block beneath a new tank ($E3B2). */
+  clearSpawnCell(cellX: number, cellY: number): void {
+    this.setCell(cellX, cellY, TerrainKind.EMPTY)
+  }
+
+  private setBaseWalls(kind: TerrainKind): void {
+    BASE_WALL_CELLS.forEach(([x, y], index) => {
+      this.setCell(x, y, kind)
+      this.wallMasks[this.index(x, y)] = BASE_WALL_MASKS[index]
+    })
   }
 
   /** 遍历所有格，供渲染层使用 */
@@ -305,7 +368,7 @@ export class TerrainGrid {
     for (let cellY = 0; cellY < GRID_SIZE; cellY += 1) {
       for (let cellX = 0; cellX < GRID_SIZE; cellX += 1) {
         const idx = this.index(cellX, cellY)
-        visit(cellX, cellY, this.kinds[idx], this.brickMasks[idx])
+        visit(cellX, cellY, this.kinds[idx], this.wallMasks[idx])
       }
     }
   }

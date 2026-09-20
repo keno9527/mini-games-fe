@@ -1,201 +1,284 @@
-/**
- * 像素精灵数据。
- *
- * 所有图形均以字符矩阵定义，字符含义由各自的调色板决定，
- * 渲染层负责把字符映射为颜色。这样做可以在不引入任何图片资源的前提下
- * 完成全部美术表现，仓库完全自包含。
- *
- * 坦克只定义「朝上」一个方向，其余三个方向由 rotateMatrix 在模块加载时
- * 一次性旋转生成，避免四份重复数据。
- */
+/** 参考 Battle City 造型重绘的像素矩阵；空格透明，数字对应材质明暗。 */
+import { EnemyKind, PowerUpKind } from '@/games/tank-battle/types.ts'
 
-/**
- * 朝上的坦克。字符含义：
- * ` ` 透明 / `1` 车身主色 / `2` 履带暗色 / `3` 炮管与高光
- */
-const TANK_UP: readonly string[] = [
-  '       33       ',
-  '       33       ',
-  ' 222  3333  222 ',
-  ' 212  3333  212 ',
-  ' 212  3333  212 ',
-  ' 212 111111 212 ',
-  ' 21211111111212 ',
-  ' 21211133111212 ',
-  ' 21211133111212 ',
-  ' 21211111111212 ',
-  ' 212 111111 212 ',
-  ' 212  1111  212 ',
-  ' 212  1111  212 ',
-  ' 222  1111  222 ',
-  ' 222        222 ',
-  '                ',
-]
-
-/** 顺时针旋转 90°：dst[r][c] = src[size-1-c][r] */
 function rotateClockwise(matrix: readonly string[]): readonly string[] {
-  const size = matrix.length
-  const result: string[] = []
-  for (let row = 0; row < size; row += 1) {
-    let line = ''
-    for (let col = 0; col < size; col += 1) {
-      line += matrix[size - 1 - col][row]
-    }
-    result.push(line)
-  }
-  return result
+  return matrix.map((_, row) =>
+    matrix.map((_, col) => matrix[matrix.length - 1 - col][row]).join(''),
+  )
+}
+function directions(up: readonly string[]): readonly (readonly string[])[] {
+  const right = rotateClockwise(up)
+  const down = rotateClockwise(right)
+  return [up, right, down, rotateClockwise(down)]
 }
 
-const TANK_RIGHT = rotateClockwise(TANK_UP)
-const TANK_DOWN = rotateClockwise(TANK_RIGHT)
-const TANK_LEFT = rotateClockwise(TANK_DOWN)
-
-/** 按 Direction 枚举顺序（上 / 右 / 下 / 左）排列的坦克精灵 */
-export const TANK_SPRITES: readonly (readonly string[])[] = [
-  TANK_UP,
-  TANK_RIGHT,
-  TANK_DOWN,
-  TANK_LEFT,
+/** 坦克朝上：1 车身、2 阴影、3 高光 */
+export const PLAYER_TANK_UP: readonly string[] = [
+  '       33       ',
+  '       13       ',
+  ' 232   13  232  ',
+  ' 212  1131 212  ',
+  ' 232 111331232  ',
+  ' 2121111331212  ',
+  ' 2321133331232  ',
+  ' 2121132231212  ',
+  ' 2321132131232  ',
+  ' 2121133331212  ',
+  ' 2321111111232  ',
+  ' 212 11111 212  ',
+  ' 232  111  232  ',
+  ' 212       212  ',
+  ' 232       232  ',
+  '                ',
 ]
 
-/** 老鹰基地（完好） */
+/** 坦克朝上：1 车身、2 阴影、3 高光 */
+export const FAST_TANK_UP: readonly string[] = [
+  '       33       ',
+  '       13       ',
+  '   32  13 23    ',
+  '   321133123    ',
+  '  23211331232   ',
+  '  21213331212   ',
+  '  23213231232   ',
+  '  21213231212   ',
+  '  23213331232   ',
+  '  21211111212   ',
+  '   321111123    ',
+  '   321111123    ',
+  '   32 111 23    ',
+  '   32     23    ',
+  '                ',
+  '                ',
+]
+
+/** 坦克朝上：1 车身、2 阴影、3 高光 */
+export const POWER_TANK_UP: readonly string[] = [
+  '       33       ',
+  '       13       ',
+  ' 2323  13 3232  ',
+  ' 2112  13 2112  ',
+  ' 2332113312332  ',
+  ' 2112113312112  ',
+  ' 2332133332332  ',
+  ' 2112132232112  ',
+  ' 2332132232332  ',
+  ' 2112133332112  ',
+  ' 2332111112332  ',
+  ' 2112111112112  ',
+  ' 2332 111 2332  ',
+  ' 2112     2112  ',
+  ' 2323     3232  ',
+  '                ',
+]
+
+/** 坦克朝上：1 车身、2 阴影、3 高光 */
+export const ARMOR_TANK_UP: readonly string[] = [
+  '       33       ',
+  '       13       ',
+  '23233  13  33232',
+  '2121333333331212',
+  '2321311111131232',
+  '2121313333131212',
+  '2321313223131232',
+  '2121313223131212',
+  '2321313333131232',
+  '2121311111131212',
+  '2321333333331232',
+  '2121111111111212',
+  '2321222222221232',
+  '2121111111111212',
+  '23233      33232',
+  '                ',
+]
+
+/** 坦克朝上：1 车身、2 阴影、3 高光 */
+export const BASIC_TANK_UP: readonly string[] = [
+  '       33       ',
+  '       13       ',
+  ' 232   13  232  ',
+  ' 212 11111 212  ',
+  ' 2321111111232  ',
+  ' 2121133331212  ',
+  ' 2321132231232  ',
+  ' 2121132131212  ',
+  ' 2321133331232  ',
+  ' 2121111111212  ',
+  ' 232 11111 232  ',
+  ' 212 11111 212  ',
+  ' 232  111  232  ',
+  ' 212       212  ',
+  ' 232       232  ',
+  '                ',
+]
+
+export const TANK_SPRITES = directions(PLAYER_TANK_UP)
+export const PLAYER_TANK_SPRITES = [
+  TANK_SPRITES,
+  directions(FAST_TANK_UP),
+  directions(POWER_TANK_UP),
+  directions(ARMOR_TANK_UP),
+]
+export const ENEMY_TANK_SPRITES = {
+  [EnemyKind.BASIC]: directions(BASIC_TANK_UP),
+  [EnemyKind.FAST]: directions(FAST_TANK_UP),
+  [EnemyKind.POWER]: directions(POWER_TANK_UP),
+  [EnemyKind.ARMOR]: directions(ARMOR_TANK_UP),
+}
+
+/** 灰白老鹰：展开羽翼、头部与尾羽 */
 export const BASE_SPRITE: readonly string[] = [
   '                ',
-  '   1        1   ',
-  '   11      11   ',
-  '   111    111   ',
-  '   1111  1111   ',
-  '    11111111    ',
-  '     111111     ',
-  '   1111111111   ',
-  '  111111111111  ',
-  '  111111111111  ',
-  '   1111111111   ',
-  '    11111111    ',
-  '     111111     ',
-  '      1111      ',
-  '                ',
+  '33            33',
+  '233          332',
+  '2133   333  3312',
+  '21133 3123333112',
+  ' 21133311333112 ',
+  '  211133331112  ',
+  '33 2111331112 33',
+  '2333211331123332',
+  ' 23321133112132 ',
+  '  233113311332  ',
+  '   2331331332   ',
+  '    23333332    ',
+  '   3313113133   ',
+  '  33231  13233  ',
   '                ',
 ]
 
-/** 老鹰基地（已被击毁，残骸） */
+/** 基地残骸 */
 export const BASE_DESTROYED_SPRITE: readonly string[] = [
   '                ',
   '                ',
   '                ',
   '                ',
-  '     1    1     ',
-  '      1  1      ',
-  '       11       ',
-  '      1111      ',
-  '     111111     ',
-  '    11111111    ',
-  '   1111111111   ',
-  '  111111111111  ',
-  '  111111111111  ',
-  '  111111111111  ',
-  '                ',
+  '     22  22     ',
+  '    21122112    ',
+  '    21333312    ',
+  '     133331     ',
+  '   2213113122   ',
+  '  211111111112  ',
+  ' 21122211222112 ',
+  ' 21211211211212 ',
+  '  222221122222  ',
+  '   2222222222   ',
+  ' 222  2222  222 ',
   '                ',
 ]
 
-/** 道具图标尺寸（居中绘制在 16x16 的道具框内） */
 export const POWERUP_ICON_SIZE = 12
 
-/** 星星：火力升级 */
+/** 道具图标：1 亮面、2 深色细节、3 阴影 */
 export const ICON_STAR: readonly string[] = [
   '     11     ',
-  '    1111    ',
-  '    1111    ',
-  '111111111111',
-  ' 1111111111 ',
-  '  11111111  ',
-  '  11111111  ',
-  ' 111    111 ',
-  ' 111    111 ',
-  ' 11      11 ',
-  '11        11',
+  '     13     ',
+  '    1132    ',
+  '111111311111',
+  ' 1111133321 ',
+  '  11133321  ',
+  '   113321   ',
+  '  11323322  ',
+  '  132  332  ',
+  ' 132    332 ',
+  ' 12      32 ',
   '            ',
 ]
 
-/** 头盔：临时无敌 */
+/** 道具图标：1 亮面、2 深色细节、3 阴影 */
+export const ICON_GRENADE: readonly string[] = [
+  '      1111  ',
+  '     123 1  ',
+  '    1113 1  ',
+  '   1212131  ',
+  '  11212131  ',
+  '  12121231  ',
+  '  11212131  ',
+  '  12121231  ',
+  '   121213   ',
+  '   112133   ',
+  '    1333    ',
+  '            ',
+]
+
+/** 道具图标：1 亮面、2 深色细节、3 阴影 */
 export const ICON_HELMET: readonly string[] = [
   '            ',
   '    1111    ',
-  '  11111111  ',
-  ' 1111111111 ',
-  ' 1111111111 ',
-  '111111111111',
-  '111111111111',
-  '            ',
-  '111111111111',
-  '111111111111',
+  '   111133   ',
+  '  11111333  ',
+  '  11111333  ',
+  ' 111111333  ',
+  ' 111111333  ',
+  ' 111111333  ',
+  '111111113333',
+  '133333333333',
   '            ',
   '            ',
 ]
 
-/** 铲子：基地围墙变钢墙 */
+/** 道具图标：1 亮面、2 深色细节、3 阴影 */
 export const ICON_SHOVEL: readonly string[] = [
-  '     11     ',
-  '    1111    ',
-  '   111111   ',
-  '  11111111  ',
-  ' 1111111111 ',
-  '111111111111',
-  '111111111111',
-  ' 1111111111 ',
-  '    1111    ',
-  '    1111    ',
-  '   111111   ',
+  '         111',
+  '        1231',
+  '        131 ',
+  '       131  ',
+  '      131   ',
+  '     131    ',
+  '  11131     ',
+  ' 112131     ',
+  '111213      ',
+  '11213       ',
+  ' 133        ',
   '            ',
 ]
 
-/** 坦克：生命 +1 */
+/** 道具图标：1 亮面、2 深色细节、3 阴影 */
 export const ICON_TANK: readonly string[] = [
   '            ',
-  '     11     ',
-  '     11     ',
-  ' 11 1111 11 ',
-  ' 1111111111 ',
-  ' 1111111111 ',
-  ' 1111111111 ',
-  ' 11 1111 11 ',
-  '            ',
-  '            ',
+  '    11111   ',
+  '111111333   ',
+  '    111333  ',
+  '  111111111 ',
+  ' 11111133331',
+  ' 13333333331',
+  '112121212131',
+  '123232323231',
+  ' 1333333333 ',
   '            ',
   '            ',
 ]
 
-/** 计时器：冻结敌方 */
+/** 道具图标：1 亮面、2 深色细节、3 阴影 */
 export const ICON_TIMER: readonly string[] = [
   '    1111    ',
-  '  11111111  ',
-  ' 11      11 ',
-  '11   11   11',
-  '11   11   11',
-  '11  1111  11',
-  '11   11   11',
-  '11   11   11',
-  ' 11      11 ',
-  '  11111111  ',
-  '    1111    ',
+  '     13  11 ',
+  '   1111131  ',
+  '  11113333  ',
+  ' 1111133333 ',
+  ' 1111113333 ',
+  ' 1111213333 ',
+  ' 1111221333 ',
+  ' 1111113333 ',
+  '  11113333  ',
+  '   133333   ',
   '            ',
 ]
 
-/** 手雷：清屏 */
-export const ICON_GRENADE: readonly string[] = [
-  '         11 ',
-  '        11  ',
-  '    1111    ',
-  '   111111   ',
-  '  11111111  ',
-  ' 1111111111 ',
-  ' 1111111111 ',
-  ' 1111111111 ',
-  '  11111111  ',
-  '   111111   ',
-  '    1111    ',
-  '            ',
-]
+/** 所有入口共用同一完整道具精灵，避免指南与战斗配色分叉。 */
+function framedPowerUp(icon: readonly string[]): readonly string[] {
+  const rows = [' SSSSSSSSSSSSSS ', 'SWWWWWWWWWWWWWWD']
+  for (const row of icon) rows.push(`SW${row.replaceAll(' ', 'B')}WD`)
+  rows.push('SWWWWWWWWWWWWWWD', ' DDDDDDDDDDDDDD ')
+  return rows
+}
+export const POWERUP_SPRITES: Readonly<Record<PowerUpKind, readonly string[]>> = {
+  [PowerUpKind.STAR]: framedPowerUp(ICON_STAR),
+  [PowerUpKind.GRENADE]: framedPowerUp(ICON_GRENADE),
+  [PowerUpKind.HELMET]: framedPowerUp(ICON_HELMET),
+  [PowerUpKind.SHOVEL]: framedPowerUp(ICON_SHOVEL),
+  [PowerUpKind.TANK]: framedPowerUp(ICON_TANK),
+  [PowerUpKind.TIMER]: framedPowerUp(ICON_TIMER),
+}
 
 /** 3x5 像素字模的字形宽度 */
 export const FONT_GLYPH_WIDTH = 3

@@ -8,17 +8,12 @@ import {
 import {
   BASE_DESTROYED_SPRITE,
   BASE_SPRITE,
+  ENEMY_TANK_SPRITES,
+  PLAYER_TANK_SPRITES,
+  POWERUP_SPRITES,
   FONT_GLYPHS,
   FONT_GLYPH_HEIGHT,
   FONT_GLYPH_WIDTH,
-  ICON_GRENADE,
-  ICON_HELMET,
-  ICON_SHOVEL,
-  ICON_STAR,
-  ICON_TANK,
-  ICON_TIMER,
-  POWERUP_ICON_SIZE,
-  TANK_SPRITES,
 } from '@/games/tank-battle/data/sprites.ts'
 import { MAX_PLAYER_STAR } from '@/games/tank-battle/data/tankSpecs.ts'
 import type { Base } from '@/games/tank-battle/entity/Base.ts'
@@ -26,8 +21,8 @@ import type { Bullet } from '@/games/tank-battle/entity/Bullet.ts'
 import type { Explosion } from '@/games/tank-battle/entity/Explosion.ts'
 import type { PowerUp } from '@/games/tank-battle/entity/PowerUp.ts'
 import type { Tank } from '@/games/tank-battle/entity/Tank.ts'
-import { EnemyKind, PowerUpKind, TankSide, TerrainKind } from '@/games/tank-battle/types.ts'
-import { COLORS } from '@/games/tank-battle/render/palette.ts'
+import { EnemyKind, TankSide, TerrainKind } from '@/games/tank-battle/types.ts'
+import { COLORS, POWERUP_PALETTE } from '@/games/tank-battle/render/palette.ts'
 
 /** 坦克精灵的字符 → 颜色映射 */
 interface TankPalette {
@@ -72,6 +67,9 @@ function getTankPalette(tank: Tank): TankPalette {
     }
   }
 
+  if (tank.bonusCarrier && tank.bonusFlashTicks < 16) {
+    return { body: '#f83800', tread: '#a81000', highlight: '#ffb8b0' }
+  }
   switch (tank.enemyKind) {
     case EnemyKind.FAST:
       return {
@@ -116,14 +114,49 @@ export function drawTank(context: CanvasRenderingContext2D, tank: Tank): void {
   }
 
   const palette = getTankPalette(tank)
-  drawMatrix(context, TANK_SPRITES[tank.direction], tank.x, tank.y, {
-    '1': palette.body,
+  const sprites =
+    tank.side === TankSide.PLAYER
+      ? PLAYER_TANK_SPRITES[Math.min(MAX_PLAYER_STAR, Math.max(0, tank.star))]
+      : ENEMY_TANK_SPRITES[tank.enemyKind ?? EnemyKind.BASIC]
+  drawMatrix(context, sprites[tank.direction], Math.round(tank.x), Math.round(tank.y), {
+    '1': tank.hitFlashTicks > 0 ? COLORS.EXPLOSION_CORE : palette.body,
     '2': palette.tread,
-    '3': palette.highlight,
+    '3': tank.hitFlashTicks > 0 ? COLORS.EXPLOSION_MID : palette.highlight,
   })
 
+  drawTankDetails(context, tank, palette.highlight)
   if (tank.shieldTicks > 0) {
     drawShield(context, tank)
+  }
+}
+
+/** 在朝上坐标系内绘制细节，然后跟随车身旋转，四个方向保持像素对齐。 */
+function drawTankDetails(context: CanvasRenderingContext2D, tank: Tank, highlight: string): void {
+  const pixel = (x: number, y: number): void => {
+    for (let turn = 0; turn < tank.direction; turn += 1) {
+      const previousX = x
+      x = TANK_SIZE - 1 - y
+      y = previousX
+    }
+    context.fillRect(Math.round(tank.x + x), Math.round(tank.y + y), 1, 1)
+  }
+  context.fillStyle = highlight
+  const phase = Math.floor(tank.treadPhase / 2)
+  for (const x of [1, 3, 12, 14]) {
+    for (let y = 3 + phase; y < 14; y += 4) pixel(x, y)
+  }
+  if (tank.muzzleFlashTicks > 0) {
+    context.fillStyle = COLORS.EXPLOSION_MID
+    for (let x = 5; x <= 10; x += 1) pixel(x, -2)
+    context.fillStyle = COLORS.EXPLOSION_CORE
+    for (let y = -3; y <= 0; y += 1) {
+      pixel(7, y)
+      pixel(8, y)
+    }
+  }
+  if (tank.maxArmor > 1) {
+    context.fillStyle = tank.hitFlashTicks > 0 ? COLORS.EXPLOSION_CORE : highlight
+    for (let index = 0; index < tank.armor; index += 1) pixel(5 + index * 2, 11)
   }
 }
 
@@ -176,7 +209,7 @@ export function drawTerrainCell(
       break
 
     case TerrainKind.STEEL:
-      drawSteelCell(context, originX, originY)
+      drawSteelCell(context, originX, originY, brickMask)
       break
 
     case TerrainKind.WATER:
@@ -204,53 +237,58 @@ export function drawTreeCell(
   context.fillStyle = COLORS.TREE_MAIN
   context.fillRect(originX, originY, CELL_SIZE, CELL_SIZE)
 
-  // 交错亮点模拟叶簇
-  context.fillStyle = COLORS.TREE_LIGHT
-  for (let y = 0; y < CELL_SIZE; y += 4) {
-    for (let x = 0; x < CELL_SIZE; x += 4) {
-      const offset = ((x / 4 + y / 4) % 2) * 2
-      context.fillRect(originX + x + offset, originY + y, 2, 2)
+  // 叶片的明暗与黑色缝隙形成簇状纹理。
+  for (let y = 0; y < CELL_SIZE; y += 1) {
+    for (let x = 0; x < CELL_SIZE; x += 1) {
+      const leaf = (x + y * 2) % 8
+      context.fillStyle =
+        leaf < 2 ? COLORS.TREE_LIGHT : (x * 3 + y) % 7 === 0 ? '#000000' : COLORS.TREE_MAIN
+      context.fillRect(originX + x, originY + y, 1, 1)
     }
   }
 }
 
-/** 砖墙：按子块掩码逐块绘制，每块带亮/暗边模拟立体感 */
+/** 8×4 错缝砖纹；破坏仍由 4×4 子块掩码决定。 */
 function drawBrickCell(
   context: CanvasRenderingContext2D,
   originX: number,
   originY: number,
   brickMask: number,
 ): void {
-  for (let subY = 0; subY < BRICK_SUB; subY += 1) {
-    for (let subX = 0; subX < BRICK_SUB; subX += 1) {
-      if ((brickMask & (1 << (subY * BRICK_SUB + subX))) === 0) {
-        continue
-      }
-      const x = originX + subX * BRICK_SUB_SIZE
-      const y = originY + subY * BRICK_SUB_SIZE
-
-      context.fillStyle = COLORS.BRICK_MAIN
-      context.fillRect(x, y, BRICK_SUB_SIZE, BRICK_SUB_SIZE)
-      context.fillStyle = COLORS.BRICK_LIGHT
-      context.fillRect(x, y, BRICK_SUB_SIZE - 1, 1)
-      context.fillStyle = COLORS.BRICK_DARK
-      context.fillRect(x, y + BRICK_SUB_SIZE - 1, BRICK_SUB_SIZE, 1)
+  for (let y = 0; y < CELL_SIZE; y += 1) {
+    for (let x = 0; x < CELL_SIZE; x += 1) {
+      const bit = Math.floor(y / BRICK_SUB_SIZE) * BRICK_SUB + Math.floor(x / BRICK_SUB_SIZE)
+      if ((brickMask & (1 << bit)) === 0) continue
+      const seam = (x + (Math.floor(y / 4) % 2) * 4) % 8
+      context.fillStyle =
+        y % 4 === 3 || seam === 7
+          ? COLORS.BRICK_DARK
+          : y % 4 === 0
+            ? COLORS.BRICK_LIGHT
+            : COLORS.BRICK_MAIN
+      context.fillRect(originX + x, originY + y, 1, 1)
     }
   }
 }
 
 /** 钢墙：2x2 分块，每块带高光与暗角 */
-function drawSteelCell(context: CanvasRenderingContext2D, originX: number, originY: number): void {
+function drawSteelCell(
+  context: CanvasRenderingContext2D,
+  originX: number,
+  originY: number,
+  mask: number,
+): void {
   const half = CELL_SIZE / 2
   for (let blockY = 0; blockY < 2; blockY += 1) {
     for (let blockX = 0; blockX < 2; blockX += 1) {
+      if ((mask & (1 << (blockY * 8 + blockX * 2))) === 0) continue
       const x = originX + blockX * half
       const y = originY + blockY * half
       context.fillStyle = COLORS.STEEL_MAIN
       context.fillRect(x, y, half, half)
       context.fillStyle = COLORS.STEEL_LIGHT
-      context.fillRect(x, y, half - 1, 1)
-      context.fillRect(x, y, 1, half - 1)
+      context.fillRect(x + 1, y + 1, half - 3, 2)
+      context.fillRect(x + 1, y + 1, 2, half - 3)
       context.fillStyle = COLORS.STEEL_DARK
       context.fillRect(x, y + half - 1, half, 1)
       context.fillRect(x + half - 1, y, 1, half)
@@ -282,10 +320,11 @@ function drawIceCell(context: CanvasRenderingContext2D, originX: number, originY
   context.fillRect(originX, originY, CELL_SIZE, CELL_SIZE)
 
   context.fillStyle = COLORS.ICE_LIGHT
-  context.fillRect(originX + 2, originY + 2, 5, 1)
-  context.fillRect(originX + 2, originY + 2, 1, 5)
-  context.fillRect(originX + 9, originY + 9, 5, 1)
-  context.fillRect(originX + 13, originY + 9, 1, 5)
+  for (let y = 0; y < CELL_SIZE; y += 1) {
+    for (let x = 0; x < CELL_SIZE; x += 1) {
+      if ((x + y) % 4 < 2) context.fillRect(originX + x, originY + y, 1, 1)
+    }
+  }
 }
 
 /** 绘制老鹰基地 */
@@ -294,40 +333,23 @@ export function drawBase(context: CanvasRenderingContext2D, base: Base): void {
   const originY = base.cellY * CELL_SIZE
   const sprite = base.destroyed ? BASE_DESTROYED_SPRITE : BASE_SPRITE
   const color = base.destroyed ? COLORS.BASE_DESTROYED : COLORS.BASE_EAGLE
-  drawMatrix(context, sprite, originX, originY, { '1': color })
-}
-
-/** 道具种类 → 图标矩阵 */
-const POWERUP_ICONS: Readonly<Record<PowerUpKind, readonly string[]>> = {
-  [PowerUpKind.GRENADE]: ICON_GRENADE,
-  [PowerUpKind.HELMET]: ICON_HELMET,
-  [PowerUpKind.SHOVEL]: ICON_SHOVEL,
-  [PowerUpKind.STAR]: ICON_STAR,
-  [PowerUpKind.TANK]: ICON_TANK,
-  [PowerUpKind.TIMER]: ICON_TIMER,
-}
-
-/** 绘制道具：白框 + 居中图标，闪烁隐藏时跳过 */
-export function drawPowerUp(context: CanvasRenderingContext2D, powerUp: PowerUp): void {
-  if (!powerUp.alive || !powerUp.isVisible()) {
-    return
-  }
-
-  const originX = powerUp.cellX * CELL_SIZE
-  const originY = powerUp.cellY * CELL_SIZE
-
-  context.fillStyle = COLORS.POWERUP_FRAME
-  context.fillRect(originX + 1, originY + 1, CELL_SIZE - 2, CELL_SIZE - 2)
-
-  const iconOffset = (CELL_SIZE - POWERUP_ICON_SIZE) / 2
-  const iconColor =
-    powerUp.kind === PowerUpKind.STAR || powerUp.kind === PowerUpKind.TANK
-      ? COLORS.POWERUP_ICON_ALT
-      : COLORS.POWERUP_ICON
-
-  drawMatrix(context, POWERUP_ICONS[powerUp.kind], originX + iconOffset, originY + iconOffset, {
-    '1': iconColor,
+  drawMatrix(context, sprite, originX, originY, {
+    '1': color,
+    '2': COLORS.STEEL_DARK,
+    '3': COLORS.STEEL_LIGHT,
   })
+}
+
+/** 共用完整精灵包含蓝底、内外边框与图标明暗；闪烁时整块隐藏。 */
+export function drawPowerUp(context: CanvasRenderingContext2D, powerUp: PowerUp): void {
+  if (!powerUp.alive || !powerUp.isVisible()) return
+  drawMatrix(
+    context,
+    POWERUP_SPRITES[powerUp.kind],
+    powerUp.cellX * CELL_SIZE,
+    powerUp.cellY * CELL_SIZE,
+    POWERUP_PALETTE,
+  )
 }
 
 /** 绘制爆炸：三层同心方块随进度先扩张后收缩 */

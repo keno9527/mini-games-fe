@@ -4,7 +4,7 @@ export default {
   game: {
     id: 'tank-battle',
     name: '坦克大战',
-    description: '守住老鹰基地，驾驶坦克突破砖墙与钢墙，迎战五关逐步升级的敌军攻势。',
+    description: '重返经典 35 关，守护老鹰基地，击中闪烁坦克获取六种道具，迎战四类敌军。',
     tags: ['动作', '街机', '经典'],
     difficulties: ['经典战役'],
   },

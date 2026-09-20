@@ -12,7 +12,7 @@ import type { Bullet } from '@/games/tank-battle/entity/Bullet.ts'
 import { Explosion } from '@/games/tank-battle/entity/Explosion.ts'
 import type { PowerUp } from '@/games/tank-battle/entity/PowerUp.ts'
 import { Tank } from '@/games/tank-battle/entity/Tank.ts'
-import { Direction, TankSide, type EnemyKind } from '@/games/tank-battle/types.ts'
+import { Direction, TankSide, EnemyKind } from '@/games/tank-battle/types.ts'
 import { TerrainGrid } from '@/games/tank-battle/system/TerrainGrid.ts'
 
 /** 关卡结束的原因 */
@@ -48,6 +48,8 @@ export class World {
   pendingEnemies: EnemyKind[] = []
   /** 本关已被击毁的敌方数量 */
   enemiesKilled = 0
+  stageKills: Record<EnemyKind, number> = { basic: 0, fast: 0, power: 0, armor: 0 }
+  private bonusLifeAwarded = false
 
   /** 敌方冻结剩余帧数（计时器道具） */
   freezeTicks = 0
@@ -89,6 +91,7 @@ export class World {
 
     this.pendingEnemies = [...LEVELS[clampedIndex].enemyQueue].slice(0, ENEMIES_PER_LEVEL)
     this.enemiesKilled = 0
+    this.stageKills = { basic: 0, fast: 0, power: 0, armor: 0 }
 
     this.freezeTicks = 0
     this.shovelTicks = 0
@@ -112,6 +115,7 @@ export class World {
     })
     tank.star = previousStar
     tank.shieldTicks = RESPAWN_SHIELD_TICKS
+    this.terrain.clearSpawnCell(...PLAYER_SPAWN_CELL)
     this.player = tank
   }
 
@@ -151,6 +155,10 @@ export class World {
 
   addScore(amount: number): void {
     this.score += amount
+    if (!this.bonusLifeAwarded && this.score >= 20000) {
+      this.playerLives += 1
+      this.bonusLifeAwarded = true
+    }
     if (this.score > this.highScore) {
       this.highScore = this.score
     }
