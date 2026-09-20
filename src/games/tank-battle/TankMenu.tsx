@@ -1,12 +1,11 @@
 import { useEffect, useRef } from 'react'
-import { ArrowDown, ArrowUp, ArrowLeft, ArrowRight } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import type { TankBattleControllers, TankBattleHandle, TankBattleMenu } from './runtime.ts'
 import type { TankMode } from './core/TankLobby.ts'
 import { LEVELS } from './data/levels.ts'
 import { PLAYER_TANK_SPRITES } from './data/sprites.ts'
-import { drawBase, drawTerrainCell, drawTreeCell, drawMatrix } from './render/drawSprites.ts'
-import { Base } from './entity/Base.ts'
-import { Direction, TerrainKind } from './types.ts'
+import { drawMatrix } from './render/drawSprites.ts'
+import { Direction } from './types.ts'
 import { COLORS } from './render/palette.ts'
 import titleImage from './assets/title.png'
 
@@ -29,31 +28,6 @@ export function TankSprite({
     })
   }, [blue, pointer])
   return <canvas ref={ref} width={16} height={16} className="tank-menu-sprite" aria-hidden="true" />
-}
-
-function BaseScenery() {
-  const ref = useRef<HTMLCanvasElement>(null)
-  useEffect(() => {
-    const ctx = ref.current?.getContext('2d')
-    if (!ctx) return
-    ctx.clearRect(0, 0, 336, 32)
-    for (let x = 0; x < 21; x++) {
-      if (x === 10) continue
-      if ([6, 7, 13, 14].includes(x)) drawTreeCell(ctx, x, 1)
-      else {
-        drawTerrainCell(ctx, x, 1, TerrainKind.BRICK, 0xffff, 0)
-        if (![2, 3, 17, 18].includes(x)) drawTerrainCell(ctx, x, 0, TerrainKind.BRICK, 0xffff, 0)
-      }
-    }
-    ctx.save()
-    const base = new Base()
-    ctx.translate(160 - base.cellX * 16, 16 - base.cellY * 16)
-    drawBase(ctx, base)
-    ctx.restore()
-  }, [])
-  return (
-    <canvas ref={ref} width={336} height={32} className="tank-menu-scenery" aria-hidden="true" />
-  )
 }
 
 interface MenuProps {
@@ -119,148 +93,128 @@ export function ConnectionHint({ controllers }: { controllers: TankBattleControl
 }
 
 export function TankMenu({ menu, controllers, ready, game, focusGame }: MenuProps) {
-  const coop = menu.mode === 'coop'
-  const missing =
-    controllers.bindings[0] === null
-      ? '第一位'
-      : coop && controllers.bindings[1] === null
-        ? '第二位'
-        : null
   const choose = (mode: TankMode) => {
     game?.selectMode(mode)
+    game?.confirm()
     focusGame()
   }
   return (
     <div className="tank-title-screen" aria-label="坦克大战标题菜单">
       <header className="tank-title-heading">
-        <img src={titleImage} alt="BATTLE CITY" />
-        <h2>坦克大战</h2>
+        <h2>
+          <img src={titleImage} alt="BATTLE CITY" />
+        </h2>
       </header>
-      <div className="tank-menu-content">
+      {menu.page === 'modes' ? (
         <nav className="tank-mode-menu" aria-label="游玩模式">
           {(
             [
-              ['single', '单人作战'],
-              ['coop', '双人合作'],
-              ['practice', '关卡练习'],
+              ['single', '1 PLAYER', '单人作战'],
+              ['coop', '2 PLAYERS', '双人合作'],
+              ['practice', 'STAGE SELECT', '关卡练习'],
             ] as const
-          ).map(([mode, label]) => (
+          ).map(([mode, label, name]) => (
             <button
               key={mode}
               type="button"
               disabled={!ready}
+              aria-label={name}
               aria-pressed={menu.mode === mode}
               onClick={() => choose(mode)}
             >
               <span className="tank-menu-pointer">
                 <TankSprite pointer />
               </span>
-              {label}
+              <span>{label}</span>
             </button>
           ))}
         </nav>
-        <div className="tank-join-panel">
-          <h3>
-            {coop ? '合作守护基地' : menu.mode === 'practice' ? '练习你的作战技巧' : '独自守护基地'}
-          </h3>
-          <ControllerStatus controllers={controllers} coop={coop} />
-          {menu.mode === 'practice' && (
-            <div className="tank-stage-select">
-              <button
-                type="button"
-                aria-label="上一关"
-                disabled={menu.practiceStage === 0}
-                onClick={() => game?.setPracticeStage(menu.practiceStage - 1)}
+      ) : (
+        <div className="tank-practice-menu" aria-label="关卡练习选关">
+          <h3>STAGE SELECT</h3>
+          <div className="tank-stage-select">
+            <button
+              type="button"
+              aria-label="上一关"
+              disabled={menu.practiceStage === 0}
+              onClick={() => game?.setPracticeStage(menu.practiceStage - 1)}
+            >
+              <ArrowLeft />
+            </button>
+            <label>
+              <span className="sr-only">练习关卡</span>
+              <select
+                aria-label="练习关卡"
+                value={menu.practiceStage}
+                onChange={(e) => game?.setPracticeStage(Number(e.target.value))}
               >
-                <ArrowLeft />
-              </button>
-              <label>
-                第{' '}
-                <select
-                  aria-label="练习关卡"
-                  value={menu.practiceStage}
-                  onChange={(e) => game?.setPracticeStage(Number(e.target.value))}
-                >
-                  {Array.from({ length: LEVELS.length }, (_, i) => (
-                    <option key={i} value={i}>
-                      {String(i + 1).padStart(2, '0')}
-                    </option>
-                  ))}
-                </select>{' '}
-                关
-              </label>
-              <button
-                type="button"
-                aria-label="下一关"
-                disabled={menu.practiceStage === LEVELS.length - 1}
-                onClick={() => game?.setPracticeStage(menu.practiceStage + 1)}
-              >
-                <ArrowRight />
-              </button>
-            </div>
-          )}
-          <div className="tank-join-message" role="status">
-            <p>
-              {!ready
-                ? '正在准备战场…'
-                : !controllers.canPlay
-                  ? missing
-                    ? `请${coop ? missing : ''}玩家按 A / × 加入`
-                    : '等待手柄读取恢复'
-                  : coop
-                    ? '两位玩家已就绪'
-                    : controllers.bindings[0] === null
-                      ? '按 Enter 开始 · 手柄按 A / × 加入'
-                      : '手柄已就绪，按 A / × 开始'}
-            </p>
-            <small>
-              {coop
-                ? '加入后由 P1 确认开始'
-                : menu.mode === 'practice'
-                  ? '单关练习 · 战绩不计入排行榜'
-                  : '经典战役 · 35 关 · 守住老鹰基地'}
-            </small>
+                {LEVELS.map((_, i) => (
+                  <option key={i} value={i}>
+                    {String(i + 1).padStart(2, '0')}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              aria-label="下一关"
+              disabled={menu.practiceStage === LEVELS.length - 1}
+              onClick={() => game?.setPracticeStage(menu.practiceStage + 1)}
+            >
+              <ArrowRight />
+            </button>
           </div>
-          <ConnectionHint controllers={controllers} />
-          <button
-            type="button"
-            className="tank-menu-start"
-            disabled={!ready || !controllers.canPlay}
-            onClick={() => {
-              game?.confirm()
-              focusGame()
-            }}
-          >
-            {coop ? 'P1 确认开始' : '开始游戏'}
-          </button>
-          {!coop && controllers.bindings[0] !== null && controllers.canPlay && (
-            <button type="button" className="tank-menu-link" onClick={() => game?.useKeyboard()}>
-              使用键盘 / 触控
+          <p>单关练习 · 战绩不计入排行榜</p>
+          <div className="tank-practice-actions">
+            <button
+              type="button"
+              onClick={() => {
+                game?.menuAction('back')
+                focusGame()
+              }}
+            >
+              返回
             </button>
-          )}
-          {!coop && !controllers.canPlay && (
-            <button type="button" className="tank-menu-link" onClick={() => game?.useKeyboard()}>
-              切回键盘 / 触控
+            <button
+              type="button"
+              onClick={() => {
+                game?.confirm()
+                focusGame()
+              }}
+            >
+              开始
             </button>
-          )}
+          </div>
         </div>
+      )}
+      <div className="tank-title-notice" role="status">
+        {!ready
+          ? '正在准备战场…'
+          : menu.awaitingControllers && (
+              <>
+                <p>
+                  {controllers.bindings[0] === null
+                    ? '请连接两只手柄，并按 A / × 激活'
+                    : controllers.bindings[1] === null && menu.mode === 'coop'
+                      ? '请连接第二只手柄，并按 A / × 激活'
+                      : '等待手柄恢复连接'}
+                </p>
+                <ConnectionHint controllers={controllers} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    game?.menuAction('back')
+                    focusGame()
+                  }}
+                >
+                  取消
+                </button>
+              </>
+            )}
       </div>
-      <BaseScenery />
       <footer className="tank-menu-footer">
-        <button
-          type="button"
-          onClick={() => {
-            game?.menuAction('back')
-            focusGame()
-          }}
-        >
-          B / ○ 返回
-        </button>
-        <span>
-          <ArrowUp aria-hidden="true" />
-          <ArrowDown aria-hidden="true" /> 选择{' '}
-          <span className="tank-confirm-hint">A / × 确认</span>
-        </span>
+        <p>{menu.page === 'practice' ? '← → 选关' : '↑ ↓ 选择'} · Enter / A / × 确认</p>
+        <small>点击菜单即可开始</small>
       </footer>
     </div>
   )

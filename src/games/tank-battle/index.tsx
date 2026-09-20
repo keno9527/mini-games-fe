@@ -33,6 +33,8 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
   const [uiState, setUiState] = useState<TankBattleUiState>('title')
   const [menu, setMenu] = useState<TankBattleMenu>({
     mode: 'single',
+    page: 'modes',
+    awaitingControllers: false,
     practiceStage: 0,
     pauseSelection: 0,
     soundEnabled: true,
@@ -96,7 +98,9 @@ export default function TankBattle({ userId, gameId }: GameComponentProps) {
   const inBattle = uiState === 'playing' || uiState === 'paused'
 
   return (
-    <section className="tank-battle-shell overflow-hidden rounded-lg border-4 border-[#4d4d4d] bg-black shadow-[0_8px_0_#050505]">
+    <section
+      className={`tank-battle-shell ${uiState === 'title' ? 'tank-battle-shell--title' : ''} overflow-hidden rounded-lg border-4 border-[#4d4d4d] bg-black shadow-[0_8px_0_#050505]`}
+    >
       <div
         ref={stageRef}
         className={`tank-battle-stage ${uiState === 'title' ? 'is-title' : ''}`}

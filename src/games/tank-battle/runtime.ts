@@ -20,6 +20,8 @@ import { SceneKind, type TankBattleHoldAction } from '@/games/tank-battle/types.
 export type TankBattleUiState = 'title' | 'playing' | 'paused' | 'gameOver'
 export interface TankBattleMenu {
   mode: TankMode
+  page: 'modes' | 'practice'
+  awaitingControllers: boolean
   practiceStage: number
   pauseSelection: number
   soundEnabled: boolean
@@ -62,6 +64,8 @@ export function mountTankBattle(
   const players = lobby.players
   const menu: TankBattleMenu = {
     mode: 'single',
+    page: 'modes',
+    awaitingControllers: false,
     practiceStage: 0,
     pauseSelection: 0,
     soundEnabled: true,
@@ -70,7 +74,7 @@ export function mountTankBattle(
   let previousControllers = ''
   let lastUiState: TankBattleUiState | undefined
   let pending: PadMenuAction[] = []
-  let keyboardDirection = ''
+  let startPending = false
   const isTitle = () => sceneManager.getCurrentKind() === SceneKind.TITLE
   const notifyMenu = () => options.onMenuChange?.({ ...menu })
   const notifyControllers = () => {
@@ -113,6 +117,9 @@ export function mountTankBattle(
     if (!isTitle()) return
     lobby.select(mode)
     menu.mode = mode
+    menu.page = 'modes'
+    menu.awaitingControllers = false
+    startPending = false
     sceneManager.setPlayerCount(lobby.count)
     sceneManager.setPracticeStage(mode === 'practice' ? menu.practiceStage : null)
     notifyMenu()
@@ -136,6 +143,10 @@ export function mountTankBattle(
     players.consume(0)
     players.consume(1)
     sceneManager.returnToTitle()
+    menu.page = 'modes'
+    menu.awaitingControllers = false
+    startPending = false
+    notifyMenu()
     syncUiState()
   }
   const reassignGamepads = () => {
@@ -144,15 +155,40 @@ export function mountTankBattle(
     pending = []
     notifyControllers()
   }
+  // Starting a mode is the consent to assign available controllers. Merely connecting one
+  // or highlighting a mode never starts a session.
+  const requestStart = () => {
+    if (lobby.snapshot.status === 'ready') {
+      for (const device of lobby.snapshot.devices) lobby.join(device.index)
+    }
+    if (lobby.count === 1 && players.getBinding(0) === null) lobby.useKeyboard()
+    menu.awaitingControllers = !lobby.canPlay
+    startPending = lobby.canPlay
+    notifyControllers()
+    notifyMenu()
+  }
   const dispatch = (action: MenuAction) => {
     if (isTitle()) {
-      if (action === 'up' || action === 'down') {
+      if (action === 'back') {
+        menu.awaitingControllers = false
+        startPending = false
+        if (menu.page === 'practice') {
+          menu.page = 'modes'
+          notifyMenu()
+        } else selectMode('single')
+      } else if (menu.page === 'practice') {
+        if (action === 'left' || action === 'right')
+          setPracticeStage(menu.practiceStage + (action === 'left' ? -1 : 1))
+        else if (action === 'confirm') requestStart()
+      } else if (action === 'up' || action === 'down') {
         const modes: TankMode[] = ['single', 'coop', 'practice']
         selectMode(modes[(modes.indexOf(menu.mode) + (action === 'up' ? 2 : 1)) % modes.length])
-      } else if ((action === 'left' || action === 'right') && menu.mode === 'practice') {
-        setPracticeStage(menu.practiceStage + (action === 'left' ? -1 : 1))
-      } else if (action === 'back') selectMode('single')
-      else if (action === 'confirm' && lobby.canPlay) input.requestConfirm()
+      } else if (action === 'confirm') {
+        if (menu.mode === 'practice') {
+          menu.page = 'practice'
+          notifyMenu()
+        } else requestStart()
+      }
     } else if (sceneManager.isPaused()) {
       if (action === 'up' || action === 'down') {
         menu.pauseSelection = (menu.pauseSelection + (action === 'up' ? 3 : 1)) % 4
@@ -183,19 +219,8 @@ export function mountTankBattle(
       let confirm = keyboard.confirmEdge
       let pause = keyboard.pauseEdge || p1.pauseEdge || p2.pauseEdge
       if (menuOpen) {
-        const direction = keyboard.up
-          ? 'up'
-          : keyboard.down
-            ? 'down'
-            : keyboard.left
-              ? 'left'
-              : keyboard.right
-                ? 'right'
-                : ''
-        if (direction && direction !== keyboardDirection) dispatch(direction)
-        keyboardDirection = direction
-        // Handle keyboard menu actions directly; requestConfirm is consumed below on the next tick.
-        if (sceneManager.isPaused() && confirm) {
+        // Menu confirmation and gameplay confirmation have separate queues.
+        if ((isTitle() || sceneManager.isPaused()) && confirm) {
           confirm = false
           dispatch('confirm')
         }
@@ -210,7 +235,7 @@ export function mountTankBattle(
                 ['up', 'down', 'left', 'right'].includes(event.action))
             ) {
               const joined = lobby.join(event.index)
-              if (joined && players.getBinding(0) === event.index && event.action !== 'confirm')
+              if (joined && isTitle() && players.getBinding(0) === event.index)
                 dispatch(event.action)
               notifyControllers()
             }
@@ -225,8 +250,10 @@ export function mountTankBattle(
           pause = false
           confirm = false
         }
-      } else keyboardDirection = ''
+      }
       pending = []
+      confirm ||= startPending
+      startPending = false
       if (lobby.canPlay)
         sceneManager.update({
           up: keyboard.up || p1.up,
@@ -249,6 +276,11 @@ export function mountTankBattle(
     audio.stopAll()
     input.clear()
     pending = []
+    startPending = false
+    if (menu.awaitingControllers) {
+      menu.awaitingControllers = false
+      notifyMenu()
+    }
     sceneManager.suspend()
     syncUiState()
   }
@@ -256,6 +288,7 @@ export function mountTankBattle(
     const update = lobby.update(next)
     if (update.lostBinding || next.status === 'paused' || next.status === 'error') suspend()
     pending.push(...update.actions)
+    if (isTitle() && menu.awaitingControllers && next.status === 'ready') requestStart()
     notifyControllers()
   })
   const handleVisibilityChange = () => {
@@ -267,6 +300,31 @@ export function mountTankBattle(
       loop.start()
     }
   }
+  // Capture short keyboard taps even when the title has not received pointer focus yet.
+  const handleMenuKeyDown = (event: KeyboardEvent) => {
+    if (!isTitle() && !sceneManager.isPaused()) return
+    if (
+      event.target instanceof HTMLElement &&
+      event.target.closest('input, textarea, select, button, a, [contenteditable="true"]')
+    )
+      return
+    const direction = (
+      {
+        ArrowUp: 'up',
+        KeyW: 'up',
+        ArrowDown: 'down',
+        KeyS: 'down',
+        ArrowLeft: 'left',
+        KeyA: 'left',
+        ArrowRight: 'right',
+        KeyD: 'right',
+      } as const
+    )[event.code as 'ArrowUp']
+    if (!direction) return
+    event.preventDefault()
+    if (!event.repeat) dispatch(direction)
+  }
+  window.addEventListener('keydown', handleMenuKeyDown)
   const handlePointerDown = () => audio.unlock()
   window.addEventListener('blur', suspend)
   document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -286,6 +344,7 @@ export function mountTankBattle(
       pixelCanvas.dispose()
       audio.dispose()
       window.removeEventListener('blur', suspend)
+      window.removeEventListener('keydown', handleMenuKeyDown)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       canvas.removeEventListener('pointerdown', handlePointerDown)
     },

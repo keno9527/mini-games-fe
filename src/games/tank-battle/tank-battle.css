@@ -1,5 +1,5 @@
 .game-page--tank-battle .game-stage {
-  max-width: 1450px;
+  max-width: 1280px;
 }
 
 .tank-touch-controls,
@@ -207,9 +207,6 @@
   .tank-powerup-guide {
     grid-template-columns: 1fr;
   }
-  .tank-toolbar {
-    padding: 12px;
-  }
 }
 
 .tank-battle-stage {
@@ -235,64 +232,56 @@
   opacity: 0;
   pointer-events: none;
 }
+.tank-battle-shell--title {
+  max-width: 800px;
+  margin-inline: auto;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
 .tank-title-screen {
   width: 100%;
-  min-height: 620px;
-  border: 16px solid #626262;
-  box-shadow: inset 0 0 0 3px #92928c;
-  padding: 44px 12px 0;
-  color: #d5d5d0;
-  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  min-height: 560px;
+  padding: 36px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: #000;
+  color: #deded8;
+  text-align: center;
 }
 .tank-title-heading {
-  text-align: center;
+  width: min(100%, 480px);
 }
 .tank-title-heading img {
   display: block;
-  width: 76%;
-  height: auto;
-  aspect-ratio: 9 / 1;
+  width: 100%;
+  height: 190px;
   object-fit: cover;
-  margin: 0 auto;
-}
-.tank-title-heading h2 {
-  font-size: clamp(28px, 3.7vw, 52px);
-  letter-spacing: 0.2em;
-  margin: 18px 0 38px;
-  font-weight: 900;
-}
-.tank-menu-content {
-  display: grid;
-  grid-template-columns: 0.85fr 1fr;
-  max-width: 940px;
-  margin: 0 auto 32px;
-  min-height: 315px;
+  image-rendering: pixelated;
 }
 .tank-mode-menu {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 14px;
-  padding: 8px 44px 8px 60px;
-  border-right: 2px solid #30302f;
+  display: grid;
+  gap: 2px;
+  text-align: left;
 }
 .tank-mode-menu button {
   display: flex;
   align-items: center;
-  gap: 22px;
-  min-height: 58px;
-  padding: 4px 8px;
-  font-size: clamp(20px, 2.3vw, 32px);
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  gap: 16px;
+  min-height: 44px;
+  padding: 4px 12px 4px 0;
+  font:
+    bold 21px/1.3 'Courier New',
+    monospace;
+  letter-spacing: 0.04em;
+  color: #deded8;
   white-space: nowrap;
 }
 .tank-menu-pointer {
   visibility: hidden;
-}
-.tank-mode-menu button[aria-pressed='true'] {
-  color: #f2cf64;
 }
 .tank-mode-menu button[aria-pressed='true'] .tank-menu-pointer {
   visibility: visible;
@@ -303,14 +292,54 @@
   image-rendering: pixelated;
   flex-shrink: 0;
 }
-.tank-join-panel {
-  text-align: center;
-  padding: 4px 16px 0 36px;
+.tank-menu-pointer .tank-menu-sprite {
+  width: 28px;
+  height: 28px;
 }
-.tank-join-panel h3 {
-  font-size: clamp(20px, 2.2vw, 30px);
-  font-weight: 700;
-  letter-spacing: 0.12em;
+.tank-title-notice {
+  max-width: 420px;
+  color: #e0bd5a;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.tank-title-notice:empty {
+  display: none;
+}
+.tank-title-notice button {
+  margin-top: 6px;
+  padding: 4px 12px;
+  text-decoration: underline;
+}
+.tank-menu-footer {
+  margin-top: 6px;
+  color: #85857d;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.tank-menu-footer small {
+  display: block;
+  font-size: 11px;
+}
+.tank-practice-menu h3 {
+  font:
+    bold 21px 'Courier New',
+    monospace;
+  letter-spacing: 0.04em;
+}
+.tank-practice-menu > p {
+  color: #85857d;
+  font-size: 12px;
+}
+.tank-practice-actions {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.tank-practice-actions button {
+  min-width: 72px;
+  min-height: 40px;
+  color: #deded8;
 }
 .tank-menu-players {
   display: flex;
@@ -339,61 +368,6 @@
 }
 .tank-player-two {
   color: #70cef2;
-}
-.tank-join-message p {
-  font-size: clamp(16px, 2vw, 28px);
-  line-height: 1.6;
-}
-.tank-join-message small {
-  display: block;
-  color: #aaa;
-  font-size: 20px;
-  margin-top: 8px;
-}
-.tank-menu-start {
-  display: inline-block;
-  border: 1px solid #8b7942;
-  color: #f2cf64;
-  padding: 8px 24px;
-  margin-top: 18px;
-  font-size: 16px;
-  min-height: 42px;
-}
-.tank-menu-start:disabled {
-  display: none;
-}
-.tank-menu-link {
-  display: block;
-  margin: 12px auto 0;
-  color: #c8c8c3;
-  text-decoration: underline;
-  font-size: 13px;
-}
-.tank-menu-scenery {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: 96px;
-  image-rendering: pixelated;
-}
-.tank-menu-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  min-height: 58px;
-  padding: 10px 12px;
-  font-size: 20px;
-}
-.tank-menu-footer > span {
-  display: flex;
-  align-items: center;
-}
-.tank-menu-footer svg {
-  width: 18px;
-}
-.tank-confirm-hint {
-  margin-left: 24px;
 }
 .tank-title-screen button:focus-visible,
 .tank-title-screen select:focus-visible,
@@ -503,65 +477,23 @@
 
 @media (max-width: 700px) {
   .tank-title-screen {
-    border-width: 7px;
-    padding: 24px 8px 0;
-    min-height: 0;
+    min-height: 460px;
+    padding: 28px 16px;
+    gap: 18px;
+  }
+  .tank-title-heading {
+    width: min(100%, 290px);
   }
   .tank-title-heading img {
-    width: 98%;
-  }
-  .tank-title-heading h2 {
-    font-size: 28px;
-    margin: 18px 0 24px;
-  }
-  .tank-menu-content {
-    grid-template-columns: 1fr;
-    min-height: 0;
-    margin-bottom: 24px;
-  }
-  .tank-mode-menu {
-    flex-direction: row;
-    border-right: 0;
-    border-bottom: 1px solid #333;
-    padding: 0 0 16px;
-    gap: 6px;
-    justify-content: space-around;
+    height: 140px;
   }
   .tank-mode-menu button {
-    font-size: 16px;
-    letter-spacing: 0;
+    font-size: 18px;
+    gap: 12px;
     min-height: 44px;
-    padding: 4px;
-    gap: 0;
-  }
-  .tank-menu-pointer {
-    display: none;
-  }
-  .tank-mode-menu button[aria-pressed='true'] {
-    border-bottom: 2px solid #f2cf64;
-  }
-  .tank-join-panel {
-    padding: 22px 0 0;
-  }
-  .tank-menu-players {
-    margin: 20px auto;
   }
   .tank-menu-players > div {
     font-size: 17px;
-  }
-  .tank-join-message small {
-    font-size: 13px;
-  }
-  .tank-menu-footer {
-    font-size: 12px;
-    padding: 8px 0;
-    min-height: 48px;
-  }
-  .tank-confirm-hint {
-    margin-left: 8px;
-  }
-  .tank-menu-scenery {
-    max-height: none;
   }
   .tank-pause-screen {
     position: absolute;

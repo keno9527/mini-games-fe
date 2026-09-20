@@ -22,7 +22,7 @@ function pad(index: number, buttons: number[] = []): Gamepad {
   } as Gamepad
 }
 
-test('runtime joins without auto-start, reserves P1 confirmation, pauses on loss and restores the missing role', () => {
+test('runtime starts a selected mode with available controllers and preserves explicit reconnection during play', () => {
   const globals = [
     'window',
     'document',
@@ -90,23 +90,16 @@ test('runtime joins without auto-start, reserves P1 confirmation, pauses on loss
   }
   try {
     handle.selectMode('coop')
-    handle.confirm()
-    frames()
-    assert.equal(state, 'title')
     send(pad(0), pad(1))
+    assert.equal(
+      state,
+      'title',
+      'connecting controllers or highlighting a mode must not start play',
+    )
+    assert.deepEqual(controllers?.bindings, [null, null])
     send(pad(0, [0]), pad(1))
-    assert.deepEqual(controllers?.bindings, [0, null])
-    assert.equal(state, 'title')
-    send(pad(0), pad(1))
-    send(pad(0), pad(1, [0]))
     assert.deepEqual(controllers?.bindings, [0, 1])
     assert.equal(controllers?.canPlay, true)
-    assert.equal(state, 'title', 'P2 joining must not start the game')
-    send(pad(0), pad(1))
-    send(pad(0), pad(1, [0]))
-    assert.equal(state, 'title', 'P2 cannot confirm the start')
-    send(pad(0), pad(1))
-    send(pad(0, [0]), pad(1))
     assert.equal(state, 'playing')
     send(pad(0), pad(1))
     send(pad(1))
@@ -142,6 +135,10 @@ test('runtime joins without auto-start, reserves P1 confirmation, pauses on loss
     assert.deepEqual(controllers?.bindings, [0, null])
     handle.confirm()
     frames()
+    assert.equal(state, 'title')
+    assert.equal(menu?.page, 'practice', 'practice opens a separate stage picker')
+    handle.confirm()
+    frames()
     assert.equal(state, 'playing')
     handle.togglePause()
     frames()
@@ -154,6 +151,49 @@ test('runtime joins without auto-start, reserves P1 confirmation, pauses on loss
     handle.confirm()
     frames()
     assert.equal(state, 'playing')
+    handle.togglePause()
+    frames()
+    handle.returnToTitle()
+    handle.selectMode('coop')
+    assert.equal(menu?.awaitingControllers, false)
+    handle.confirm()
+    frames()
+    assert.equal(menu?.awaitingControllers, true)
+    assert.equal(state, 'title')
+    send(pad(0))
+    assert.equal(state, 'title', 'one controller cannot launch coop')
+    handle.menuAction('back')
+    send(pad(0), pad(1))
+    assert.equal(state, 'title', 'cancelling the prompt prevents late devices from starting play')
+    assert.equal(menu?.awaitingControllers, false)
+    handle.selectMode('coop')
+    handle.confirm()
+    frames()
+    assert.equal(state, 'playing')
+    handle.togglePause()
+    frames()
+    handle.returnToTitle()
+    handle.selectMode('coop')
+    send()
+    handle.confirm()
+    frames()
+    send(pad(0))
+    assert.equal(state, 'title')
+    send(pad(0), pad(1, [0]))
+    assert.equal(
+      state,
+      'playing',
+      'a requested coop game starts when the missing controller becomes available',
+    )
+    handle.togglePause()
+    frames()
+    handle.returnToTitle()
+    handle.selectMode('single')
+    handle.useKeyboard()
+    send(pad(0), pad(1))
+    send(pad(0, [0]), pad(1))
+    assert.equal(state, 'playing', 'a single confirm press assigns P1 and starts a solo game')
+    assert.deepEqual(controllers?.bindings, [0, null])
   } finally {
     handle.destroy()
     for (const [key, descriptor] of originals) {

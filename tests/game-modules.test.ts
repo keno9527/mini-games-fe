@@ -170,7 +170,7 @@ test('tank battle runtime releases browser resources when unmounted', async () =
   const handle = runtime.mountTankBattle(canvas, stage)
 
   assert.equal(animationFrameRequests, 1)
-  assert.equal(windowListeners.get('keydown')?.size, 1)
+  assert.equal(windowListeners.get('keydown')?.size, 2)
   assert.equal(windowListeners.get('resize')?.size, 1)
   assert.equal(documentListeners.get('visibilitychange')?.size, 1)
   assert.equal(canvasListeners.get('pointerdown')?.size, 1)
