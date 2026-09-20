@@ -15,6 +15,8 @@ export type TankBattleUiState = 'title' | 'playing' | 'paused' | 'gameOver'
 
 export interface TankBattleHandle {
   destroy(): void
+  setViewport(viewport: HTMLElement | null): void
+  suspend(): void
   setHeldAction(action: TankBattleHoldAction, active: boolean): void
   confirm(): void
   togglePause(): void
@@ -169,6 +171,8 @@ export function mountTankBattle(
 
   let destroyed = false
   return {
+    setViewport: (viewport) => pixelCanvas.setViewport(viewport),
+    suspend,
     destroy(): void {
       if (destroyed) {
         return

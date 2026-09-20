@@ -22,6 +22,7 @@ import { drawHud } from '../src/games/tank-battle/render/Hud.ts'
 import { renderBattlefield } from '../src/games/tank-battle/render/renderBattlefield.ts'
 import { BattleScene } from '../src/games/tank-battle/scene/BattleScene.ts'
 import { AudioEngine } from '../src/games/tank-battle/core/AudioEngine.ts'
+import { PixelCanvas } from '../src/games/tank-battle/render/PixelCanvas.ts'
 import {
   TerrainKind,
   PowerUpKind,
@@ -639,4 +640,104 @@ test('chip audio schedules melodies in sequence, mutes active voices and closes 
     if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)
     else Reflect.deleteProperty(globalThis, 'window')
   }
+})
+
+test('battle canvas fits viewport and controls, grows after shrinking, and restores title sizing', () => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const listeners = new Map<string, () => void>()
+  const properties = new Map<string, string>()
+  const viewport = { clientWidth: 1440, clientHeight: 900 }
+  const toolbar = { offsetHeight: 50 }
+  const controls = { offsetHeight: 0 }
+  let sideWidth = '0'
+  const shell = {
+    style: {
+      setProperty: (name: string, value: string) => properties.set(name, value),
+      removeProperty: (name: string) => properties.delete(name),
+    },
+    querySelectorAll: () => [toolbar, controls],
+  }
+  const stage = {
+    clientWidth: 1200,
+    parentElement: shell,
+    getBoundingClientRect: () => ({ top: 260 }),
+  }
+  const context = { imageSmoothingEnabled: true }
+  const canvas = {
+    width: 0,
+    height: 0,
+    style: { width: '', height: '' },
+    getContext: () => context,
+  }
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      innerWidth: 1440,
+      innerHeight: 900,
+      addEventListener: (name: string, fn: () => void) => listeners.set(name, fn),
+      removeEventListener: (name: string) => listeners.delete(name),
+      getComputedStyle: (element: unknown) => ({
+        paddingLeft: element === viewport ? '12px' : '6px',
+        paddingRight: element === viewport ? '12px' : '6px',
+        paddingTop: element === viewport ? '12px' : '6px',
+        paddingBottom: element === viewport ? '12px' : '6px',
+        borderLeftWidth: '2px',
+        borderRightWidth: '2px',
+        borderTopWidth: '2px',
+        borderBottomWidth: '2px',
+        getPropertyValue: () => sideWidth,
+      }),
+    },
+  })
+  let pixelCanvas: PixelCanvas | undefined
+  try {
+    pixelCanvas = new PixelCanvas(
+      canvas as unknown as HTMLCanvasElement,
+      stage as unknown as HTMLElement,
+    )
+    assert.equal(canvas.style.width, '512px')
+    pixelCanvas.setViewport(viewport as unknown as HTMLElement)
+    assert.equal(canvas.style.width, '864px')
+    assert.equal(canvas.style.height, '810px')
+
+    // 手机竖屏为下方触控按钮留出空间，并保留完整地图。
+    viewport.clientWidth = 390
+    viewport.clientHeight = 568
+    toolbar.offsetHeight = 82
+    controls.offsetHeight = 164
+    listeners.get('resize')!()
+    assert.equal(canvas.style.height, '282px')
+    assert.equal(parseFloat(canvas.style.width) / parseFloat(canvas.style.height), 256 / 240)
+
+    // 横屏从宽度扣除左右触控区；不能使用旧的至少两倍缩放导致溢出。
+    viewport.clientWidth = 650
+    viewport.clientHeight = 375
+    controls.offsetHeight = 0
+    sideWidth = '272'
+    listeners.get('resize')!()
+    assert.equal(canvas.style.height, '253px')
+    assert.ok(parseFloat(canvas.style.width) + 272 + 16 <= 626)
+
+    // 重新放大窗口时必须根据独立视口测量，而非已缩小的面板。
+    stage.clientWidth = 300
+    viewport.clientWidth = 1440
+    viewport.clientHeight = 900
+    toolbar.offsetHeight = 50
+    sideWidth = '0'
+    listeners.get('resize')!()
+    assert.equal(canvas.style.width, '864px')
+    assert.equal(canvas.width, 256)
+    assert.equal(canvas.height, 240)
+    assert.equal(context.imageSmoothingEnabled, false)
+
+    stage.clientWidth = 1200
+    pixelCanvas.setViewport(null)
+    assert.equal(canvas.style.width, '512px')
+    assert.equal(properties.has('--tank-panel-width'), false)
+  } finally {
+    pixelCanvas?.dispose()
+    if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)
+    else Reflect.deleteProperty(globalThis, 'window')
+  }
+  assert.equal(listeners.size, 0)
 })

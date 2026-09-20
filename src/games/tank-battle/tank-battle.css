@@ -272,6 +272,177 @@
   }
 }
 
+.tank-player-frame--battle {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  height: 100dvh;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+  background: #1c1d1b;
+}
+.tank-player-frame--battle .tank-battle-shell {
+  --tank-side-width: 0;
+  width: var(--tank-panel-width, 100%);
+  max-width: 100%;
+  flex: none;
+  border-width: 2px;
+  border-radius: 4px;
+  box-shadow: 0 8px 32px #0005;
+}
+.tank-player-frame--battle .tank-toolbar {
+  gap: 6px 12px;
+  padding: 6px 10px;
+}
+.tank-player-frame--battle .tank-mode {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  gap: 10px;
+}
+.tank-battle-mode-label {
+  color: #d5c58f;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+.tank-player-frame--battle .tank-toolbar-actions {
+  gap: 4px;
+}
+.tank-player-frame--battle .tank-toolbar button {
+  padding: 6px 8px;
+  min-height: 36px;
+}
+.tank-player-frame--battle .tank-battle-stage {
+  min-height: 0;
+  padding: 6px;
+  overflow: hidden;
+}
+.tank-player-frame--battle .tank-battle-help {
+  display: none;
+}
+.tank-battle-canvas:focus-visible {
+  outline: 2px solid #e2cd89;
+  outline-offset: 2px;
+}
+.tank-help-dialog {
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid #626252;
+  border-radius: 8px;
+  background: #1b1c18;
+  color: #bcbcb5;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.tank-help-dialog::backdrop {
+  background: #000b;
+}
+.tank-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: #e2cd89;
+}
+.tank-help-header h2 {
+  font-size: 18px;
+}
+.tank-help-header button {
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 1px solid #626252;
+  border-radius: 4px;
+}
+.tank-help-dialog p {
+  margin-top: 12px;
+}
+.tank-help-dialog :focus-visible {
+  outline: 2px solid #e2cd89;
+  outline-offset: 3px;
+}
+@media (max-width: 700px), (pointer: coarse) {
+  .tank-player-frame--battle .tank-toolbar button {
+    min-height: 44px;
+    padding: 6px;
+    gap: 4px;
+    font-size: 12px;
+  }
+  .tank-player-frame--battle .tank-touch-controls {
+    padding: 8px;
+    min-height: 164px;
+    gap: 8px;
+  }
+  .tank-player-frame--battle .tank-touch-dpad {
+    grid-template: repeat(2, 52px) / repeat(3, 52px);
+  }
+  .tank-player-frame--battle .tank-touch-direction {
+    min-width: 52px;
+    min-height: 52px;
+  }
+  .tank-player-frame--battle .tank-eyebrow {
+    letter-spacing: 1px;
+  }
+}
+@media (max-width: 480px) {
+  .tank-player-frame--battle .tank-toolbar-label {
+    display: none;
+  }
+  .tank-player-frame--battle .tank-toolbar button {
+    min-width: 44px;
+  }
+}
+@media (orientation: landscape) and (max-height: 600px) and (pointer: coarse),
+  (orientation: landscape) and (max-height: 500px) and (max-width: 700px) {
+  .tank-player-frame--battle .tank-battle-shell {
+    --tank-side-width: 272;
+    display: grid;
+    grid-template-columns: 166px minmax(0, 1fr) 106px;
+    align-items: center;
+  }
+  .tank-player-frame--battle [data-tank-chrome] {
+    grid-column: 1 / -1;
+  }
+  .tank-player-frame--battle .tank-battle-stage {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .tank-player-frame--battle .tank-touch-controls {
+    display: contents;
+  }
+  .tank-player-frame--battle .tank-touch-dpad {
+    display: grid;
+    grid-template: repeat(2, 48px) / repeat(3, 48px);
+    gap: 4px;
+    justify-content: center;
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .tank-player-frame--battle .tank-touch-direction {
+    min-width: 48px;
+    min-height: 48px;
+  }
+  .tank-player-frame--battle .tank-touch-actions {
+    grid-column: 3;
+    grid-row: 3;
+  }
+  .tank-player-frame--battle .tank-touch-pause,
+  .tank-player-frame--battle .tank-touch-start {
+    display: none;
+  }
+}
+
 /* 地图工坊与游戏共用像素画面，工具使用可读的网页控件。 */
 .tank-editor-shell {
   background: #141a19;

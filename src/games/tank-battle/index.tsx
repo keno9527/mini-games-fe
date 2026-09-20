@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
   ArrowUp,
   Crosshair,
+  ArrowsOut,
+  ArrowsIn,
+  Question,
   Pause,
   Play,
   SpeakerHigh,
@@ -92,6 +95,8 @@ function TankBattlePlayer({
   onReturn,
   returnLabel,
 }: PlayerProps) {
+  const frameRef = useRef<HTMLDivElement>(null)
+  const helpRef = useRef<HTMLDialogElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef<TankBattleHandle | null>(null)
@@ -104,6 +109,9 @@ function TankBattlePlayer({
   })
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [practiceStage, setPracticeStage] = useState('campaign')
+  const [fullscreen, setFullscreen] = useState(false)
+  const [fullscreenError, setFullscreenError] = useState('')
+  const compactBattle = uiState !== 'title'
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -153,242 +161,367 @@ function TankBattlePlayer({
     }
   }, [gameId, userId, customMap])
 
+  useLayoutEffect(() => {
+    if (!ready) return
+    gameRef.current?.setViewport(compactBattle ? frameRef.current : null)
+    if (compactBattle) canvasRef.current?.focus({ preventScroll: true })
+  }, [compactBattle, ready])
+
+  useEffect(() => {
+    if (!compactBattle) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [compactBattle])
+
+  useEffect(() => {
+    const updateFullscreen = () => setFullscreen(document.fullscreenElement === frameRef.current)
+    document.addEventListener('fullscreenchange', updateFullscreen)
+    return () => document.removeEventListener('fullscreenchange', updateFullscreen)
+  }, [])
+
+  const toggleFullscreen = async () => {
+    setFullscreenError('')
+    try {
+      if (document.fullscreenElement === frameRef.current) await document.exitFullscreen()
+      else await frameRef.current?.requestFullscreen()
+      canvasRef.current?.focus({ preventScroll: true })
+    } catch {
+      setFullscreenError('无法进入全屏，请继续使用当前窗口。')
+    }
+  }
+
+  const returnToTitle = async () => {
+    if (document.fullscreenElement === frameRef.current) {
+      try {
+        await document.exitFullscreen()
+      } catch {
+        // 返回标题仍可进行，浏览器也可通过 Esc 退出全屏。
+      }
+    }
+    setFullscreenError('')
+    gameRef.current?.returnToTitle()
+  }
+
   const setHeldAction = useCallback((action: TankBattleHoldAction, active: boolean) => {
     gameRef.current?.setHeldAction(action, active)
   }, [])
   const inBattle = uiState === 'playing' || uiState === 'paused'
 
   return (
-    <section className="tank-battle-shell overflow-hidden rounded-lg border-4 border-[#4d4d4d] bg-black shadow-[0_8px_0_#050505]">
-      <div className="tank-toolbar">
-        <div className="tank-mode">
-          <span className="tank-eyebrow">BATTLE CITY · 1985</span>
-          <label>
-            <span className="sr-only">战役或关卡练习</span>
-            <select
-              aria-label="战役或关卡练习"
-              disabled={!ready || inBattle || Boolean(customMap)}
-              value={customMap ? 'custom' : practiceStage}
-              onChange={(event) => {
-                setPracticeStage(event.target.value)
-                gameRef.current?.setPracticeStage(
-                  event.target.value === 'campaign' ? null : Number(event.target.value),
-                )
+    <div
+      ref={frameRef}
+      className={`tank-player-frame${compactBattle ? ' tank-player-frame--battle' : ''}`}
+    >
+      <section className="tank-battle-shell overflow-hidden rounded-lg border-4 border-[#4d4d4d] bg-black shadow-[0_8px_0_#050505]">
+        <div className="tank-toolbar" data-tank-chrome>
+          <div className="tank-mode">
+            <span className="tank-eyebrow">BATTLE CITY · 1985</span>
+            {!compactBattle && (
+              <label>
+                <span className="sr-only">战役或关卡练习</span>
+                <select
+                  aria-label="战役或关卡练习"
+                  disabled={!ready || inBattle || Boolean(customMap)}
+                  value={customMap ? 'custom' : practiceStage}
+                  onChange={(event) => {
+                    setPracticeStage(event.target.value)
+                    gameRef.current?.setPracticeStage(
+                      event.target.value === 'campaign' ? null : Number(event.target.value),
+                    )
+                  }}
+                >
+                  {customMap && <option value="custom">自定义 · {customMap.name}</option>}
+                  <option value="campaign">经典战役 · 35 关</option>
+                  {LEVELS.map((_, index) => (
+                    <option key={index} value={index}>
+                      关卡练习 · 第 {index + 1} 关
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {compactBattle && (
+              <span className="tank-battle-mode-label">
+                {customMap
+                  ? customMap.name
+                  : practiceStage === 'campaign'
+                    ? '经典战役'
+                    : `关卡练习 · 第 ${Number(practiceStage) + 1} 关`}
+              </span>
+            )}
+          </div>
+          <div className="tank-toolbar-actions">
+            {!customMap && !compactBattle && (
+              <>
+                <button disabled={!ready} onClick={onEditor}>
+                  地图编辑
+                </button>
+                <button disabled={!ready} onClick={onLibrary}>
+                  我的地图
+                </button>
+              </>
+            )}
+            {customMap && <button onClick={onReturn}>{returnLabel}</button>}
+            <button
+              type="button"
+              disabled={!ready || !controllers.canPlay}
+              onClick={() => {
+                if (inBattle) gameRef.current?.togglePause()
+                else gameRef.current?.confirm()
+                canvasRef.current?.focus({ preventScroll: true })
               }}
             >
-              {customMap && <option value="custom">自定义 · {customMap.name}</option>}
-              <option value="campaign">经典战役 · 35 关</option>
-              {LEVELS.map((_, index) => (
-                <option key={index} value={index}>
-                  关卡练习 · 第 {index + 1} 关
-                </option>
-              ))}
-            </select>
-          </label>
+              {uiState === 'playing' ? (
+                <Pause size={18} aria-hidden="true" />
+              ) : (
+                <Play size={18} aria-hidden="true" />
+              )}
+              {uiState === 'playing'
+                ? '暂停'
+                : uiState === 'paused'
+                  ? '继续'
+                  : uiState === 'gameOver'
+                    ? '再来一局'
+                    : '开始游戏'}
+            </button>
+            <button
+              type="button"
+              aria-label={soundEnabled ? '关闭音效' : '开启音效'}
+              aria-pressed={soundEnabled}
+              disabled={!ready}
+              onClick={() => {
+                gameRef.current?.setSoundEnabled(!soundEnabled)
+                setSoundEnabled(!soundEnabled)
+              }}
+            >
+              {soundEnabled ? (
+                <SpeakerHigh size={18} aria-hidden="true" />
+              ) : (
+                <SpeakerSlash size={18} aria-hidden="true" />
+              )}
+              <span className="tank-toolbar-label">
+                {soundEnabled ? (compactBattle ? '音效' : '音效开') : '静音'}
+              </span>
+            </button>
+            {compactBattle && (
+              <>
+                {document.fullscreenEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => void toggleFullscreen()}
+                    aria-label={fullscreen ? '退出全屏' : '进入全屏'}
+                  >
+                    {fullscreen ? (
+                      <ArrowsIn size={18} aria-hidden="true" />
+                    ) : (
+                      <ArrowsOut size={18} aria-hidden="true" />
+                    )}
+                    <span className="tank-toolbar-label">{fullscreen ? '退出全屏' : '全屏'}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  aria-label="帮助"
+                  onClick={() => {
+                    gameRef.current?.suspend()
+                    helpRef.current?.showModal()
+                  }}
+                >
+                  <Question size={18} aria-hidden="true" />
+                  <span className="tank-toolbar-label">帮助</span>
+                </button>
+              </>
+            )}
+            {(uiState === 'paused' || uiState === 'gameOver') && !customMap && (
+              <button type="button" aria-label="返回标题" onClick={() => void returnToTitle()}>
+                <ArrowLeft size={18} aria-hidden="true" />
+                <span className="tank-toolbar-label">返回标题</span>
+              </button>
+            )}
+          </div>
         </div>
-        <div className="tank-toolbar-actions">
-          {!customMap && !inBattle && (
+        {(customMap || practiceStage !== 'campaign') && (
+          <p className="tank-practice-note" data-tank-chrome>
+            {customMap ? `自定义地图 · ${customMap.name}` : '单关练习'} · 三条生命 ·
+            战绩不计入排行榜
+            {customMap && ' · 试玩破坏不会写回原稿'}
+          </p>
+        )}
+        {fullscreenError && (
+          <p className="tank-practice-note" role="status" data-tank-chrome>
+            {fullscreenError}
+          </p>
+        )}
+        <div
+          ref={stageRef}
+          className="tank-battle-stage flex min-h-[240px] w-full items-center justify-center overflow-auto bg-black p-3 md:p-5"
+        >
+          <canvas
+            ref={canvasRef}
+            tabIndex={0}
+            className="tank-battle-canvas block max-w-none [image-rendering:pixelated]"
+            aria-label="坦克大战游戏画布"
+          />
+        </div>
+        <div className="tank-battle-help grid gap-2 border-t-2 border-[#343434] bg-[#111] px-4 py-3 font-mono-crt text-sm tracking-wide text-[#d8d8d8] md:grid-cols-2">
+          <p className="tank-keyboard-help">移动：方向键 / WASD</p>
+          <p className="tank-keyboard-help">开始：Enter · 开火：空格 / J · 暂停：P / Esc</p>
+          <p className="tank-touch-help">左侧方向键移动，右侧按键开火</p>
+        </div>
+        <div className="tank-touch-controls" aria-label="坦克大战触控操作" data-tank-chrome>
+          {!inBattle ? (
+            <button
+              type="button"
+              className="tank-touch-start"
+              disabled={!ready || !controllers.canPlay}
+              onClick={() => gameRef.current?.confirm()}
+            >
+              <Play size={24} weight="fill" aria-hidden="true" />
+              {uiState === 'gameOver' ? '重新挑战' : '开始游戏'}
+            </button>
+          ) : (
             <>
-              <button disabled={!ready} onClick={onEditor}>
-                地图编辑
-              </button>
-              <button disabled={!ready} onClick={onLibrary}>
-                我的地图
-              </button>
+              <div className="tank-touch-dpad" aria-label="移动方向">
+                <HoldButton
+                  action="up"
+                  label="向上移动"
+                  disabled={uiState === 'paused' || !controllers.canPlay}
+                  onAction={setHeldAction}
+                >
+                  <ArrowUp size={28} weight="bold" aria-hidden="true" />
+                </HoldButton>
+                <HoldButton
+                  action="left"
+                  label="向左移动"
+                  disabled={uiState === 'paused' || !controllers.canPlay}
+                  onAction={setHeldAction}
+                >
+                  <ArrowLeft size={28} weight="bold" aria-hidden="true" />
+                </HoldButton>
+                <HoldButton
+                  action="down"
+                  label="向下移动"
+                  disabled={uiState === 'paused' || !controllers.canPlay}
+                  onAction={setHeldAction}
+                >
+                  <ArrowDown size={28} weight="bold" aria-hidden="true" />
+                </HoldButton>
+                <HoldButton
+                  action="right"
+                  label="向右移动"
+                  disabled={uiState === 'paused' || !controllers.canPlay}
+                  onAction={setHeldAction}
+                >
+                  <ArrowRight size={28} weight="bold" aria-hidden="true" />
+                </HoldButton>
+              </div>
+              <div className="tank-touch-actions">
+                <HoldButton
+                  action="fire"
+                  label="持续开火"
+                  disabled={uiState === 'paused' || !controllers.canPlay}
+                  onAction={setHeldAction}
+                  fire
+                >
+                  <Crosshair size={34} weight="bold" aria-hidden="true" />
+                  <span>开火</span>
+                </HoldButton>
+                <button
+                  type="button"
+                  className="tank-touch-pause"
+                  disabled={!controllers.canPlay}
+                  onClick={() => gameRef.current?.togglePause()}
+                >
+                  {uiState === 'paused' ? (
+                    <Play size={20} weight="fill" aria-hidden="true" />
+                  ) : (
+                    <Pause size={20} weight="fill" aria-hidden="true" />
+                  )}
+                  {uiState === 'paused' ? '继续' : '暂停'}
+                </button>
+              </div>
             </>
           )}
-          {customMap && <button onClick={onReturn}>{returnLabel}</button>}
-          <button
-            type="button"
-            disabled={!ready || !controllers.canPlay}
-            onClick={() => {
-              if (inBattle) gameRef.current?.togglePause()
-              else gameRef.current?.confirm()
-              canvasRef.current?.focus({ preventScroll: true })
-            }}
-          >
-            {uiState === 'playing' ? (
-              <Pause size={18} aria-hidden="true" />
-            ) : (
-              <Play size={18} aria-hidden="true" />
-            )}
-            {uiState === 'playing'
-              ? '暂停'
-              : uiState === 'paused'
-                ? '继续'
-                : uiState === 'gameOver'
-                  ? '再来一局'
-                  : '开始游戏'}
-          </button>
-          <button
-            type="button"
-            aria-label={soundEnabled ? '关闭音效' : '开启音效'}
-            aria-pressed={soundEnabled}
-            disabled={!ready}
-            onClick={() => {
-              gameRef.current?.setSoundEnabled(!soundEnabled)
-              setSoundEnabled(!soundEnabled)
-            }}
-          >
-            {soundEnabled ? (
-              <SpeakerHigh size={18} aria-hidden="true" />
-            ) : (
-              <SpeakerSlash size={18} aria-hidden="true" />
-            )}
-            {soundEnabled ? '音效开' : '静音'}
-          </button>
-          {uiState === 'paused' && !customMap && (
-            <button type="button" onClick={() => gameRef.current?.returnToTitle()}>
-              返回标题
-            </button>
-          )}
         </div>
-      </div>
-      {(customMap || practiceStage !== 'campaign') && (
-        <p className="tank-practice-note">
-          {customMap ? `自定义地图 · ${customMap.name}` : '单关练习'} · 三条生命 · 战绩不计入排行榜
-          {customMap && ' · 试玩破坏不会写回原稿'}
-        </p>
-      )}
-      <div
-        ref={stageRef}
-        className="tank-battle-stage flex min-h-[240px] w-full items-center justify-center overflow-auto bg-black p-3 md:p-5"
-      >
-        <canvas
-          ref={canvasRef}
-          tabIndex={0}
-          className="tank-battle-canvas block max-w-none [image-rendering:pixelated]"
-          aria-label="坦克大战游戏画布"
-        />
-      </div>
-      <div className="tank-battle-help grid gap-2 border-t-2 border-[#343434] bg-[#111] px-4 py-3 font-mono-crt text-sm tracking-wide text-[#d8d8d8] md:grid-cols-2">
-        <p className="tank-keyboard-help">移动：方向键 / WASD</p>
-        <p className="tank-keyboard-help">开始：Enter · 开火：空格 / J · 暂停：P / Esc</p>
-        <p className="tank-touch-help">左侧方向键移动，右侧按键开火</p>
-      </div>
-      <div className="tank-touch-controls" aria-label="坦克大战触控操作">
-        {!inBattle ? (
-          <button
-            type="button"
-            className="tank-touch-start"
-            disabled={!ready || !controllers.canPlay}
-            onClick={() => gameRef.current?.confirm()}
-          >
-            <Play size={24} weight="fill" aria-hidden="true" />
-            {uiState === 'gameOver' ? '重新挑战' : '开始游戏'}
-          </button>
-        ) : (
-          <>
-            <div className="tank-touch-dpad" aria-label="移动方向">
-              <HoldButton
-                action="up"
-                label="向上移动"
-                disabled={uiState === 'paused' || !controllers.canPlay}
-                onAction={setHeldAction}
-              >
-                <ArrowUp size={28} weight="bold" aria-hidden="true" />
-              </HoldButton>
-              <HoldButton
-                action="left"
-                label="向左移动"
-                disabled={uiState === 'paused' || !controllers.canPlay}
-                onAction={setHeldAction}
-              >
-                <ArrowLeft size={28} weight="bold" aria-hidden="true" />
-              </HoldButton>
-              <HoldButton
-                action="down"
-                label="向下移动"
-                disabled={uiState === 'paused' || !controllers.canPlay}
-                onAction={setHeldAction}
-              >
-                <ArrowDown size={28} weight="bold" aria-hidden="true" />
-              </HoldButton>
-              <HoldButton
-                action="right"
-                label="向右移动"
-                disabled={uiState === 'paused' || !controllers.canPlay}
-                onAction={setHeldAction}
-              >
-                <ArrowRight size={28} weight="bold" aria-hidden="true" />
-              </HoldButton>
-            </div>
-            <div className="tank-touch-actions">
-              <HoldButton
-                action="fire"
-                label="持续开火"
-                disabled={uiState === 'paused' || !controllers.canPlay}
-                onAction={setHeldAction}
-                fire
-              >
-                <Crosshair size={34} weight="bold" aria-hidden="true" />
-                <span>开火</span>
-              </HoldButton>
-              <button
-                type="button"
-                className="tank-touch-pause"
-                disabled={!controllers.canPlay}
-                onClick={() => gameRef.current?.togglePause()}
-              >
-                {uiState === 'paused' ? (
-                  <Play size={20} weight="fill" aria-hidden="true" />
-                ) : (
-                  <Pause size={20} weight="fill" aria-hidden="true" />
-                )}
-                {uiState === 'paused' ? '继续' : '暂停'}
-              </button>
-            </div>
-          </>
+        {!compactBattle && (
+          <details className="tank-field-guide">
+            <summary>道具与作战指南</summary>
+            <FieldGuide />
+          </details>
         )}
-      </div>
-      <details className="tank-field-guide">
-        <summary>道具与作战指南</summary>
-        <p>守住老鹰，消灭每关 20 辆敌军。击中红色闪烁坦克会出现道具，拾取获得 500 分。</p>
-        <div className="tank-powerup-guide">
-          {[
-            [POWERUP_SPRITES[PowerUpKind.STAR], '星星', '一星快弹、二星双发、三星破钢'],
-            [POWERUP_SPRITES[PowerUpKind.HELMET], '头盔', '短暂无敌，闪烁护盾保护坦克'],
-            [POWERUP_SPRITES[PowerUpKind.SHOVEL], '铲子', '重建基地钢墙，倒计时后恢复砖墙'],
-            [POWERUP_SPRITES[PowerUpKind.TIMER], '时钟', '冻结敌方坦克，已发射的炮弹仍在飞行'],
-            [POWERUP_SPRITES[PowerUpKind.GRENADE], '手雷', '清除已出场敌军，不增加击杀分'],
-            [POWERUP_SPRITES[PowerUpKind.TANK], '坦克', '增加一条生命'],
-          ].map(([icon, name, description]) => (
-            <div key={name as string} className="tank-guide-item">
-              <svg
-                viewBox="0 0 16 16"
-                width="32"
-                height="32"
-                aria-hidden="true"
-                shapeRendering="crispEdges"
-              >
-                {(icon as readonly string[]).flatMap((row, y) =>
-                  [...row].map((pixel, x) =>
-                    POWERUP_PALETTE[pixel] ? (
-                      <rect
-                        key={`${x}-${y}`}
-                        x={x}
-                        y={y}
-                        width="1"
-                        height="1"
-                        fill={POWERUP_PALETTE[pixel]}
-                      />
-                    ) : null,
-                  ),
-                )}
-              </svg>
-              <div>
-                <strong>{name}</strong>
-                <span>{description}</span>
-              </div>
+        <dialog
+          ref={helpRef}
+          className="tank-help-dialog"
+          aria-labelledby="tank-help-title"
+          onClose={() => canvasRef.current?.focus({ preventScroll: true })}
+        >
+          <div className="tank-help-header">
+            <h2 id="tank-help-title">操作与作战指南</h2>
+            <form method="dialog">
+              <button type="submit">关闭帮助</button>
+            </form>
+          </div>
+          <p className="tank-keyboard-help">移动：方向键 / WASD · 开火：空格 / J · 暂停：P / Esc</p>
+          <p className="tank-touch-help">左侧方向键移动，右侧按键开火。</p>
+          <p>查看帮助时游戏已暂停，关闭后点击“继续”恢复战斗。</p>
+          <FieldGuide />
+        </dialog>
+      </section>
+    </div>
+  )
+}
+
+function FieldGuide() {
+  return (
+    <>
+      <p>守住老鹰，消灭每关 20 辆敌军。击中红色闪烁坦克会出现道具，拾取获得 500 分。</p>
+      <div className="tank-powerup-guide">
+        {[
+          [POWERUP_SPRITES[PowerUpKind.STAR], '星星', '一星快弹、二星双发、三星破钢'],
+          [POWERUP_SPRITES[PowerUpKind.HELMET], '头盔', '短暂无敌，闪烁护盾保护坦克'],
+          [POWERUP_SPRITES[PowerUpKind.SHOVEL], '铲子', '重建基地钢墙，倒计时后恢复砖墙'],
+          [POWERUP_SPRITES[PowerUpKind.TIMER], '时钟', '冻结敌方坦克，已发射的炮弹仍在飞行'],
+          [POWERUP_SPRITES[PowerUpKind.GRENADE], '手雷', '清除已出场敌军，不增加击杀分'],
+          [POWERUP_SPRITES[PowerUpKind.TANK], '坦克', '增加一条生命'],
+        ].map(([icon, name, description]) => (
+          <div key={name as string} className="tank-guide-item">
+            <svg
+              viewBox="0 0 16 16"
+              width="32"
+              height="32"
+              aria-hidden="true"
+              shapeRendering="crispEdges"
+            >
+              {(icon as readonly string[]).flatMap((row, y) =>
+                [...row].map((pixel, x) =>
+                  POWERUP_PALETTE[pixel] ? (
+                    <rect
+                      key={`${x}-${y}`}
+                      x={x}
+                      y={y}
+                      width="1"
+                      height="1"
+                      fill={POWERUP_PALETTE[pixel]}
+                    />
+                  ) : null,
+                ),
+              )}
+            </svg>
+            <div>
+              <strong>{name}</strong>
+              <span>{description}</span>
             </div>
-          ))}
-        </div>
-        <p>
-          草丛遮蔽坦克，水面阻挡移动，冰面产生滑行；普通炮弹破砖，三星炮弹破钢。阵亡后升级归零，过关保留升级。首次达到
-          20,000 分时，每位尚未出局的玩家奖励一条生命。
-        </p>
-      </details>
-    </section>
+          </div>
+        ))}
+      </div>
+      <p>
+        草丛遮蔽坦克，水面阻挡移动，冰面产生滑行；普通炮弹破砖，三星炮弹破钢。阵亡后升级归零，过关保留升级。首次达到
+        20,000 分时，每位尚未出局的玩家奖励一条生命。
+      </p>
+    </>
   )
 }
 
