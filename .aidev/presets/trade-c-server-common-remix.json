@@ -1,0 +1,19 @@
+{
+  "$schema": "https://aidev.bytedance.net/schemas/preset.override.json",
+  "extends": "builtin:backend",
+  "templates": [
+    {
+      "digest": "sha256:ab1900e434a5b73e515eabf931837bb34152346ab95221be93b3115ab9687c5d",
+      "ref": "aidev-preset://public/trade-c-server-common-remix@1.0.6"
+    }
+  ],
+  "modes": [],
+  "mcpServers": {},
+  "nodes": [],
+  "sources": [],
+  "capabilities": {
+    "decision": false,
+    "edges": false,
+    "layout": false
+  }
+}

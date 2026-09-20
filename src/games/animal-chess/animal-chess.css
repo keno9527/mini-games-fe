@@ -1,0 +1,299 @@
+.animal-chess-room {
+  --gs-bg: #e5d8aa;
+  --gs-panel: #f5ebc7;
+  --gs-text: #26392d;
+  --gs-muted: #6c6b4d;
+  --gs-line: #a99561;
+  --gs-accent: #8a3d2d;
+  --gs-on-accent: #fff5d3;
+  background:
+    radial-gradient(circle at 12% 15%, #fff8d766, transparent 28%),
+    linear-gradient(145deg, #eadcaf, #d5c48b);
+}
+
+.animal-chess-room .gs-heading h2 {
+  font-family: 'Songti SC', 'STSong', serif;
+  color: #334f3b;
+}
+
+.animal-paw {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid #93773f;
+  border-radius: 50%;
+  background: #f8e9b7;
+  font-size: 27px;
+  box-shadow: 0 4px 0 #92723e33;
+  transform: rotate(-8deg);
+}
+
+.animal-play-layout {
+  grid-template-columns: minmax(280px, 1fr) 210px;
+}
+
+.animal-board-column {
+  min-width: 0;
+}
+
+.animal-turn {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 auto 10px;
+  max-width: 560px;
+  padding: 0 3px;
+  color: #3f4e3d;
+}
+
+.animal-turn span {
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.animal-turn small {
+  color: var(--gs-muted);
+  font-size: 10px;
+}
+
+.animal-turn-blue span {
+  color: #255c70;
+}
+
+.animal-turn-red span {
+  color: #8a3d2d;
+}
+
+.animal-board-shell {
+  width: min(100%, 560px);
+  margin: auto;
+  padding: clamp(8px, 2cqw, 14px);
+  border: 1px solid #7a653d;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #82683c, #b79554 50%, #725934);
+  box-shadow:
+    0 6px 0 #5c482d,
+    0 15px 30px #58442533,
+    inset 0 1px #faedbe;
+}
+
+.animal-board {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid #6d7044;
+  background: #cad490;
+  box-shadow: inset 0 0 18px #30452c33;
+}
+
+.animal-cell {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  aspect-ratio: 1;
+  place-items: center;
+  overflow: hidden;
+  border: 0;
+  border-right: 1px solid #73784d99;
+  border-bottom: 1px solid #73784d99;
+  background:
+    radial-gradient(circle at 20% 18%, #ffffff26, transparent 35%),
+    linear-gradient(145deg, #d7dc9c, #b9ca82);
+}
+
+.animal-cell:nth-child(7n) {
+  border-right: 0;
+}
+
+.animal-cell:nth-last-child(-n + 7) {
+  border-bottom: 0;
+}
+
+.animal-cell.terrain-water {
+  background:
+    repeating-linear-gradient(165deg, transparent 0 9px, #d6f1e433 10px 12px),
+    linear-gradient(145deg, #589d99, #397e83);
+}
+
+.animal-cell.terrain-trap {
+  background:
+    repeating-linear-gradient(45deg, transparent 0 8px, #7c6e3a24 8px 10px),
+    linear-gradient(145deg, #d3bd78, #bda65f);
+}
+
+.animal-cell.terrain-den {
+  background:
+    radial-gradient(circle, #d7b65a 0 24%, transparent 25%),
+    repeating-conic-gradient(from 22deg, #6b573b 0 7deg, #b18e4d 8deg 16deg);
+}
+
+.animal-cell:not(:disabled):hover {
+  filter: brightness(1.06);
+}
+
+.animal-cell.is-last::after {
+  content: '';
+  position: absolute;
+  inset: 7%;
+  border: 2px solid #fff6bd99;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.animal-cell.is-selected {
+  z-index: 2;
+  box-shadow: inset 0 0 0 4px #fff0a8;
+}
+
+.animal-terrain-mark,
+.animal-water-mark {
+  position: absolute;
+  color: #5d572d70;
+  font:
+    700 clamp(10px, 2.2cqw, 16px) 'Songti SC',
+    serif;
+}
+
+.animal-water-mark {
+  color: #d5f2df88;
+  font-size: clamp(18px, 4cqw, 34px);
+  letter-spacing: -0.2em;
+}
+
+.animal-legal-mark {
+  position: absolute;
+  z-index: 2;
+  width: 20%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff5a8;
+  box-shadow: 0 0 0 4px #344d3555;
+}
+
+.animal-piece {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  width: 76%;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-family: 'Songti SC', 'STSong', serif;
+  box-shadow:
+    0 3px 0 #332b1c55,
+    inset 0 0 0 3px #fff6c944;
+  transition: transform 0.15s ease;
+}
+
+.animal-cell:not(:disabled):hover .animal-piece {
+  transform: translateY(-2px);
+}
+
+.animal-piece strong {
+  font-size: clamp(15px, 4.2cqw, 31px);
+  line-height: 1;
+}
+
+.animal-piece small {
+  position: absolute;
+  right: 7%;
+  bottom: 2%;
+  display: grid;
+  width: clamp(12px, 2cqw, 17px);
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  background: currentColor;
+  color: #fff3d1;
+  font: 700 clamp(7px, 1.2cqw, 9px) sans-serif;
+}
+
+.animal-piece-red {
+  color: #9b3528;
+  background: radial-gradient(circle at 30% 22%, #ffe5a4, #e6b75d 70%);
+}
+
+.animal-piece-blue {
+  color: #22566c;
+  background: radial-gradient(circle at 30% 22%, #d8e7b0, #9eb67a 70%);
+}
+
+.animal-armies {
+  display: grid;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.animal-armies span {
+  display: grid;
+  grid-template-columns: 9px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--gs-muted);
+}
+
+.animal-armies i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.animal-armies i.red {
+  background: #9b3528;
+}
+
+.animal-armies i.blue {
+  background: #22566c;
+}
+
+.animal-armies strong {
+  color: var(--gs-text);
+  font:
+    700 16px Georgia,
+    serif;
+}
+
+.animal-rules strong:not(:first-child) {
+  display: block;
+  margin-top: 13px;
+}
+
+@media (max-width: 760px) {
+  .animal-play-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .animal-chess-room .gs-sidebar {
+    grid-template-columns: minmax(0, 1fr) minmax(140px, 0.55fr);
+  }
+
+  .animal-rules {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 460px) {
+  .animal-chess-room {
+    padding: 10px;
+  }
+
+  .animal-turn {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .animal-board-shell {
+    padding: 6px;
+  }
+
+  .animal-piece {
+    width: 82%;
+    border-width: 1px;
+  }
+}

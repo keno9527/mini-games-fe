@@ -1,5 +1,7 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import twentyFourPoints from '@/games/24points/manifest.ts'
+import animalChess from '@/games/animal-chess/manifest.ts'
+import animalChessAI from '@/games/animal-chess-ai/manifest.ts'
 import breakout from '@/games/breakout/manifest.ts'
 import gomoku from '@/games/gomoku/manifest.ts'
 import gravityGraveyard from '@/games/gravity-graveyard/manifest.ts'
@@ -15,6 +17,8 @@ import type { GameComponentProps, GameManifest } from '@/games/manifest.ts'
 import type { Game } from '@/types'
 
 const gameManifests: readonly GameManifest[] = [
+  animalChessAI,
+  animalChess,
   xiangqi,
   tankBattle,
   gravityGraveyard,

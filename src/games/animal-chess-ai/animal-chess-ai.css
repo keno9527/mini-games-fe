@@ -1,0 +1,40 @@
+.animal-ai-room .animal-ai-message,
+.animal-ai-room .animal-ai-notice {
+  max-width: 560px;
+  margin: 16px auto 0;
+  color: var(--gs-text);
+  font-size: 12px;
+  line-height: 1.8;
+  min-height: 44px;
+}
+
+.animal-ai-room .animal-ai-notice {
+  margin-top: 0;
+  color: var(--gs-accent);
+}
+
+.animal-ai-room .animal-ai-last-action {
+  margin-top: 12px;
+}
+
+.animal-ai-room .animal-cell.is-legal {
+  box-shadow: inset 0 0 0 3px #fff0a8;
+}
+
+.animal-ai-room .animal-piece-red small {
+  background: #9b3528;
+}
+
+.animal-ai-room .animal-piece-blue small {
+  background: #22566c;
+}
+
+.animal-ai-room .animal-cell:not(:disabled) {
+  cursor: pointer;
+}
+
+@media (max-width: 460px) {
+  .animal-ai-room .gs-sidebar {
+    grid-template-columns: 1fr;
+  }
+}
