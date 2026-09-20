@@ -38,7 +38,10 @@ export function updatePlayer(
     player.moving = false
   }
 
+  const wasSliding = player.slideTicks > 0
   updateIceSliding(player, direction !== null, moveContext)
+  if (direction === null && wasSliding && player.moving && player.slideTicks === 11)
+    playSound(SoundEffect.ICE)
   clampTankToField(player, FIELD_PIXELS)
 
   if (input.fire) {

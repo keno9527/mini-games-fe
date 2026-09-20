@@ -171,7 +171,12 @@ for (const playerCount of [1, 2] as const) {
   test(`custom ${playerCount}-player game ends after one map, retries that map and never reports a campaign score`, () => {
     const source = createMap()
     const results: TankBattleResult[] = []
-    const audio = { play() {}, stopAll() {} } as unknown as AudioEngine
+    const audio = {
+      play() {},
+      playSequence() {},
+      setMotor() {},
+      stopAll() {},
+    } as unknown as AudioEngine
     const manager = new SceneManager(audio, 1, {
       customLevel: source,
       initialHighScore: 9000,

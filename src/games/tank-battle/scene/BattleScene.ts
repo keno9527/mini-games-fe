@@ -50,7 +50,6 @@ export class BattleScene implements Scene {
   private phase: BattlePhase = BattlePhase.INTRO
   private phaseTicks = 0
   private resumePhase = BattlePhase.FIGHTING
-  private elapsedTicks = 0
   /** 水面波纹等环境动画的相位，与逻辑帧同步递增 */
   private animationPhase = 0
 
@@ -124,7 +123,6 @@ export class BattleScene implements Scene {
       this.audio.play(effect)
     }
 
-    this.elapsedTicks += 1
     const previousLives = this.world.players.map((player) => player.lives)
     updatePlayer(this.world, input, playSound)
     if (this.world.players.length === 2)
@@ -141,8 +139,14 @@ export class BattleScene implements Scene {
 
     if (this.world.players.some((player, slot) => player.lives > previousLives[slot]))
       this.audio.play(SoundEffect.EXTRA_LIFE)
-    if (this.world.getPlayerTanks().some((player) => player.moving) && this.elapsedTicks % 6 === 0)
-      this.audio.play(SoundEffect.MOTOR)
+    const tanks = this.world.getPlayerTanks().filter((tank) => !tank.isSpawning())
+    this.audio.setMotor(
+      tanks.length === 0
+        ? null
+        : tanks.some((tank) => tank.moving)
+          ? SoundEffect.MOTOR
+          : SoundEffect.IDLE,
+    )
     this.handleOutcome()
   }
 
@@ -166,7 +170,7 @@ export class BattleScene implements Scene {
     }
 
     if (this.world.outcome === LevelOutcome.FAILED) {
-      this.audio.play(SoundEffect.GAME_OVER)
+      this.audio.setMotor(null)
       this.callbacks.onGameOver(false)
     }
   }
