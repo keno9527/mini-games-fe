@@ -94,7 +94,8 @@ export const MAX_POWERUPS_ON_FIELD = 1
 export const EXPLOSION_TICKS = 24
 
 /** 关卡开场提示的持续时长（逻辑帧） */
-export const LEVEL_INTRO_TICKS = 120
+// Let the sampled stage introduction finish before combat begins.
+export const LEVEL_INTRO_TICKS = 270
 
 /** 关卡结算画面的持续时长（逻辑帧） */
 export const LEVEL_CLEAR_TICKS = 420

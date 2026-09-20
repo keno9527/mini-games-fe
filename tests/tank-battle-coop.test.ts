@@ -15,7 +15,12 @@ import { SceneKind } from '../src/games/tank-battle/types.ts'
 import type { AudioEngine } from '../src/games/tank-battle/core/AudioEngine.ts'
 import { LEVEL_INTRO_TICKS } from '../src/games/tank-battle/constants.ts'
 
-const audio = { play() {}, stopAll() {} } as unknown as AudioEngine
+const audio = {
+  play() {},
+  playSequence() {},
+  setMotor() {},
+  stopAll() {},
+} as unknown as AudioEngine
 const silent = () => {}
 function world(count: 1 | 2 = 2) {
   const w = new World(42, 0, count)

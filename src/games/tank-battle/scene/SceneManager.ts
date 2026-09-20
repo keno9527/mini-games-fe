@@ -2,7 +2,12 @@ import { LEVELS } from '@/games/tank-battle/data/levels.ts'
 import type { AudioEngine } from '@/games/tank-battle/core/AudioEngine.ts'
 import { resetEntityIds } from '@/games/tank-battle/core/ids.ts'
 import { World } from '@/games/tank-battle/system/World.ts'
-import { SceneKind, type LevelData, type InputSnapshot } from '@/games/tank-battle/types.ts'
+import {
+  SoundEffect,
+  SceneKind,
+  type LevelData,
+  type InputSnapshot,
+} from '@/games/tank-battle/types.ts'
 import { BattleScene } from '@/games/tank-battle/scene/BattleScene.ts'
 import { GameOverScene } from '@/games/tank-battle/scene/GameOverScene.ts'
 import type { Scene } from '@/games/tank-battle/scene/Scene.ts'
@@ -118,6 +123,13 @@ export class SceneManager {
 
   /** 战斗结束：快照战绩后切到结束画面 */
   private finishGame(victory: boolean): void {
+    const newHighScore =
+      this.practiceStage === null && !this.customLevel && this.world.score > this.campaignHighScore
+    this.audio.setMotor(null)
+    this.audio.playSequence([
+      victory ? SoundEffect.VICTORY : SoundEffect.GAME_OVER,
+      ...(newHighScore ? [SoundEffect.HIGH_SCORE] : []),
+    ])
     if (this.practiceStage === null && !this.customLevel)
       this.campaignHighScore = this.world.highScore
     this.finalVictory = victory

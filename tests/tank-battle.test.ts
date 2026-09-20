@@ -331,7 +331,7 @@ test('HUD counters and simultaneous effects fit the frame without covering the b
 })
 
 function silentAudio(): AudioEngine {
-  return { play() {}, stopAll() {} } as unknown as AudioEngine
+  return { play() {}, playSequence() {}, setMotor() {}, stopAll() {} } as unknown as AudioEngine
 }
 
 test('half brick and half steel have matching collision and render masks', () => {
@@ -568,47 +568,59 @@ test('practice clears only the selected stage; title return preserves mode', () 
   assert.equal(manager.getCurrentKind(), SceneKind.TITLE)
 })
 
-test('chip audio schedules melodies in sequence, mutes active voices and closes the context', () => {
+test('sample audio switches one engine loop, sequences music and cancels pending playback', async () => {
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
-  const sources: { startTime: number; stopped: boolean; disconnected: boolean }[] = []
+  const previousFetch = globalThis.fetch
+  const sources: { startTime: number; stopped: boolean; disconnected: boolean; loop: boolean }[] =
+    []
   let closed = false
-  const param = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} })
+  let release!: () => void
+  const loaded = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const flush = () => new Promise<void>((resolve) => setImmediate(resolve))
   const node = () => ({ connect() {}, disconnect() {} })
   class FakeAudioContext {
     state = 'running'
-    sampleRate = 1000
     currentTime = 1
     destination = node()
     createGain() {
-      return { ...node(), gain: param() }
+      return { ...node(), gain: { value: 0 } }
     }
-    createBuffer() {
-      return { getChannelData: () => new Float32Array(1000) }
-    }
-    createBiquadFilter() {
-      return { ...node(), type: 'lowpass', frequency: param() }
-    }
-    createOscillator() {
-      const record = { startTime: 0, stopped: false, disconnected: false }
-      sources.push(record)
+    async decodeAudioData() {
+      await loaded
       return {
-        ...node(),
-        type: 'square',
-        frequency: param(),
-        onended: null,
-        start(time: number) {
-          record.startTime = time
-        },
-        stop(time?: number) {
-          if (time === undefined) record.stopped = true
-        },
-        disconnect() {
-          record.disconnected = true
-        },
+        duration: 4,
+        length: 4000,
+        sampleRate: 1000,
+        numberOfChannels: 1,
+        getChannelData: () => new Float32Array(4000).fill(0.5, 1000, 3000),
       }
     }
+    createBuffer(channels: number, length: number, sampleRate: number) {
+      return { duration: length / sampleRate, copyToChannel() {} }
+    }
     createBufferSource() {
-      return this.createOscillator()
+      const source = {
+        ...node(),
+        startTime: 0,
+        stopped: false,
+        disconnected: false,
+        loop: false,
+        buffer: null,
+        onended: null,
+        start(time: number) {
+          this.startTime = time
+        },
+        stop() {
+          this.stopped = true
+        },
+        disconnect() {
+          this.disconnected = true
+        },
+      }
+      sources.push(source)
+      return source
     }
     close() {
       closed = true
@@ -619,24 +631,53 @@ test('chip audio schedules melodies in sequence, mutes active voices and closes 
     configurable: true,
     value: { AudioContext: FakeAudioContext },
   })
+  const requested: string[] = []
+  globalThis.fetch = (async (url: string) => {
+    requested.push(url)
+    return { ok: true, arrayBuffer: async () => new ArrayBuffer(1) }
+  }) as typeof fetch
+  const audio = new AudioEngine()
   try {
-    const audio = new AudioEngine()
     audio.unlock()
-    audio.play(SoundEffect.LEVEL_START)
-    assert.equal(sources.length, 8)
-    assert.ok(sources[1].startTime > sources[0].startTime)
+    audio.play(SoundEffect.FIRE)
+    audio.setMotor(SoundEffect.IDLE)
+    audio.stopAll()
+    release()
+    await flush()
+    assert.equal(sources.length, 0, 'late decoding must not resurrect a stopped scene')
+    assert.equal(requested.length, 18)
+    audio.setMotor(SoundEffect.IDLE)
+    await flush()
+    audio.setMotor(SoundEffect.IDLE)
+    await flush()
+    assert.equal(sources.length, 1, 'same engine state must not stack loops')
+    assert.equal(sources[0].loop, true)
+    audio.setMotor(SoundEffect.MOTOR)
+    await flush()
+    assert.equal(sources[0].stopped, true)
+    assert.equal(sources.length, 2)
+    audio.playSequence([SoundEffect.GAME_OVER, SoundEffect.HIGH_SCORE])
+    await flush()
+    assert.ok(
+      Math.abs(sources[3].startTime - sources[2].startTime - 2.006) < 0.0001,
+      'music sequencing excludes silent padding',
+    )
     audio.setEnabled(false)
     assert.ok(sources.every((source) => source.stopped && source.disconnected))
-    const count = sources.length
     audio.play(SoundEffect.FIRE)
-    assert.equal(sources.length, count)
+    audio.setMotor(SoundEffect.MOTOR)
+    await flush()
+    assert.equal(sources.length, 4)
     audio.setEnabled(true)
-    audio.play(SoundEffect.EXPLODE_BIG)
-    assert.equal(sources.length, count + 2)
+    audio.setMotor(SoundEffect.IDLE)
+    await flush()
+    assert.equal(sources.length, 5)
     audio.dispose()
     assert.equal(closed, true)
     assert.ok(sources.every((source) => source.stopped && source.disconnected))
   } finally {
+    audio.dispose()
+    globalThis.fetch = previousFetch
     if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)
     else Reflect.deleteProperty(globalThis, 'window')
   }

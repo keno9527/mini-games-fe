@@ -136,7 +136,7 @@ function destroyAllEnemies(world: World, playSound: (effect: SoundEffect) => voi
     destroyedAny = true
   }
   if (destroyedAny) {
-    playSound(SoundEffect.EXPLODE_BIG)
+    playSound(SoundEffect.EXPLODE_SMALL)
   }
 }
 
