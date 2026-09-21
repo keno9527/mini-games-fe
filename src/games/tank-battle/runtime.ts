@@ -15,7 +15,7 @@ import {
 import { LEVELS } from '@/games/tank-battle/data/levels.ts'
 import { PixelCanvas } from '@/games/tank-battle/render/PixelCanvas.ts'
 import { SceneManager, type TankBattleResult } from '@/games/tank-battle/scene/SceneManager.ts'
-import { SceneKind, type TankBattleHoldAction } from '@/games/tank-battle/types.ts'
+import { SceneKind, type LevelData, type TankBattleHoldAction } from '@/games/tank-battle/types.ts'
 
 export type TankBattleUiState = 'title' | 'playing' | 'paused' | 'gameOver'
 export interface TankBattleMenu {
@@ -28,6 +28,8 @@ export interface TankBattleMenu {
 }
 export interface TankBattleHandle {
   destroy(): void
+  setViewport(viewport: HTMLElement | null): void
+  suspend(): void
   setHeldAction(action: TankBattleHoldAction, active: boolean): void
   confirm(): void
   togglePause(): void
@@ -45,6 +47,7 @@ export interface TankBattleControllers {
   canPlay: boolean
 }
 export interface TankBattleOptions {
+  readonly customLevel?: LevelData
   readonly onControllersChange?: (state: TankBattleControllers) => void
   readonly onMenuChange?: (state: TankBattleMenu) => void
   readonly initialHighScore?: number
@@ -335,8 +338,12 @@ export function mountTankBattle(
   loop.start()
   let destroyed = false
   return {
-    destroy() {
-      if (destroyed) return
+    setViewport: (viewport) => pixelCanvas.setViewport(viewport),
+    suspend,
+    destroy(): void {
+      if (destroyed) {
+        return
+      }
       destroyed = true
       loop.stop()
       stopMonitoring()

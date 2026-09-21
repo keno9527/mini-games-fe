@@ -1,0 +1,19 @@
+{
+  "$schema": "https://aidev.bytedance.net/schemas/preset.override.json",
+  "extends": "builtin:backend",
+  "templates": [
+    {
+      "digest": "sha256:62ee9952ca51afeb3dc656355c216fdcbd2fca62cd5cf8095e67eed2a57fbbcd",
+      "ref": "aidev-preset://public/trip_c_trade_ppe_loop_v1@1.0.2"
+    }
+  ],
+  "modes": [],
+  "mcpServers": {},
+  "nodes": [],
+  "sources": [],
+  "capabilities": {
+    "decision": true,
+    "edges": false,
+    "layout": false
+  }
+}

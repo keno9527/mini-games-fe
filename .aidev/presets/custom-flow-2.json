@@ -1,0 +1,33 @@
+{
+  "$schema": "https://aidev.bytedance.net/schemas/preset.override.json",
+  "extends": "builtin:all",
+  "modes": [
+    {
+      "key": "custom-flow-2",
+      "nodes": [
+        "fullstack_requirement_analysis",
+        "custom_step1"
+      ],
+      "title": "生成交互稿"
+    }
+  ],
+  "nodes": [
+    {
+      "inputs": [],
+      "instruction": [
+        "根据需求，分析关键页面动线，生成交互稿"
+      ],
+      "key": "custom_step1",
+      "outputs": [],
+      "skills": [
+        "@frontend-design"
+      ],
+      "title": "生成交互稿"
+    }
+  ],
+  "capabilities": {
+    "decision": false,
+    "edges": false,
+    "layout": false
+  }
+}

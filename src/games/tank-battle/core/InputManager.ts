@@ -99,7 +99,9 @@ export class InputManager {
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (
       event.target instanceof HTMLElement &&
-      event.target.closest('input, textarea, select, button, a, [contenteditable="true"]')
+      event.target.closest(
+        'input, textarea, select, button, a, dialog[open], [contenteditable="true"]',
+      )
     )
       return
     if (PREVENT_DEFAULT_CODES.has(event.code)) {

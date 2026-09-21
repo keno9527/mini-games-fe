@@ -12,7 +12,7 @@ import type { Bullet } from '@/games/tank-battle/entity/Bullet.ts'
 import { Explosion } from '@/games/tank-battle/entity/Explosion.ts'
 import type { PowerUp } from '@/games/tank-battle/entity/PowerUp.ts'
 import { Tank } from '@/games/tank-battle/entity/Tank.ts'
-import { Direction, TankSide, EnemyKind } from '@/games/tank-battle/types.ts'
+import { Direction, TankSide, EnemyKind, type LevelData } from '@/games/tank-battle/types.ts'
 import { TerrainGrid } from '@/games/tank-battle/system/TerrainGrid.ts'
 
 /** 关卡结束的原因 */
@@ -35,6 +35,7 @@ export interface PlayerState {
 }
 
 export class World {
+  private readonly customLevel?: LevelData
   readonly terrain: TerrainGrid
   readonly base = new Base()
   readonly rng: Rng
@@ -67,14 +68,17 @@ export class World {
 
   outcome: LevelOutcome = LevelOutcome.ONGOING
 
-  constructor(seed: number, initialHighScore = 0, playerCount: 1 | 2 = 1) {
+  constructor(seed: number, initialHighScore = 0, playerCount: 1 | 2 = 1, customLevel?: LevelData) {
+    this.customLevel = customLevel
+      ? { terrain: [...customLevel.terrain], enemyQueue: [...customLevel.enemyQueue] }
+      : undefined
     this.players = Array.from({ length: playerCount }, () => ({
       tank: null,
       lives: PLAYER_INITIAL_LIVES,
       respawnDelayTicks: 0,
     }))
     this.rng = new Rng(seed)
-    this.terrain = new TerrainGrid(LEVELS[0].terrain)
+    this.terrain = new TerrainGrid((this.customLevel ?? LEVELS[0]).terrain)
     this.highScore = initialHighScore
   }
 
@@ -88,7 +92,8 @@ export class World {
     const clampedIndex = levelIndex % LEVELS.length
     this.levelIndex = levelIndex
 
-    this.terrain.load(LEVELS[clampedIndex].terrain)
+    const level = this.customLevel ?? LEVELS[clampedIndex]
+    this.terrain.load(level.terrain)
     this.base.reset()
 
     this.enemies = []
@@ -96,7 +101,7 @@ export class World {
     this.powerUps = []
     this.explosions = []
 
-    this.pendingEnemies = [...LEVELS[clampedIndex].enemyQueue].slice(0, ENEMIES_PER_LEVEL)
+    this.pendingEnemies = [...level.enemyQueue].slice(0, ENEMIES_PER_LEVEL)
     this.enemiesKilled = 0
     this.stageKills = { basic: 0, fast: 0, power: 0, armor: 0 }
 

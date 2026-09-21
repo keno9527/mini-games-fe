@@ -1,0 +1,56 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Applications/Trae CN.app/Contents/Frameworks/Trae CN Helper (Plugin).app/Contents/MacOS/Trae CN Helper (Plugin)' '/Users/bytedance/Codebases/mini-games-fe/.codex/plugins/pegas/hooks/entry.mjs'",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Applications/Trae CN.app/Contents/Frameworks/Trae CN Helper (Plugin).app/Contents/MacOS/Trae CN Helper (Plugin)' '/Users/bytedance/Codebases/mini-games-fe/.codex/pegas/partner-ai-report/node_modules/@byted/partner-ai-report/build/bin/partner-ai-report.js' agent-hook pre --source codex",
+            "timeout": 30,
+            "statusMessage": "Recording AI edit baseline",
+            "name": "pegas-partner-ai-report"
+          }
+        ],
+        "matcher": "Edit|Write|apply_patch"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Applications/Trae CN.app/Contents/Frameworks/Trae CN Helper (Plugin).app/Contents/MacOS/Trae CN Helper (Plugin)' '/Users/bytedance/Codebases/mini-games-fe/.codex/pegas/partner-ai-report/node_modules/@byted/partner-ai-report/build/bin/partner-ai-report.js' agent-hook post --source codex",
+            "timeout": 30,
+            "statusMessage": "Recording AI edited files",
+            "name": "pegas-partner-ai-report"
+          }
+        ],
+        "matcher": "Edit|Write|apply_patch"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Applications/Trae CN.app/Contents/Frameworks/Trae CN Helper (Plugin).app/Contents/MacOS/Trae CN Helper (Plugin)' '/Users/bytedance/Codebases/mini-games-fe/.codex/pegas/partner-ai-report/node_modules/@byted/partner-ai-report/build/bin/partner-ai-report.js' agent-hook flush --source codex",
+            "timeout": 30,
+            "statusMessage": "Reporting AI edited files",
+            "name": "pegas-partner-ai-report"
+          }
+        ]
+      }
+    ]
+  }
+}

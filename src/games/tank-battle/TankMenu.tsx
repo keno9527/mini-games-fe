@@ -220,13 +220,19 @@ export function TankMenu({ menu, controllers, ready, game, focusGame }: MenuProp
   )
 }
 
-export function TankPauseMenu({ menu, controllers, game, focusGame }: MenuProps) {
+export function TankPauseMenu({
+  menu,
+  controllers,
+  game,
+  focusGame,
+  returnLabel = '返回标题',
+}: MenuProps & { returnLabel?: string }) {
   const coop = menu.mode === 'coop'
   const labels = [
     '继续作战',
     menu.soundEnabled ? '音效：开' : '音效：关',
     '重新分配手柄',
-    '返回标题',
+    returnLabel,
   ]
   const actions = [
     () => game?.togglePause(),

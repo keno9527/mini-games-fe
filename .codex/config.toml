@@ -1,0 +1,10 @@
+# >>> pegas managed >>> mcp
+[mcp_servers.pegas]
+command = "node"
+args = ["/Users/bytedance/Codebases/mini-games-fe/.codex/plugins/pegas/lib/mcp-server.mjs"]
+enabled = true
+default_tools_approval_mode = "approve"
+
+[mcp_servers.pegas.env]
+PEGAS_PROJECT_ROOT = "/Users/bytedance/Codebases/mini-games-fe"
+# <<< pegas managed <<< mcp

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://aidev.bytedance.net/schemas/preset.override.json",
+  "extends": "builtin:web",
+  "templates": [
+    {
+      "digest": "sha256:174ddfd4576e6d4723e6997447fc0fc12288745b69fe273994d73fc941a4fec5",
+      "ref": "aidev-preset://public/industry-fe@1.0.2"
+    }
+  ],
+  "modes": [],
+  "mcpServers": {},
+  "nodes": [],
+  "sources": [],
+  "capabilities": {
+    "decision": false,
+    "edges": false,
+    "layout": false
+  }
+}

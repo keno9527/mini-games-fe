@@ -83,3 +83,26 @@ $RECYCLE.BIN
 
 # ===== 文档草稿（不入库） =====
 docs
+
+# >>> aidev managed gitignore
+.aidev/*
+!.aidev/
+!.aidev/README.md
+!.aidev/template-bindings.json
+!.aidev/template-bindings.schema.json
+!.aidev/presets/
+!.aidev/presets/**
+!.aidev/instructions/
+!.aidev/instructions/**
+!.aidev/skills/
+!.aidev/skills/**
+!.aidev/agents/
+!.aidev/agents/**
+!.aidev/mcps/
+!.aidev/mcps/**
+# <<< aidev managed gitignore
+# >>> pegas managed >>> gitignore
+/.codex/**/pegas*
+.pegas/
+.pegas-external-skills.json
+# <<< pegas managed <<< gitignore

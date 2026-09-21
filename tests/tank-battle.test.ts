@@ -22,6 +22,7 @@ import { drawHud } from '../src/games/tank-battle/render/Hud.ts'
 import { renderBattlefield } from '../src/games/tank-battle/render/renderBattlefield.ts'
 import { BattleScene } from '../src/games/tank-battle/scene/BattleScene.ts'
 import { AudioEngine } from '../src/games/tank-battle/core/AudioEngine.ts'
+import { PixelCanvas } from '../src/games/tank-battle/render/PixelCanvas.ts'
 import {
   TerrainKind,
   PowerUpKind,
@@ -330,7 +331,7 @@ test('HUD counters and simultaneous effects fit the frame without covering the b
 })
 
 function silentAudio(): AudioEngine {
-  return { play() {}, stopAll() {} } as unknown as AudioEngine
+  return { play() {}, playSequence() {}, setMotor() {}, stopAll() {} } as unknown as AudioEngine
 }
 
 test('half brick and half steel have matching collision and render masks', () => {
@@ -567,47 +568,59 @@ test('practice clears only the selected stage; title return preserves mode', () 
   assert.equal(manager.getCurrentKind(), SceneKind.TITLE)
 })
 
-test('chip audio schedules melodies in sequence, mutes active voices and closes the context', () => {
+test('sample audio switches one engine loop, sequences music and cancels pending playback', async () => {
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
-  const sources: { startTime: number; stopped: boolean; disconnected: boolean }[] = []
+  const previousFetch = globalThis.fetch
+  const sources: { startTime: number; stopped: boolean; disconnected: boolean; loop: boolean }[] =
+    []
   let closed = false
-  const param = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} })
+  let release!: () => void
+  const loaded = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const flush = () => new Promise<void>((resolve) => setImmediate(resolve))
   const node = () => ({ connect() {}, disconnect() {} })
   class FakeAudioContext {
     state = 'running'
-    sampleRate = 1000
     currentTime = 1
     destination = node()
     createGain() {
-      return { ...node(), gain: param() }
+      return { ...node(), gain: { value: 0 } }
     }
-    createBuffer() {
-      return { getChannelData: () => new Float32Array(1000) }
-    }
-    createBiquadFilter() {
-      return { ...node(), type: 'lowpass', frequency: param() }
-    }
-    createOscillator() {
-      const record = { startTime: 0, stopped: false, disconnected: false }
-      sources.push(record)
+    async decodeAudioData() {
+      await loaded
       return {
-        ...node(),
-        type: 'square',
-        frequency: param(),
-        onended: null,
-        start(time: number) {
-          record.startTime = time
-        },
-        stop(time?: number) {
-          if (time === undefined) record.stopped = true
-        },
-        disconnect() {
-          record.disconnected = true
-        },
+        duration: 4,
+        length: 4000,
+        sampleRate: 1000,
+        numberOfChannels: 1,
+        getChannelData: () => new Float32Array(4000).fill(0.5, 1000, 3000),
       }
     }
+    createBuffer(channels: number, length: number, sampleRate: number) {
+      return { duration: length / sampleRate, copyToChannel() {} }
+    }
     createBufferSource() {
-      return this.createOscillator()
+      const source = {
+        ...node(),
+        startTime: 0,
+        stopped: false,
+        disconnected: false,
+        loop: false,
+        buffer: null,
+        onended: null,
+        start(time: number) {
+          this.startTime = time
+        },
+        stop() {
+          this.stopped = true
+        },
+        disconnect() {
+          this.disconnected = true
+        },
+      }
+      sources.push(source)
+      return source
     }
     close() {
       closed = true
@@ -618,25 +631,154 @@ test('chip audio schedules melodies in sequence, mutes active voices and closes 
     configurable: true,
     value: { AudioContext: FakeAudioContext },
   })
+  const requested: string[] = []
+  globalThis.fetch = (async (url: string) => {
+    requested.push(url)
+    return { ok: true, arrayBuffer: async () => new ArrayBuffer(1) }
+  }) as typeof fetch
+  const audio = new AudioEngine()
   try {
-    const audio = new AudioEngine()
     audio.unlock()
-    audio.play(SoundEffect.LEVEL_START)
-    assert.equal(sources.length, 8)
-    assert.ok(sources[1].startTime > sources[0].startTime)
+    audio.play(SoundEffect.FIRE)
+    audio.setMotor(SoundEffect.IDLE)
+    audio.stopAll()
+    release()
+    await flush()
+    assert.equal(sources.length, 0, 'late decoding must not resurrect a stopped scene')
+    assert.equal(requested.length, 18)
+    audio.setMotor(SoundEffect.IDLE)
+    await flush()
+    audio.setMotor(SoundEffect.IDLE)
+    await flush()
+    assert.equal(sources.length, 1, 'same engine state must not stack loops')
+    assert.equal(sources[0].loop, true)
+    audio.setMotor(SoundEffect.MOTOR)
+    await flush()
+    assert.equal(sources[0].stopped, true)
+    assert.equal(sources.length, 2)
+    audio.playSequence([SoundEffect.GAME_OVER, SoundEffect.HIGH_SCORE])
+    await flush()
+    assert.ok(
+      Math.abs(sources[3].startTime - sources[2].startTime - 2.006) < 0.0001,
+      'music sequencing excludes silent padding',
+    )
     audio.setEnabled(false)
     assert.ok(sources.every((source) => source.stopped && source.disconnected))
-    const count = sources.length
     audio.play(SoundEffect.FIRE)
-    assert.equal(sources.length, count)
+    audio.setMotor(SoundEffect.MOTOR)
+    await flush()
+    assert.equal(sources.length, 4)
     audio.setEnabled(true)
-    audio.play(SoundEffect.EXPLODE_BIG)
-    assert.equal(sources.length, count + 2)
+    audio.setMotor(SoundEffect.IDLE)
+    await flush()
+    assert.equal(sources.length, 5)
     audio.dispose()
     assert.equal(closed, true)
     assert.ok(sources.every((source) => source.stopped && source.disconnected))
   } finally {
+    audio.dispose()
+    globalThis.fetch = previousFetch
     if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)
     else Reflect.deleteProperty(globalThis, 'window')
   }
+})
+
+test('battle canvas fits viewport and controls, grows after shrinking, and restores title sizing', () => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const listeners = new Map<string, () => void>()
+  const properties = new Map<string, string>()
+  const viewport = { clientWidth: 1440, clientHeight: 900 }
+  const toolbar = { offsetHeight: 50 }
+  const controls = { offsetHeight: 0 }
+  let sideWidth = '0'
+  const shell = {
+    style: {
+      setProperty: (name: string, value: string) => properties.set(name, value),
+      removeProperty: (name: string) => properties.delete(name),
+    },
+    querySelectorAll: () => [toolbar, controls],
+  }
+  const stage = {
+    clientWidth: 1200,
+    parentElement: shell,
+    getBoundingClientRect: () => ({ top: 260 }),
+  }
+  const context = { imageSmoothingEnabled: true }
+  const canvas = {
+    width: 0,
+    height: 0,
+    style: { width: '', height: '' },
+    getContext: () => context,
+  }
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      innerWidth: 1440,
+      innerHeight: 900,
+      addEventListener: (name: string, fn: () => void) => listeners.set(name, fn),
+      removeEventListener: (name: string) => listeners.delete(name),
+      getComputedStyle: (element: unknown) => ({
+        paddingLeft: element === viewport ? '12px' : '6px',
+        paddingRight: element === viewport ? '12px' : '6px',
+        paddingTop: element === viewport ? '12px' : '6px',
+        paddingBottom: element === viewport ? '12px' : '6px',
+        borderLeftWidth: '2px',
+        borderRightWidth: '2px',
+        borderTopWidth: '2px',
+        borderBottomWidth: '2px',
+        getPropertyValue: () => sideWidth,
+      }),
+    },
+  })
+  let pixelCanvas: PixelCanvas | undefined
+  try {
+    pixelCanvas = new PixelCanvas(
+      canvas as unknown as HTMLCanvasElement,
+      stage as unknown as HTMLElement,
+    )
+    assert.equal(canvas.style.width, '512px')
+    pixelCanvas.setViewport(viewport as unknown as HTMLElement)
+    assert.equal(canvas.style.width, '864px')
+    assert.equal(canvas.style.height, '810px')
+
+    // 手机竖屏为下方触控按钮留出空间，并保留完整地图。
+    viewport.clientWidth = 390
+    viewport.clientHeight = 568
+    toolbar.offsetHeight = 82
+    controls.offsetHeight = 164
+    listeners.get('resize')!()
+    assert.equal(canvas.style.height, '282px')
+    assert.equal(parseFloat(canvas.style.width) / parseFloat(canvas.style.height), 256 / 240)
+
+    // 横屏从宽度扣除左右触控区；不能使用旧的至少两倍缩放导致溢出。
+    viewport.clientWidth = 650
+    viewport.clientHeight = 375
+    controls.offsetHeight = 0
+    sideWidth = '272'
+    listeners.get('resize')!()
+    assert.equal(canvas.style.height, '253px')
+    assert.ok(parseFloat(canvas.style.width) + 272 + 16 <= 626)
+
+    // 重新放大窗口时必须根据独立视口测量，而非已缩小的面板。
+    stage.clientWidth = 300
+    viewport.clientWidth = 1440
+    viewport.clientHeight = 900
+    toolbar.offsetHeight = 50
+    sideWidth = '0'
+    listeners.get('resize')!()
+    assert.equal(canvas.style.width, '864px')
+    assert.equal(canvas.width, 256)
+    assert.equal(canvas.height, 240)
+    assert.equal(context.imageSmoothingEnabled, false)
+
+    stage.clientWidth = 1200
+    pixelCanvas.setViewport(null)
+    assert.equal(canvas.style.width, '512px')
+    assert.equal(properties.has('--tank-panel-width'), false)
+  } finally {
+    pixelCanvas?.dispose()
+    if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)
+    else Reflect.deleteProperty(globalThis, 'window')
+  }
+  assert.equal(listeners.size, 0)
 })
