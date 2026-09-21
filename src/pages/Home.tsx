@@ -5,6 +5,14 @@ import GameLaunchLink from '@/components/GameLaunchLink'
 import { GameCardSkeleton } from '@/components/Skeleton'
 import type { Game, PlayRankItem } from '@/types'
 
+function formatDuration(seconds: number): string {
+  const totalSeconds = Math.floor(seconds)
+  if (totalSeconds < 60) return `${totalSeconds} 秒`
+  const minutes = Math.floor(totalSeconds / 60)
+  if (minutes < 60) return `${minutes} 分钟`
+  return `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分钟`
+}
+
 export default function Home() {
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
@@ -16,9 +24,14 @@ export default function Home() {
       .then(setGames)
       .catch(() => setError('本地游戏配置读取失败，请刷新页面重试'))
       .finally(() => setLoading(false))
-    getPlayRanking()
-      .then(setRanking)
-      .catch(() => {})
+    const refreshRanking = () => {
+      getPlayRanking()
+        .then(setRanking)
+        .catch(() => {})
+    }
+    refreshRanking()
+    window.addEventListener('storage', refreshRanking)
+    return () => window.removeEventListener('storage', refreshRanking)
   }, [])
 
   const top5 = ranking.slice(0, 5)
@@ -58,6 +71,7 @@ export default function Home() {
           </div>
           <section className="library-popular" aria-labelledby="popular-title">
             <h2 id="popular-title">热门排行榜</h2>
+            <p>本机累计 · 按盘数排序，同盘数按时长排序</p>
             {top5.length === 0 ? (
               <p>暂无排行记录，开始一局吧。</p>
             ) : (
@@ -67,7 +81,9 @@ export default function Home() {
                     <GameLaunchLink gameId={item.gameId}>
                       <span>{String(i + 1).padStart(2, '0')}</span>
                       <strong>{item.gameName}</strong>
-                      <small>{item.playCount} 次游玩</small>
+                      <small>
+                        {item.playCount} 盘 · {formatDuration(item.totalDuration)}
+                      </small>
                     </GameLaunchLink>
                   </li>
                 ))}

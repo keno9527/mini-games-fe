@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useEffect, useMemo, useState } from 'react'
 import type { GameComponentProps } from '@/games/manifest'
 import { useGameRecord } from '@/hooks/useGameRecord'
@@ -26,6 +27,7 @@ const samePosition = (a: Position | null, b: Position) => a?.x === b.x && a.y ==
 
 function AnimalChessSession({ userId, gameId }: GameComponentProps) {
   const [game, setGame] = useState(createInitialState)
+  const play = useGamePlay(gameId)
   const [selected, setSelected] = useState<Position | null>(null)
   const [message, setMessage] = useState('你执赤方先行。点击己方棋子，再点击高亮位置。')
   const { start, submit } = useGameRecord({ userId, gameId })
@@ -40,8 +42,11 @@ function AnimalChessSession({ userId, gameId }: GameComponentProps) {
   }, [start])
 
   useEffect(() => {
-    if (game.winner) void submit(getOutcome(game.winner))
-  }, [game.winner, submit])
+    if (game.winner) {
+      play.stop()
+      void submit(getOutcome(game.winner))
+    }
+  }, [game.winner, submit, play])
 
   useEffect(() => {
     if (!thinking) return
@@ -56,6 +61,7 @@ function AnimalChessSession({ userId, gameId }: GameComponentProps) {
   }, [game, thinking])
 
   const reset = () => {
+    play.restart()
     start()
     setGame(createInitialState())
     setSelected(null)
@@ -88,6 +94,7 @@ function AnimalChessSession({ userId, gameId }: GameComponentProps) {
       setMessage(error)
       return
     }
+    play.start()
     setGame((current) => (current === game ? applyMove(current, selected, position) : current))
     setSelected(null)
     setMessage('点击一枚赤方棋子继续行棋。')

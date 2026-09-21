@@ -45,4 +45,5 @@ export interface PlayRankItem {
   gameId: string
   gameName: string
   playCount: number
+  totalDuration: number
 }

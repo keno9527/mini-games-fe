@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
 import '../game-surfaces.css'
@@ -166,6 +167,7 @@ export default function Gomoku({ userId, gameId }: Props) {
   const [level, setLevel] = useState<Level>('中等')
   const [board, setBoard] = useState<Cell[][]>(emptyBoard)
   const [status, setStatus] = useState<Status>('idle')
+  useGamePlay(gameId, status === 'playing' ? 'playing' : 'idle')
   const [turn, setTurn] = useState<'X' | 'O'>('X')
   const [message, setMessage] = useState('你执黑先手，点「开始对局」')
   const [lastMove, setLastMove] = useState<{ x: number; y: number } | null>(null)

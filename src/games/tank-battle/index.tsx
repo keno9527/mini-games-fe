@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
   ArrowDown,
@@ -104,6 +105,7 @@ function TankBattlePlayer({
   const customGameStarted = useRef(false)
   const [ready, setReady] = useState(false)
   const [uiState, setUiState] = useState<TankBattleUiState>('title')
+  useGamePlay(gameId, uiState === 'playing' || uiState === 'paused' ? uiState : 'idle')
   const [menu, setMenu] = useState<TankBattleMenu>({
     mode: 'single',
     page: 'modes',

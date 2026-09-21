@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
   CaretDown,
@@ -156,6 +157,7 @@ interface PuzzleProps extends GameComponentProps {
 
 function Puzzle({ level, gameId, userId, onComplete, onRetry, onNext }: PuzzleProps) {
   const [session, dispatch] = useReducer(sessionReducer, level, newSession)
+  const play = useGamePlay(gameId)
   const [selected, setSelected] = useState<number | null>(null)
   const [hint, setHint] = useState<Move | null>(null)
   const [hintRequested, setHintRequested] = useState(false)
@@ -179,12 +181,13 @@ function Puzzle({ level, gameId, userId, onComplete, onRetry, onNext }: PuzzlePr
   }, [start])
   useEffect(() => {
     if (!ended) return
+    play.stop()
     if (phase === 'won') onComplete(level.id, stars)
     void submit({
       score: phase === 'won' ? stars * 100 : 0,
       result: phase === 'won' ? 'win' : 'lose',
     })
-  }, [ended, phase, level.id, stars, onComplete, submit])
+  }, [ended, phase, level.id, stars, onComplete, submit, play])
 
   useEffect(() => {
     if (phase !== 'black' && !(phase === 'red' && hintRequested)) return
@@ -244,6 +247,7 @@ function Puzzle({ level, gameId, userId, onComplete, onRetry, onNext }: PuzzlePr
           : '这枚棋子当前没有合法落点，请选择其他红子。',
       )
     } else if (selected !== null && destinations.includes(square)) {
+      play.start()
       dispatch({ type: 'move', move: { from: selected, to: square } })
       setSelected(null)
       setHint(null)

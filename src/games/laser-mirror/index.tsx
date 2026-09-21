@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { useGameRecord } from '@/hooks/useGameRecord'
 import {
@@ -22,6 +23,7 @@ const directionGlyph = { N: '↑', E: '→', S: '↓', W: '←' } as const
 
 export default function LaserMirror({ userId, gameId }: Props) {
   const [levelIndex, setLevelIndex] = useState(0)
+  const play = useGamePlay(gameId)
   const level = LASER_LEVELS[levelIndex]
   const [mirrors, setMirrors] = useState<Mirror[]>(() => level.mirrors.map((item) => ({ ...item })))
   const [history, setHistory] = useState<Mirror[][]>([])
@@ -37,6 +39,7 @@ export default function LaserMirror({ userId, gameId }: Props) {
     (index: number) => {
       const next = LASER_LEVELS[index]
       if (!next || index >= progression.unlocked) return
+      play.stop()
       setLevelIndex(index)
       setMirrors(next.mirrors.map((item) => ({ ...item })))
       setHistory([])
@@ -46,7 +49,7 @@ export default function LaserMirror({ userId, gameId }: Props) {
       resetRecord()
       start()
     },
-    [progression.unlocked, resetRecord, start],
+    [progression.unlocked, resetRecord, start, play],
   )
 
   useEffect(() => {
@@ -55,6 +58,7 @@ export default function LaserMirror({ userId, gameId }: Props) {
 
   useEffect(() => {
     if (!trace.solved || settled) return
+    play.stop()
     setSettled(true)
     const next = recordCompletion(
       progression,
@@ -77,11 +81,13 @@ export default function LaserMirror({ userId, gameId }: Props) {
     stars,
     submit,
     trace.solved,
+    play,
     userId,
   ])
 
   const turnMirror = (mirrorIndex: number) => {
     if (settled) return
+    play.start()
     setHistory((current) => [...current, mirrors.map((item) => ({ ...item }))])
     setMirrors((current) =>
       current.map((mirror, index) => (index === mirrorIndex ? rotateMirror(mirror) : mirror)),
@@ -98,6 +104,7 @@ export default function LaserMirror({ userId, gameId }: Props) {
   }
 
   const reset = () => {
+    play.restart()
     setMirrors(level.mirrors.map((item) => ({ ...item })))
     setHistory([])
     setMoves(0)
@@ -110,6 +117,7 @@ export default function LaserMirror({ userId, gameId }: Props) {
   const hint = () => {
     const index = findHint(level, mirrors)
     if (index === undefined || settled) return
+    play.start()
     setHistory((current) => [...current, mirrors.map((item) => ({ ...item }))])
     setMirrors((current) =>
       current.map((mirror, mirrorIndex) =>

@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
 import '../game-surfaces.css'
@@ -70,6 +71,7 @@ export default function WhackAMole({ userId, gameId }: Props) {
   const [score, setScore] = useState(0)
   const [timeLeft, setTimeLeft] = useState(CFG['中等'].duration)
   const [status, setStatus] = useState<'idle' | 'playing' | 'over'>('idle')
+  useGamePlay(gameId, status === 'playing' ? 'playing' : 'idle')
   const [whacked, setWhacked] = useState<number | null>(null)
   const [missed, setMissed] = useState<number | null>(null)
 

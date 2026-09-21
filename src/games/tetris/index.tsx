@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
 import '../game-surfaces.css'
@@ -281,6 +282,7 @@ export default function Tetris({ userId, gameId }: Props) {
   const [score, setScore] = useState(0)
   const [lines, setLines] = useState(0)
   const [status, setStatus] = useState<Status>('idle')
+  useGamePlay(gameId, status === 'playing' || status === 'paused' ? status : 'idle')
 
   const boardRef = useRef(board)
   const activeRef = useRef<Active | null>(active)

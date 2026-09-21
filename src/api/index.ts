@@ -1,8 +1,10 @@
-import { defaultPlayRanking, gameCatalog, getCatalogGame } from '@/features/games/data'
+import { gameCatalog, getCatalogGame } from '@/features/games/data'
+import { comparePlayTotals, type PlayTotals } from '@/features/games/playStats'
 import type { Game, User, GameRecord, UserStats, PlayRankItem } from '@/types'
 
 const USERS_KEY = 'mini-games-local-users'
 const RECORDS_KEY = 'mini-games-local-records'
+const PLAY_STATS_KEY = 'mini-games-local-play-stats'
 
 function readStorage<T>(key: string, fallback: T): T {
   try {
@@ -144,21 +146,60 @@ export const createRecord = async (
   return record
 }
 
-// Ranking
-export const getPlayRanking = async (): Promise<PlayRankItem[]> => {
-  const countByGame = new Map<string, number>()
-  defaultPlayRanking.forEach((item) => {
-    countByGame.set(item.gameId, item.playCount)
-  })
-  getStoredRecords().forEach((record) => {
-    countByGame.set(record.gameId, (countByGame.get(record.gameId) ?? 0) + 1)
-  })
+// Anonymous, browser-local gameplay totals. Personal score records do not affect these totals.
+function getStoredPlayStats(): Record<string, PlayTotals> {
+  const stored = readStorage<unknown>(PLAY_STATS_KEY, {})
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {}
+  return Object.fromEntries(
+    Object.entries(stored)
+      .filter(
+        ([, value]) =>
+          value &&
+          Number.isSafeInteger(value.playCount) &&
+          value.playCount >= 0 &&
+          Number.isFinite(value.totalDuration) &&
+          value.totalDuration >= 0,
+      )
+      .map(([gameId, value]) => [
+        gameId,
+        {
+          playCount: value.playCount,
+          totalDuration: value.totalDuration,
+        },
+      ]),
+  )
+}
 
-  return Array.from(countByGame.entries())
-    .map(([gameId, playCount]) => ({
+export function addGamePlayStats(gameId: string, delta: PlayTotals): void {
+  if (
+    !getCatalogGame(gameId) ||
+    !Number.isSafeInteger(delta.playCount) ||
+    delta.playCount < 0 ||
+    !Number.isFinite(delta.totalDuration) ||
+    delta.totalDuration < 0
+  )
+    return
+  try {
+    const stats = getStoredPlayStats()
+    const current = stats[gameId] ?? { playCount: 0, totalDuration: 0 }
+    const next = {
+      playCount: current.playCount + delta.playCount,
+      totalDuration: current.totalDuration + delta.totalDuration,
+    }
+    if (!Number.isSafeInteger(next.playCount) || !Number.isFinite(next.totalDuration)) return
+    stats[gameId] = next
+    writeStorage(PLAY_STATS_KEY, stats)
+  } catch {
+    // Storage may be blocked or full; statistics must not interrupt gameplay.
+  }
+}
+
+export const getPlayRanking = async (): Promise<PlayRankItem[]> =>
+  Object.entries(getStoredPlayStats())
+    .filter(([gameId, stats]) => getCatalogGame(gameId) && stats.playCount > 0)
+    .map(([gameId, stats]) => ({
       gameId,
       gameName: getGameName(gameId),
-      playCount,
+      ...stats,
     }))
-    .sort((a, b) => b.playCount - a.playCount)
-}
+    .sort((a, b) => comparePlayTotals(a, b) || a.gameId.localeCompare(b.gameId))

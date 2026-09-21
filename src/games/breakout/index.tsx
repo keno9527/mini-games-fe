@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
 import '../game-surfaces.css'
@@ -186,6 +187,7 @@ function randPowerUp(): PowerUpType {
 export default function Breakout({ userId, gameId }: Props) {
   const [level, setLevel] = useState<Level>('中等')
   const [status, setStatus] = useState<Status>('idle')
+  useGamePlay(gameId, status === 'playing' ? 'playing' : status === 'ready' ? 'paused' : 'idle')
   const [score, setScore] = useState(0)
   const [lives, setLives] = useState(3)
   const [levelIdx, setLevelIdx] = useState(0)

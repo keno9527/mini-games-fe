@@ -17,7 +17,7 @@ import {
 } from '../src/games/animal-chess-ai/engine.ts'
 import { getCatalogGame } from '../src/features/games/data.ts'
 import { getGameManifest } from '../src/games/registry.ts'
-import { createRecord, getPlayRanking, getRecords } from '../src/api/index.ts'
+import { addGamePlayStats, createRecord, getPlayRanking, getRecords } from '../src/api/index.ts'
 
 const at = (x: number, y: number) => ({ x, y })
 const piece = (side: Piece['side'], animal: Animal, x: number, y: number): Piece => ({
@@ -268,7 +268,7 @@ test('outcomes always use the human red side for win/lose and scoring', () => {
   assert.deepEqual(getOutcome('blue'), { result: 'lose', score: 0 })
 })
 
-test('completed AI games persist separately and ranking counts games, not score', async () => {
+test('personal scores persist separately from anonymous game totals', async () => {
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
   const storage = new Map<string, string>([
     ['mini-games-local-users', JSON.stringify([{ id: 'ai-test-player', name: '测试玩家' }])],
@@ -306,6 +306,9 @@ test('completed AI games persist separately and ranking counts games, not score'
         ['lose', 0, 90],
       ],
     )
+    assert.deepEqual(await getPlayRanking(), [])
+    addGamePlayStats('animal-chess-ai', { playCount: 2, totalDuration: 180 })
+    addGamePlayStats('animal-chess', { playCount: 1, totalDuration: 30 })
     const ranking = await getPlayRanking()
     assert.equal(ranking.find((r) => r.gameId === 'animal-chess-ai')?.playCount, 2)
     assert.equal(ranking.find((r) => r.gameId === 'animal-chess')?.playCount, 1)

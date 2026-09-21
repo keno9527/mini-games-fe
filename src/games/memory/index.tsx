@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { createRecord } from '@/api'
 import '../game-surfaces.css'
@@ -62,6 +63,7 @@ export default function MemoryCard({ userId, gameId }: Props) {
   const [steps, setSteps] = useState(0)
   const [locked, setLocked] = useState(false)
   const [status, setStatus] = useState<'idle' | 'playing' | 'won'>('idle')
+  useGamePlay(gameId, status === 'playing' ? 'playing' : 'idle')
   const [startTime, setStartTime] = useState(0)
   const [submitted, setSubmitted] = useState(false)
 

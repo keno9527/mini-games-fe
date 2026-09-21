@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback, useId } from 'react'
 import './snake.css'
 import { useGameRecord } from '@/hooks/useGameRecord'
@@ -57,6 +58,7 @@ export default function Snake({ userId, gameId }: Props) {
   const [dir, setDir] = useState<Dir>('RIGHT')
   const [score, setScore] = useState(0)
   const [status, setStatus] = useState<'idle' | 'playing' | 'paused' | 'over'>('idle')
+  useGamePlay(gameId, status === 'playing' || status === 'paused' ? status : 'idle')
   const [highScore, setHighScore] = useState(0)
 
   const dirRef = useRef<Dir>('RIGHT')

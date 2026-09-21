@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createRecord } from '@/api'
 import {
@@ -39,6 +40,7 @@ function terrainLabel(position: Position) {
 
 export default function AnimalChess({ userId, gameId }: Props) {
   const [game, setGame] = useState(createInitialState)
+  const play = useGamePlay(gameId)
   const [selected, setSelected] = useState<Position | null>(null)
   const startedAtRef = useRef(Date.now())
   const submittedRef = useRef(false)
@@ -48,6 +50,7 @@ export default function AnimalChess({ userId, gameId }: Props) {
   )
 
   useEffect(() => {
+    if (game.winner) play.stop()
     if (!game.winner || !userId || submittedRef.current) return
     submittedRef.current = true
     const duration = Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000))
@@ -57,9 +60,10 @@ export default function AnimalChess({ userId, gameId }: Props) {
       duration,
       result: 'complete',
     }).catch(() => undefined)
-  }, [game.winner, gameId, userId])
+  }, [game.winner, gameId, userId, play])
 
   const reset = () => {
+    play.restart()
     setGame(createInitialState())
     setSelected(null)
     startedAtRef.current = Date.now()
@@ -78,6 +82,7 @@ export default function AnimalChess({ userId, gameId }: Props) {
       return
     }
     if (!selected || !legalMoves.some((move) => isSamePosition(move, position))) return
+    play.start()
     setGame((current) => applyMove(current, selected, position))
     setSelected(null)
   }

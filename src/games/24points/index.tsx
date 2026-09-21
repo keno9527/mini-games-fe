@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { createRecord } from '@/api'
 
@@ -86,6 +87,7 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
   const [streak, setStreak] = useState(0)
   const [timeLeft, setTimeLeft] = useState(LEVEL_SECONDS['中等'])
   const [status, setStatus] = useState<'idle' | 'playing' | 'over'>('idle')
+  useGamePlay(gameId, status === 'playing' ? 'playing' : 'idle')
   const timerHandle = useRef<ReturnType<typeof setInterval> | null>(null)
   const scoreRef = useRef(0)
   const submittedRef = useRef(false)

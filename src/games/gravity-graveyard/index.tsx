@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   ArrowDown,
@@ -264,6 +265,14 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
   const audioRef = useRef<{ context: AudioContext; nodes: AudioNode[] } | null>(null)
 
   const [run, setRun] = useState<RunState>(runRef.current)
+  useGamePlay(
+    gameId,
+    run.phase === 'active'
+      ? 'playing'
+      : run.phase === 'interlude' || run.phase === 'ending'
+        ? 'paused'
+        : 'idle',
+  )
   const [hud, setHud] = useState<HudSnapshot>({
     run: runRef.current,
     anchors: 0,

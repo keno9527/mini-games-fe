@@ -1,3 +1,4 @@
+import { useGamePlay } from '@/hooks/useGamePlay'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { GameComponentProps } from '@/games/manifest'
 import { useGameRecord } from '@/hooks/useGameRecord'
@@ -61,6 +62,7 @@ function Minefield({ userId, gameId }: GameComponentProps) {
   const [difficulty, setDifficulty] = useState<Difficulty>('简单')
   const [board, setBoard] = useState<CellState[][] | null>(null)
   const [status, setStatus] = useState<'idle' | 'playing' | 'won' | 'lost'>('idle')
+  const play = useGamePlay(gameId, status === 'playing' ? 'playing' : 'idle')
   const [elapsed, setElapsed] = useState(0)
   const [mode, setMode] = useState<'reveal' | 'flag'>('reveal')
   const [lastCell, setLastCell] = useState<number | null>(null)
@@ -131,6 +133,7 @@ function Minefield({ userId, gameId }: GameComponentProps) {
     if (!working) {
       working = createBoard(cfg.rows, cfg.cols, cfg.mines, r, c)
       startTime.current = Date.now()
+      play.start()
       record.start()
       setElapsed(0)
     }
@@ -140,6 +143,7 @@ function Minefield({ userId, gameId }: GameComponentProps) {
         working.map((row) => row.map((cell) => (cell.mine ? { ...cell, revealed: true } : cell))),
       )
       setStatus('lost')
+      play.stop()
       setElapsed(duration)
       void record.submit({ result: 'lose', duration, score: 0 })
       return
@@ -150,6 +154,7 @@ function Minefield({ userId, gameId }: GameComponentProps) {
         next.map((row) => row.map((cell) => (cell.mine ? { ...cell, flagged: true } : cell))),
       )
       setStatus('won')
+      play.stop()
       setElapsed(duration)
       void record.submit({
         result: 'win',
