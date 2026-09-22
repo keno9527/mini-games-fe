@@ -9,6 +9,7 @@ interface GameOverSceneCallbacks {
 }
 
 interface GameOverStats {
+  readonly canRetry: boolean
   readonly victory: boolean
   readonly score: number
   readonly highScore: number
@@ -80,7 +81,13 @@ export class GameOverScene implements Scene {
     )
 
     if (this.inputLockTicks <= 0 && this.blinkPhase < 40) {
-      drawCentered(context, 'PRESS START TO RETRY', 160, COLORS.TEXT_PRIMARY, 1)
+      drawCentered(
+        context,
+        stats.canRetry ? 'SELECT RETRY OR NEW GAME' : 'PRESS START TO RETRY',
+        160,
+        COLORS.TEXT_PRIMARY,
+        1,
+      )
     }
   }
 }

@@ -61,7 +61,7 @@ export const BULLET_SPEED_FAST = 4
 export const TURN_SNAP = CELL_SIZE / 2
 
 /** 玩家初始生命数 */
-export const PLAYER_INITIAL_LIVES = 3
+export const PLAYER_INITIAL_LIVES = 6
 
 /** 每关敌方坦克总数 */
 export const ENEMIES_PER_LEVEL = 20

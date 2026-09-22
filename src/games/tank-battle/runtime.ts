@@ -12,6 +12,7 @@ import {
   type MenuAction,
   type PadMenuAction,
 } from '@/games/tank-battle/core/TankLobby.ts'
+import { isValidStage } from './progress.ts'
 import { LEVELS } from '@/games/tank-battle/data/levels.ts'
 import { PixelCanvas } from '@/games/tank-battle/render/PixelCanvas.ts'
 import { SceneManager, type TankBattleResult } from '@/games/tank-battle/scene/SceneManager.ts'
@@ -20,7 +21,11 @@ import { SceneKind, type LevelData, type TankBattleHoldAction } from '@/games/ta
 export type TankBattleUiState = 'title' | 'playing' | 'paused' | 'gameOver'
 export interface TankBattleMenu {
   mode: TankMode
-  page: 'modes' | 'practice'
+  page: 'modes' | 'practice' | 'campaign'
+  highestStage: number
+  retryStage: number | null
+  startSelection: number
+  continued: boolean
   awaitingControllers: boolean
   practiceStage: number
   pauseSelection: number
@@ -37,6 +42,7 @@ export interface TankBattleHandle {
   setSoundEnabled(enabled: boolean): void
   setPracticeStage(stage: number): void
   selectMode(mode: TankMode): void
+  chooseStart(continueProgress: boolean): void
   menuAction(action: MenuAction): void
   useKeyboard(): void
   reassignGamepads(): void
@@ -47,6 +53,8 @@ export interface TankBattleControllers {
   canPlay: boolean
 }
 export interface TankBattleOptions {
+  readonly initialProgress?: number
+  readonly onStageReached?: (stage: number) => void
   readonly customLevel?: LevelData
   readonly onControllersChange?: (state: TankBattleControllers) => void
   readonly onMenuChange?: (state: TankBattleMenu) => void
@@ -68,12 +76,23 @@ export function mountTankBattle(
   const menu: TankBattleMenu = {
     mode: 'single',
     page: 'modes',
+    highestStage: isValidStage(options.initialProgress) ? options.initialProgress : 0,
+    retryStage: null,
+    startSelection: 0,
+    continued: false,
     awaitingControllers: false,
     practiceStage: 0,
     pauseSelection: 0,
     soundEnabled: true,
   }
-  const sceneManager = new SceneManager(audio, Date.now() >>> 0, options)
+  const sceneManager = new SceneManager(audio, Date.now() >>> 0, {
+    ...options,
+    onStageReached: (stage) => {
+      menu.highestStage = Math.max(menu.highestStage, stage)
+      options.onStageReached?.(menu.highestStage)
+      notifyMenu()
+    },
+  })
   let previousControllers = ''
   let lastUiState: TankBattleUiState | undefined
   let pending: PadMenuAction[] = []
@@ -113,6 +132,10 @@ export function mountTankBattle(
       menu.pauseSelection = 0
       notifyMenu()
     }
+    menu.continued = sceneManager.isContinued()
+    menu.retryStage = state === 'gameOver' ? sceneManager.getRetryStage() : null
+    if (state === 'gameOver') menu.startSelection = 0
+    notifyMenu()
     lastUiState = state
     options.onStateChange?.(state)
   }
@@ -121,8 +144,10 @@ export function mountTankBattle(
     lobby.select(mode)
     menu.mode = mode
     menu.page = 'modes'
+    menu.startSelection = 0
     menu.awaitingControllers = false
     startPending = false
+    sceneManager.setStartStage(null)
     sceneManager.setPlayerCount(lobby.count)
     sceneManager.setPracticeStage(mode === 'practice' ? menu.practiceStage : null)
     notifyMenu()
@@ -170,15 +195,35 @@ export function mountTankBattle(
     notifyControllers()
     notifyMenu()
   }
+  const selectStart = (selection: number) => {
+    menu.startSelection = selection
+    sceneManager.setStartStage(
+      selection === 0 ? (isTitle() ? menu.highestStage : menu.retryStage) : null,
+    )
+    notifyMenu()
+  }
+  const chooseStart = (continueProgress: boolean) => {
+    if (isTitle() && menu.page === 'campaign') {
+      selectStart(continueProgress ? 0 : 1)
+      requestStart()
+    } else if (sceneManager.getCurrentKind() === SceneKind.GAME_OVER && menu.retryStage !== null) {
+      selectStart(continueProgress ? 0 : 1)
+      if (lobby.canPlay) input.requestConfirm()
+    }
+  }
   const dispatch = (action: MenuAction) => {
     if (isTitle()) {
       if (action === 'back') {
         menu.awaitingControllers = false
         startPending = false
-        if (menu.page === 'practice') {
+        if (menu.page !== 'modes') {
+          sceneManager.setStartStage(null)
           menu.page = 'modes'
           notifyMenu()
         } else selectMode('single')
+      } else if (menu.page === 'campaign') {
+        if (['up', 'down', 'left', 'right'].includes(action)) selectStart(1 - menu.startSelection)
+        else if (action === 'confirm') chooseStart(menu.startSelection === 0)
       } else if (menu.page === 'practice') {
         if (action === 'left' || action === 'right')
           setPracticeStage(menu.practiceStage + (action === 'left' ? -1 : 1))
@@ -190,6 +235,9 @@ export function mountTankBattle(
         if (menu.mode === 'practice') {
           menu.page = 'practice'
           notifyMenu()
+        } else if (menu.mode === 'single' && !options.customLevel && menu.highestStage > 0) {
+          menu.page = 'campaign'
+          selectStart(0)
         } else requestStart()
       }
     } else if (sceneManager.isPaused()) {
@@ -205,6 +253,8 @@ export function mountTankBattle(
       }
     } else if (sceneManager.getCurrentKind() === SceneKind.GAME_OVER) {
       if (action === 'back') returnToTitle()
+      else if (menu.retryStage !== null && ['up', 'down', 'left', 'right'].includes(action))
+        selectStart(1 - menu.startSelection)
       else if (action === 'confirm' && lobby.canPlay) input.requestConfirm()
     }
   }
@@ -305,7 +355,12 @@ export function mountTankBattle(
   }
   // Capture short keyboard taps even when the title has not received pointer focus yet.
   const handleMenuKeyDown = (event: KeyboardEvent) => {
-    if (!isTitle() && !sceneManager.isPaused()) return
+    if (
+      !isTitle() &&
+      !sceneManager.isPaused() &&
+      sceneManager.getCurrentKind() !== SceneKind.GAME_OVER
+    )
+      return
     if (
       event.target instanceof HTMLElement &&
       event.target.closest('input, textarea, select, button, a, [contenteditable="true"]')
@@ -364,6 +419,7 @@ export function mountTankBattle(
     setSoundEnabled,
     setPracticeStage,
     selectMode,
+    chooseStart,
     menuAction: dispatch,
     useKeyboard: () => {
       if (!isTitle() && !sceneManager.isPaused()) return

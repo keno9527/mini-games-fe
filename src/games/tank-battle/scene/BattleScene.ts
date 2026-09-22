@@ -31,6 +31,7 @@ enum BattlePhase {
 }
 
 interface BattleSceneCallbacks {
+  readonly onLevelStart?: (stage: number) => void
   readonly practice?: boolean
   /** 全部关卡通关或玩家失败时通知外层切场景 */
   readonly onGameOver: (victory: boolean) => void
@@ -73,6 +74,7 @@ export class BattleScene implements Scene {
   /** 载入指定关卡并进入开场阶段 */
   startLevel(levelIndex: number): void {
     this.world.loadLevel(levelIndex)
+    this.callbacks.onLevelStart?.(levelIndex)
     this.phase = BattlePhase.INTRO
     this.phaseTicks = LEVEL_INTRO_TICKS
     this.audio.stopAll()

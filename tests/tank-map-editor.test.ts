@@ -189,7 +189,7 @@ for (const playerCount of [1, 2] as const) {
     assert.equal(inspect.world.players.length, playerCount)
     assert.deepEqual(
       inspect.world.players.map((player) => player.lives),
-      Array(playerCount).fill(3),
+      Array(playerCount).fill(6),
     )
     inspect.world.score = 700
     inspect.world.highScore = 700

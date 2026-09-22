@@ -23,6 +23,8 @@ import {
   type TankBattleControllers,
   type TankBattleMenu,
 } from '@/games/tank-battle/runtime.ts'
+import { loadProgress, saveProgress } from './progress.ts'
+import { PLAYER_INITIAL_LIVES } from './constants.ts'
 import { TankMenu, TankPauseMenu } from './TankMenu.tsx'
 import { POWERUP_SPRITES } from '@/games/tank-battle/data/sprites.ts'
 import { POWERUP_PALETTE } from '@/games/tank-battle/render/palette.ts'
@@ -109,6 +111,10 @@ function TankBattlePlayer({
   const [menu, setMenu] = useState<TankBattleMenu>({
     mode: 'single',
     page: 'modes',
+    highestStage: 0,
+    retryStage: null,
+    startSelection: 0,
+    continued: false,
     awaitingControllers: false,
     practiceStage: 0,
     pauseSelection: 0,
@@ -121,6 +127,7 @@ function TankBattlePlayer({
   })
   const [fullscreen, setFullscreen] = useState(false)
   const [fullscreenError, setFullscreenError] = useState('')
+  const [progressError, setProgressError] = useState('')
   const compactBattle = uiState !== 'title'
 
   useEffect(() => {
@@ -143,14 +150,32 @@ function TankBattlePlayer({
       }
 
       if (cancelled) return
+      let initialProgress = 0
+      setProgressError('')
+      if (!customMap) {
+        try {
+          initialProgress = loadProgress(userId)
+        } catch {
+          setProgressError('无法读取关卡进度，本次仍可正常游玩和重试。')
+        }
+      }
       game = mountTankBattle(canvas, stage, {
         customLevel: customMap,
         initialHighScore,
+        initialProgress,
+        onStageReached: (stage) => {
+          try {
+            saveProgress(stage, userId)
+            setProgressError('')
+          } catch {
+            setProgressError('进度未能保存，当前页面仍可重试；关闭后可能丢失进度。')
+          }
+        },
         onStateChange: setUiState,
         onControllersChange: setControllers,
         onMenuChange: setMenu,
         onGameOver: (result) => {
-          if (!userId || result.practice) return
+          if (!userId || result.practice || result.continued) return
           createRecord(userId, {
             gameId,
             score: result.score,
@@ -250,7 +275,9 @@ function TankBattlePlayer({
                   {customMap
                     ? customMap.name
                     : menu.mode !== 'practice'
-                      ? '经典战役'
+                      ? menu.continued
+                        ? '续关挑战'
+                        : '经典战役'
                       : `关卡练习 · 第 ${menu.practiceStage + 1} 关`}
                 </span>
               )}
@@ -276,7 +303,9 @@ function TankBattlePlayer({
                   : uiState === 'paused'
                     ? '继续'
                     : uiState === 'gameOver'
-                      ? '再来一局'
+                      ? menu.retryStage !== null
+                        ? '确认选择'
+                        : '再来一局'
                       : '开始游戏'}
               </button>
               <button
@@ -335,11 +364,40 @@ function TankBattlePlayer({
             </div>
           </div>
         )}
-        {compactBattle && (customMap || menu.mode === 'practice') && (
+        {compactBattle && (customMap || menu.mode === 'practice' || menu.continued) && (
           <p className="tank-practice-note" data-tank-chrome>
-            {customMap ? `自定义地图 · ${customMap.name}` : '单关练习'} · 三条生命 ·
-            战绩不计入排行榜
+            {customMap
+              ? `自定义地图 · ${customMap.name}`
+              : menu.continued
+                ? '续关挑战'
+                : '单关练习'}{' '}
+            · {PLAYER_INITIAL_LIVES} 条生命 · 战绩不计入排行榜
             {customMap && ' · 试玩破坏不会写回原稿'}
+          </p>
+        )}
+        {uiState === 'gameOver' && menu.retryStage !== null && (
+          <div className="tank-retry-actions" aria-label="失败后选择" data-tank-chrome>
+            {[`重试第 ${menu.retryStage + 1} 关`, '从头开始'].map((label, index) => (
+              <button
+                key={label}
+                type="button"
+                className={menu.startSelection === index ? 'is-selected' : ''}
+                aria-pressed={menu.startSelection === index}
+                disabled={!controllers.canPlay}
+                onClick={() => {
+                  gameRef.current?.chooseStart(index === 0)
+                  canvasRef.current?.focus({ preventScroll: true })
+                }}
+              >
+                {label}
+              </button>
+            ))}
+            <small>重试恢复 {PLAYER_INITIAL_LIVES} 条命，分数和升级重置 · 续关不计入经典战绩</small>
+          </div>
+        )}
+        {progressError && !customMap && (
+          <p className="tank-practice-note" role="status" data-tank-chrome>
+            {progressError}
           </p>
         )}
         {fullscreenError && (
@@ -351,7 +409,7 @@ function TankBattlePlayer({
           ref={stageRef}
           className={`tank-battle-stage ${!compactBattle ? 'is-title' : ''}`}
           onKeyDown={(event) => {
-            if (uiState !== 'title' && uiState !== 'paused') return
+            if (uiState !== 'title' && uiState !== 'paused' && uiState !== 'gameOver') return
             if ((event.target as HTMLElement).tagName === 'SELECT') return
             const action = (
               { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' } as const
@@ -405,7 +463,11 @@ function TankBattlePlayer({
                   onClick={() => gameRef.current?.confirm()}
                 >
                   <Play size={24} weight="fill" aria-hidden="true" />
-                  {uiState === 'gameOver' ? '重新挑战' : '开始游戏'}
+                  {uiState === 'gameOver'
+                    ? menu.retryStage !== null
+                      ? '确认选择'
+                      : '重新挑战'
+                    : '开始游戏'}
                 </button>
               ) : (
                 <>

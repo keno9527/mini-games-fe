@@ -66,6 +66,7 @@ test('runtime starts a selected mode with available controllers and preserves ex
   let controllers: TankBattleControllers | undefined
   let menu: TankBattleMenu | undefined
   const handle = mountTankBattle(canvas, stage, {
+    initialProgress: 4,
     onStateChange: (next) => {
       state = next
     },
@@ -150,7 +151,16 @@ test('runtime starts a selected mode with available controllers and preserves ex
     handle.useKeyboard()
     handle.confirm()
     frames()
+    assert.equal(state, 'title')
+    assert.equal(menu?.page, 'campaign')
+    assert.equal(menu?.highestStage, 4)
+    handle.menuAction('down')
+    assert.equal(menu?.startSelection, 1)
+    handle.confirm()
+    frames()
     assert.equal(state, 'playing')
+    assert.equal(menu?.continued, false)
+    assert.equal(menu?.highestStage, 4, 'starting over preserves the saved progress')
     handle.togglePause()
     frames()
     handle.returnToTitle()
@@ -192,7 +202,12 @@ test('runtime starts a selected mode with available controllers and preserves ex
     handle.useKeyboard()
     send(pad(0), pad(1))
     send(pad(0, [0]), pad(1))
-    assert.equal(state, 'playing', 'a single confirm press assigns P1 and starts a solo game')
+    assert.equal(state, 'title', 'solo with progress offers continue or start over')
+    assert.equal(menu?.page, 'campaign')
+    send(pad(0), pad(1))
+    send(pad(0, [0]), pad(1))
+    assert.equal(state, 'playing')
+    assert.equal(menu?.continued, true)
     assert.deepEqual(controllers?.bindings, [0, null])
   } finally {
     handle.destroy()

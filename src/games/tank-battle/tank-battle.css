@@ -1111,3 +1111,35 @@
   overflow-y: auto;
   justify-content: safe center;
 }
+
+.tank-campaign-actions {
+  display: grid;
+  gap: 12px;
+  justify-content: center;
+  margin: 20px 0;
+}
+.tank-campaign-actions button,
+.tank-retry-actions button {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid #555;
+  color: #deded8;
+}
+.tank-campaign-actions .is-selected,
+.tank-retry-actions .is-selected {
+  border-color: #f5cb5c;
+  color: #f5cb5c;
+}
+.tank-retry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  background: #111;
+}
+.tank-retry-actions small {
+  flex-basis: 100%;
+  text-align: center;
+  color: #aaa;
+}

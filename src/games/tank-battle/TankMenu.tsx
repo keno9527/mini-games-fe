@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import type { TankBattleControllers, TankBattleHandle, TankBattleMenu } from './runtime.ts'
 import type { TankMode } from './core/TankLobby.ts'
+import { PLAYER_INITIAL_LIVES } from './constants.ts'
 import { LEVELS } from './data/levels.ts'
 import { PLAYER_TANK_SPRITES } from './data/sprites.ts'
 import { drawMatrix } from './render/drawSprites.ts'
@@ -129,6 +130,37 @@ export function TankMenu({ menu, controllers, ready, game, focusGame }: MenuProp
             </button>
           ))}
         </nav>
+      ) : menu.page === 'campaign' ? (
+        <div className="tank-practice-menu" aria-label="单人战役进度">
+          <h3>单人作战</h3>
+          <div className="tank-campaign-actions">
+            {[`从第 ${menu.highestStage + 1} 关继续`, '从头开始'].map((label, index) => (
+              <button
+                key={label}
+                type="button"
+                className={menu.startSelection === index ? 'is-selected' : ''}
+                aria-pressed={menu.startSelection === index}
+                onClick={() => {
+                  game?.chooseStart(index === 0)
+                  focusGame()
+                }}
+              >
+                {label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                game?.menuAction('back')
+                focusGame()
+              }}
+            >
+              返回
+            </button>
+          </div>
+          <p>续关从关卡开头挑战 · {PLAYER_INITIAL_LIVES} 条命 · 不计入经典战绩</p>
+          <p>进度自动保存在当前浏览器，从头开始不会清除进度</p>
+        </div>
       ) : (
         <div className="tank-practice-menu" aria-label="关卡练习选关">
           <h3>STAGE SELECT</h3>

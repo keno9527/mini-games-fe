@@ -11,9 +11,11 @@ import {
 import { BattleScene } from '@/games/tank-battle/scene/BattleScene.ts'
 import { GameOverScene } from '@/games/tank-battle/scene/GameOverScene.ts'
 import type { Scene } from '@/games/tank-battle/scene/Scene.ts'
+import { isValidStage } from '../progress.ts'
 import { TitleScene } from '@/games/tank-battle/scene/TitleScene.ts'
 
 export interface TankBattleResult {
+  readonly continued: boolean
   readonly practice: boolean
   readonly victory: boolean
   readonly score: number
@@ -23,6 +25,7 @@ export interface TankBattleResult {
 }
 
 export interface SceneManagerOptions {
+  readonly onStageReached?: (stage: number) => void
   readonly customLevel?: LevelData
   readonly initialHighScore?: number
   readonly onGameOver?: (result: TankBattleResult) => void
@@ -38,6 +41,9 @@ export class SceneManager {
   private readonly customLevel?: LevelData
   private readonly audio: AudioEngine
   private readonly onGameOver?: (result: TankBattleResult) => void
+  private readonly onStageReached?: (stage: number) => void
+  private startStage: number | null = null
+  private continued = false
   private practiceStage: number | null = null
   private world: World
   private runTicks = 0
@@ -74,6 +80,7 @@ export class SceneManager {
       : undefined
     this.audio = audio
     this.onGameOver = options.onGameOver
+    this.onStageReached = options.onStageReached
     this.world = new World(
       seed,
       this.customLevel ? 0 : options.initialHighScore,
@@ -92,6 +99,7 @@ export class SceneManager {
       score: this.finalScore,
       highScore: this.finalHighScore,
       levelReached: this.finalLevel,
+      canRetry: this.getRetryStage() !== null,
     }))
 
     this.battleScene = this.createBattleScene()
@@ -103,18 +111,23 @@ export class SceneManager {
   private createBattleScene(): BattleScene {
     return new BattleScene(this.world, this.audio, {
       onGameOver: (victory: boolean): void => this.finishGame(victory),
+      onLevelStart: (stage) => {
+        if (this.isSingleCampaign()) this.onStageReached?.(stage)
+      },
       practice: this.practiceStage !== null || this.customLevel !== undefined,
     })
   }
 
   /** 开始新一局：重置世界状态但保留最高分 */
   private startNewGame(): void {
-    const highScore = this.practiceStage === null && !this.customLevel ? this.campaignHighScore : 0
+    this.continued = this.isSingleCampaign() && this.startStage !== null
+    const highScore = this.isRankedRun() ? this.campaignHighScore : 0
 
     resetEntityIds()
     this.world = new World(Date.now() >>> 0, highScore, this.playerCount, this.customLevel)
     this.world.score = 0
-    this.world.levelIndex = this.practiceStage ?? 0
+    this.world.levelIndex = this.practiceStage ?? (this.continued ? this.startStage! : 0)
+    this.startStage = null
     this.runTicks = 0
 
     this.battleScene = this.createBattleScene()
@@ -123,20 +136,20 @@ export class SceneManager {
 
   /** 战斗结束：快照战绩后切到结束画面 */
   private finishGame(victory: boolean): void {
-    const newHighScore =
-      this.practiceStage === null && !this.customLevel && this.world.score > this.campaignHighScore
+    const newHighScore = this.isRankedRun() && this.world.score > this.campaignHighScore
     this.audio.setMotor(null)
     this.audio.playSequence([
       victory ? SoundEffect.VICTORY : SoundEffect.GAME_OVER,
       ...(newHighScore ? [SoundEffect.HIGH_SCORE] : []),
     ])
-    if (this.practiceStage === null && !this.customLevel)
-      this.campaignHighScore = this.world.highScore
+    if (this.isRankedRun()) this.campaignHighScore = this.world.highScore
     this.finalVictory = victory
     this.finalScore = this.world.score
     this.finalHighScore = this.world.highScore
     this.finalLevel = this.world.levelIndex + 1
+    this.startStage = this.getRetryStage()
     this.onGameOver?.({
+      continued: this.continued,
       practice: this.practiceStage !== null || this.customLevel !== undefined,
       victory,
       score: this.finalScore,
@@ -145,6 +158,27 @@ export class SceneManager {
       duration: Math.max(1, Math.round(this.runTicks / 60)),
     })
     this.switchTo(SceneKind.GAME_OVER)
+  }
+
+  private isSingleCampaign(): boolean {
+    return this.playerCount === 1 && this.practiceStage === null && !this.customLevel
+  }
+
+  private isRankedRun(): boolean {
+    return this.practiceStage === null && !this.customLevel && !this.continued
+  }
+
+  isContinued(): boolean {
+    return this.continued
+  }
+
+  getRetryStage(): number | null {
+    return this.isSingleCampaign() && !this.finalVictory ? this.finalLevel - 1 : null
+  }
+
+  setStartStage(stage: number | null): void {
+    if (this.currentKind === SceneKind.BATTLE) return
+    this.startStage = this.isSingleCampaign() && isValidStage(stage) ? stage : null
   }
 
   switchTo(kind: SceneKind): void {
@@ -168,6 +202,7 @@ export class SceneManager {
   returnToTitle(): void {
     if (!this.isPaused() && this.currentKind !== SceneKind.GAME_OVER) return
     this.audio.stopAll()
+    this.startStage = null
     this.switchTo(SceneKind.TITLE)
   }
 

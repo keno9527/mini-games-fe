@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { PLAYER_INITIAL_LIVES } from '../constants.ts'
 import { LEVELS } from '@/games/tank-battle/data/levels.ts'
 import {
   createMap,
@@ -330,7 +331,7 @@ export function MapEditor({ initialMap, active, onPlay, onBack, onLibrary }: Edi
             ))}
           </select>
         </label>
-        <span className="tank-editor-count">20 辆敌军 · 3 条生命</span>
+        <span className="tank-editor-count">20 辆敌军 · {PLAYER_INITIAL_LIVES} 条生命</span>
       </div>
       <div className="tank-editor-layout">
         <div className="tank-editor-workspace">

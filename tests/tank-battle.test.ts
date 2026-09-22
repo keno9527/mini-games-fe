@@ -443,7 +443,7 @@ test('six powerups apply their effects, award 500 points, and expire on game tic
     assert.equal(world.score, 500)
     assert.equal(world.powerUps[0].alive, false)
     if (kind === PowerUpKind.STAR) assert.equal(world.players[0].tank?.star, 1)
-    if (kind === PowerUpKind.TANK) assert.equal(world.players[0].lives, 4)
+    if (kind === PowerUpKind.TANK) assert.equal(world.players[0].lives, 7)
     if (kind === PowerUpKind.HELMET)
       assert.equal(world.players[0].tank?.shieldTicks, HELMET_SHIELD_TICKS)
     if (kind === PowerUpKind.TIMER) assert.equal(world.freezeTicks, FREEZE_TICKS)
@@ -477,9 +477,9 @@ test('star upgrades persist between stages but reset on death; 20000 awards one 
   world.loadLevel(1)
   assert.equal(world.players[0].tank?.star, 3)
   world.addScore(20000)
-  assert.equal(world.players[0].lives, 4)
+  assert.equal(world.players[0].lives, 7)
   world.addScore(20000)
-  assert.equal(world.players[0].lives, 4)
+  assert.equal(world.players[0].lives, 7)
   world.onPlayerDestroyed()
   for (let i = 0; i < 30; i += 1) updateSpawning(world)
   assert.equal(world.players[0].tank?.star, 0)
@@ -781,4 +781,88 @@ test('battle canvas fits viewport and controls, grows after shrinking, and resto
     else Reflect.deleteProperty(globalThis, 'window')
   }
   assert.equal(listeners.size, 0)
+})
+
+test('solo retry rebuilds the failed stage with six lives and resets score, upgrades and duration', () => {
+  const results: import('../src/games/tank-battle/scene/SceneManager.ts').TankBattleResult[] = []
+  const reached: number[] = []
+  const manager = new SceneManager(silentAudio(), 1, {
+    initialHighScore: 1000,
+    onGameOver: (result) => results.push(result),
+    onStageReached: (stage) => reached.push(stage),
+  })
+  const world = () => (manager as unknown as { world: World }).world
+  manager.setStartStage(4)
+  manager.update({ ...idle, confirmEdge: true })
+  assert.equal(world().levelIndex, 4)
+  assert.equal(world().players[0].lives, 6)
+  assert.equal(manager.isContinued(), true)
+  for (let i = 0; i < LEVEL_INTRO_TICKS; i++) manager.update(idle)
+  world().players[0].tank!.star = 3
+  world().score = 2500
+  world().players[0].lives = 1
+  world().onPlayerDestroyed()
+  manager.update(idle)
+  assert.equal(manager.getCurrentKind(), SceneKind.GAME_OVER)
+  assert.equal(results.length, 1)
+  assert.equal(results[0].continued, true)
+  assert.equal(manager.getRetryStage(), 4)
+  for (let i = 0; i < 45; i++) manager.update(idle)
+  manager.update({ ...idle, confirmEdge: true })
+  assert.equal(world().levelIndex, 4)
+  assert.equal(world().players[0].lives, 6)
+  assert.equal(world().players[0].tank!.star, 0)
+  assert.equal(world().score, 0)
+  assert.equal(world().base.destroyed, false)
+  assert.equal(world().getEnemiesRemaining(), 20)
+  assert.equal((manager as unknown as { runTicks: number }).runTicks, 0)
+  for (let i = 0; i < LEVEL_INTRO_TICKS; i++) manager.update(idle)
+  world().pendingEnemies = []
+  world().enemies = []
+  manager.update(idle)
+  for (let i = 0; i < LEVEL_CLEAR_TICKS; i++) manager.update(idle)
+  assert.equal(world().levelIndex, 5, 'continued games advance to the next stage')
+  assert.deepEqual(reached, [4, 4, 5])
+  for (let i = 0; i < LEVEL_INTRO_TICKS; i++) manager.update(idle)
+  world().addScore(50000)
+  world().onBaseDestroyed()
+  manager.update(idle)
+  assert.equal(manager.getRetryStage(), 5, 'base destruction also supports retry')
+  manager.setStartStage(null)
+  for (let i = 0; i < 45; i++) manager.update(idle)
+  manager.update({ ...idle, confirmEdge: true })
+  assert.equal(world().levelIndex, 0)
+  assert.equal(world().highScore, 1000, 'continued scores never replace the classic high score')
+  assert.equal(manager.isContinued(), false)
+})
+
+test('only solo campaigns update progress; final-stage victory does not offer retry or save an invalid stage', () => {
+  for (const mode of ['solo', 'coop', 'practice', 'custom'] as const) {
+    const reached: number[] = []
+    const manager = new SceneManager(silentAudio(), 1, {
+      customLevel: mode === 'custom' ? LEVELS[0] : undefined,
+      onStageReached: (stage) => reached.push(stage),
+    })
+    if (mode === 'coop') manager.setPlayerCount(2)
+    if (mode === 'practice') manager.setPracticeStage(4)
+    manager.setStartStage(LEVELS.length - 1)
+    manager.update({ ...idle, confirmEdge: true })
+    const world = (manager as unknown as { world: World }).world
+    assert.equal(world.players[0].lives, 6)
+    assert.equal(manager.isContinued(), mode === 'solo')
+    assert.deepEqual(reached, mode === 'solo' ? [LEVELS.length - 1] : [])
+    for (let i = 0; i < LEVEL_INTRO_TICKS; i++) manager.update(idle)
+    if (mode === 'solo') {
+      world.pendingEnemies = []
+      world.enemies = []
+      manager.update(idle)
+      for (let i = 0; i < LEVEL_CLEAR_TICKS; i++) manager.update(idle)
+      assert.deepEqual(reached, [LEVELS.length - 1])
+    } else {
+      world.onBaseDestroyed()
+      manager.update(idle)
+    }
+    assert.equal(manager.getCurrentKind(), SceneKind.GAME_OVER)
+    assert.equal(manager.getRetryStage(), null)
+  }
 })
