@@ -6,7 +6,8 @@ import {
   SPAWN_BLINK_TICKS,
 } from '@/games/tank-battle/constants.ts'
 import { Rng } from '@/games/tank-battle/core/rng.ts'
-import { LEVELS, PLAYER_SPAWN_CELLS } from '@/games/tank-battle/data/levels.ts'
+import { BASE_CELL, PLAYER_SPAWN_CELLS } from '@/games/tank-battle/data/levels.ts'
+import { CAMPAIGNS, type CampaignId } from '@/games/tank-battle/data/campaigns.ts'
 import { Base } from '@/games/tank-battle/entity/Base.ts'
 import type { Bullet } from '@/games/tank-battle/entity/Bullet.ts'
 import { Explosion } from '@/games/tank-battle/entity/Explosion.ts'
@@ -68,7 +69,13 @@ export class World {
 
   outcome: LevelOutcome = LevelOutcome.ONGOING
 
-  constructor(seed: number, initialHighScore = 0, playerCount: 1 | 2 = 1, customLevel?: LevelData) {
+  constructor(
+    seed: number,
+    initialHighScore = 0,
+    playerCount: 1 | 2 = 1,
+    customLevel?: LevelData,
+    readonly campaignId: CampaignId = 'battle-city',
+  ) {
     this.customLevel = customLevel
       ? { terrain: [...customLevel.terrain], enemyQueue: [...customLevel.enemyQueue] }
       : undefined
@@ -78,8 +85,12 @@ export class World {
       respawnDelayTicks: 0,
     }))
     this.rng = new Rng(seed)
-    this.terrain = new TerrainGrid((this.customLevel ?? LEVELS[0]).terrain)
+    this.terrain = new TerrainGrid((this.customLevel ?? CAMPAIGNS[campaignId].levels[0]).terrain)
     this.highScore = initialHighScore
+  }
+
+  get levelCount(): number {
+    return this.customLevel ? 1 : CAMPAIGNS[this.campaignId].levels.length
   }
 
   /** 本关剩余敌方总数（未出场 + 场上存活） */
@@ -89,11 +100,14 @@ export class World {
 
   /** 载入指定关卡并重置战场（保留分数与生命） */
   loadLevel(levelIndex: number): void {
-    const clampedIndex = levelIndex % LEVELS.length
+    const clampedIndex = levelIndex % this.levelCount
     this.levelIndex = levelIndex
 
-    const level = this.customLevel ?? LEVELS[clampedIndex]
+    const level = this.customLevel ?? CAMPAIGNS[this.campaignId].levels[clampedIndex]
     this.terrain.load(level.terrain)
+    // The original base drawing pass replaces map tiles at the eagle's position.
+    // Shifted Tank A layouts can contain walls/trees here before that pass.
+    this.terrain.clearSpawnCell(...BASE_CELL)
     this.base.reset()
 
     this.enemies = []

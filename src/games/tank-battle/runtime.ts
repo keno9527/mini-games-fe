@@ -13,7 +13,7 @@ import {
   type PadMenuAction,
 } from '@/games/tank-battle/core/TankLobby.ts'
 import { isValidStage } from './progress.ts'
-import { LEVELS } from '@/games/tank-battle/data/levels.ts'
+import { CAMPAIGNS, type CampaignId } from '@/games/tank-battle/data/campaigns.ts'
 import { PixelCanvas } from '@/games/tank-battle/render/PixelCanvas.ts'
 import { SceneManager, type TankBattleResult } from '@/games/tank-battle/scene/SceneManager.ts'
 import { SceneKind, type LevelData, type TankBattleHoldAction } from '@/games/tank-battle/types.ts'
@@ -53,6 +53,8 @@ export interface TankBattleControllers {
   canPlay: boolean
 }
 export interface TankBattleOptions {
+  readonly campaignId?: CampaignId
+  readonly onCampaignChange?: (campaignId: CampaignId) => void
   readonly initialProgress?: number
   readonly onStageReached?: (stage: number) => void
   readonly customLevel?: LevelData
@@ -68,6 +70,8 @@ export function mountTankBattle(
   container: HTMLElement,
   options: TankBattleOptions = {},
 ): TankBattleHandle {
+  const campaignId = options.campaignId ?? 'battle-city'
+  const levels = CAMPAIGNS[campaignId].levels
   const pixelCanvas = new PixelCanvas(canvas, container)
   const audio = new AudioEngine()
   const input = new InputManager()
@@ -76,7 +80,7 @@ export function mountTankBattle(
   const menu: TankBattleMenu = {
     mode: 'single',
     page: 'modes',
-    highestStage: isValidStage(options.initialProgress) ? options.initialProgress : 0,
+    highestStage: isValidStage(options.initialProgress, campaignId) ? options.initialProgress : 0,
     retryStage: null,
     startSelection: 0,
     continued: false,
@@ -155,7 +159,7 @@ export function mountTankBattle(
   }
   const setPracticeStage = (stage: number) => {
     if (!isTitle()) return
-    menu.practiceStage = Math.max(0, Math.min(LEVELS.length - 1, Math.floor(stage)))
+    menu.practiceStage = Math.max(0, Math.min(levels.length - 1, Math.floor(stage)))
     sceneManager.setPracticeStage(menu.mode === 'practice' ? menu.practiceStage : null)
     notifyMenu()
   }
@@ -228,6 +232,12 @@ export function mountTankBattle(
         if (action === 'left' || action === 'right')
           setPracticeStage(menu.practiceStage + (action === 'left' ? -1 : 1))
         else if (action === 'confirm') requestStart()
+      } else if (
+        (action === 'left' || action === 'right') &&
+        !options.customLevel &&
+        !menu.awaitingControllers
+      ) {
+        options.onCampaignChange?.(campaignId === 'battle-city' ? 'tank-a' : 'battle-city')
       } else if (action === 'up' || action === 'down') {
         const modes: TankMode[] = ['single', 'coop', 'practice']
         selectMode(modes[(modes.indexOf(menu.mode) + (action === 'up' ? 2 : 1)) % modes.length])

@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight } from '@phosphor-icons/react'
 import type { TankBattleControllers, TankBattleHandle, TankBattleMenu } from './runtime.ts'
 import type { TankMode } from './core/TankLobby.ts'
 import { PLAYER_INITIAL_LIVES } from './constants.ts'
-import { LEVELS } from './data/levels.ts'
+import { CAMPAIGNS, type CampaignId } from './data/campaigns.ts'
 import { PLAYER_TANK_SPRITES } from './data/sprites.ts'
 import { drawMatrix } from './render/drawSprites.ts'
 import { Direction } from './types.ts'
@@ -94,7 +94,19 @@ export function ConnectionHint({ controllers }: { controllers: TankBattleControl
   ) : null
 }
 
-export function TankMenu({ menu, controllers, ready, game, focusGame }: MenuProps) {
+export function TankMenu({
+  menu,
+  controllers,
+  ready,
+  game,
+  focusGame,
+  campaignId,
+  onCampaignChange,
+}: MenuProps & {
+  campaignId: CampaignId
+  onCampaignChange?: (campaignId: CampaignId) => void
+}) {
+  const campaign = CAMPAIGNS[campaignId]
   const choose = (mode: TankMode) => {
     game?.selectMode(mode)
     game?.confirm()
@@ -107,6 +119,31 @@ export function TankMenu({ menu, controllers, ready, game, focusGame }: MenuProp
           <img src={titleImage} alt="BATTLE CITY" />
         </h2>
       </header>
+      {onCampaignChange && (
+        <div className="tank-campaign-picker">
+          <label>
+            <span>关卡版本</span>
+            <select
+              aria-label="关卡版本"
+              value={campaignId}
+              disabled={!ready || menu.awaitingControllers}
+              onChange={(event) => onCampaignChange(event.target.value as CampaignId)}
+            >
+              {Object.entries(CAMPAIGNS).map(([id, entry]) => (
+                <option key={id} value={id}>
+                  {entry.label} · {entry.levels.length} 关
+                </option>
+              ))}
+            </select>
+          </label>
+          <p>
+            {campaignId === 'tank-a'
+              ? '原版第 1–50 关地图（含循环）· 沿用当前作战规则'
+              : '经典 35 关 · 守护老鹰基地'}
+          </p>
+          {campaignId === 'tank-a' && <p>进度独立保存 · 不计入经典排行榜</p>}
+        </div>
+      )}
       {menu.page === 'modes' ? (
         <nav className="tank-mode-menu" aria-label="游玩模式">
           {(
@@ -181,7 +218,7 @@ export function TankMenu({ menu, controllers, ready, game, focusGame }: MenuProp
                 value={menu.practiceStage}
                 onChange={(e) => game?.setPracticeStage(Number(e.target.value))}
               >
-                {LEVELS.map((_, i) => (
+                {campaign.levels.map((_, i) => (
                   <option key={i} value={i}>
                     {String(i + 1).padStart(2, '0')}
                   </option>
@@ -191,7 +228,7 @@ export function TankMenu({ menu, controllers, ready, game, focusGame }: MenuProp
             <button
               type="button"
               aria-label="下一关"
-              disabled={menu.practiceStage === LEVELS.length - 1}
+              disabled={menu.practiceStage === campaign.levels.length - 1}
               onClick={() => game?.setPracticeStage(menu.practiceStage + 1)}
             >
               <ArrowRight />
@@ -248,6 +285,7 @@ export function TankMenu({ menu, controllers, ready, game, focusGame }: MenuProp
       <footer className="tank-menu-footer">
         <p>{menu.page === 'practice' ? '← → 选关' : '↑ ↓ 选择'} · Enter / A / × 确认</p>
         <small>点击菜单即可开始</small>
+        {onCampaignChange && menu.page === 'modes' && <small>← → 切换关卡版本</small>}
       </footer>
     </div>
   )

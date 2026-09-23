@@ -15,7 +15,11 @@ export class TitleScene implements Scene {
   private readonly getHighScore: () => number
   private blinkPhase = 0
 
-  constructor(callbacks: TitleSceneCallbacks, getHighScore: () => number) {
+  constructor(
+    callbacks: TitleSceneCallbacks,
+    getHighScore: () => number,
+    private readonly getLevelCount = () => 35,
+  ) {
     this.callbacks = callbacks
     this.getHighScore = getHighScore
   }
@@ -57,7 +61,13 @@ export class TitleScene implements Scene {
       drawCentered(context, 'PRESS START', 160, COLORS.TEXT_PRIMARY, 1)
     }
 
-    drawCentered(context, '35 STAGES - PROTECT THE EAGLE', 184, COLORS.BASE_EAGLE, 1)
+    drawCentered(
+      context,
+      `${this.getLevelCount()} STAGES - PROTECT THE EAGLE`,
+      184,
+      COLORS.BASE_EAGLE,
+      1,
+    )
   }
 }
 
