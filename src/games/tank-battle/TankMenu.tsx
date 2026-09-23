@@ -7,14 +7,14 @@ import { LEVELS } from './data/levels.ts'
 import { PLAYER_TANK_SPRITES } from './data/sprites.ts'
 import { drawMatrix } from './render/drawSprites.ts'
 import { Direction } from './types.ts'
-import { COLORS } from './render/palette.ts'
-import titleImage from './assets/title.png'
+import { PLAYER_PALETTES } from './render/palette.ts'
+import titleImage from './assets/title.svg'
 
 export function TankSprite({
-  blue = false,
+  secondary = false,
   pointer = false,
 }: {
-  blue?: boolean
+  secondary?: boolean
   pointer?: boolean
 }) {
   const ref = useRef<HTMLCanvasElement>(null)
@@ -22,12 +22,13 @@ export function TankSprite({
     const ctx = ref.current?.getContext('2d')
     if (!ctx) return
     ctx.clearRect(0, 0, 16, 16)
+    const palette = PLAYER_PALETTES[secondary ? 1 : 0]
     drawMatrix(ctx, PLAYER_TANK_SPRITES[0][pointer ? Direction.RIGHT : Direction.UP], 0, 0, {
-      '1': blue ? '#4cb9e7' : COLORS.PLAYER_BODY,
-      '2': blue ? '#24617d' : COLORS.PLAYER_TREAD,
-      '3': blue ? '#e0f8ff' : COLORS.PLAYER_HIGHLIGHT,
+      '1': palette.body,
+      '2': palette.tread,
+      '3': palette.highlight,
     })
-  }, [blue, pointer])
+  }, [secondary, pointer])
   return <canvas ref={ref} width={16} height={16} className="tank-menu-sprite" aria-hidden="true" />
 }
 
@@ -49,7 +50,7 @@ export function ControllerStatus({
     <div className="tank-menu-players" aria-label="玩家加入状态">
       {(coop ? [0, 1] : [0]).map((slot) => (
         <div key={slot} className={slot === 0 ? 'tank-player-one' : 'tank-player-two'}>
-          <TankSprite blue={slot === 1} />
+          <TankSprite secondary={slot === 1} />
           <strong>P{slot + 1}</strong>
           <span
             className={

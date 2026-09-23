@@ -7,7 +7,7 @@ import {
   TICKS_PER_SECOND,
 } from '@/games/tank-battle/constants.ts'
 import { drawText } from '@/games/tank-battle/render/drawSprites.ts'
-import { COLORS } from '@/games/tank-battle/render/palette.ts'
+import { COLORS, PLAYER_PALETTES } from '@/games/tank-battle/render/palette.ts'
 import type { World } from '@/games/tank-battle/system/World.ts'
 
 const MINI_TANK = [
@@ -79,7 +79,7 @@ export function drawHud(context: CanvasRenderingContext2D, world: World): void {
   world.players.forEach((player, slot) => {
     const y = world.players.length === 1 ? 128 : 122 + slot * 30
     drawHudNumber(context, `${slot + 1}P`, x, y)
-    drawMiniTank(context, x, y + 11, slot === 0 ? COLORS.PLAYER_TREAD : '#4cb9e7')
+    drawMiniTank(context, x, y + 11, (PLAYER_PALETTES[slot] ?? PLAYER_PALETTES[0]).body)
     drawHudNumber(context, String(Math.min(99, player.lives)), x + 8, y + 11)
     if (player.tank && player.tank.star > 0)
       drawText(context, `ST${player.tank.star}`, x, y + 25, COLORS.TEXT_DIM)

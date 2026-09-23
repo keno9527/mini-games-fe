@@ -1,77 +1,75 @@
-/** 全局配色。集中定义便于统一调整像素风格。 */
+/** Tank 1990 风格的有限色表；菜单、HUD 与战斗共享玩家配色。 */
 export const COLORS = {
-  /** 战场外的背景（信息栏底色） */
   UI_BACKGROUND: '#747474',
-  /** 战场底色 */
   FIELD_BACKGROUND: '#000000',
 
-  BRICK_MAIN: '#a85400',
-  BRICK_LIGHT: '#f8a050',
-  BRICK_DARK: '#747474',
+  BRICK_MAIN: '#c84c0c',
+  BRICK_MORTAR: '#747474',
+  BRICK_DARK: '#a40000',
 
   STEEL_MAIN: '#bcbcbc',
   STEEL_LIGHT: '#fcfcfc',
   STEEL_DARK: '#747474',
 
   WATER_MAIN: '#2038ec',
-  WATER_LIGHT: '#5c94fc',
+  WATER_LIGHT: '#9cfcf0',
 
-  TREE_MAIN: '#005800',
+  TREE_MAIN: '#003c14',
   TREE_LIGHT: '#80d010',
+  TREE_DARK: '#004400',
 
   ICE_MAIN: '#bcbcbc',
   ICE_LIGHT: '#fcfcfc',
+  ICE_DARK: '#747474',
 
-  /** 玩家坦克配色：车身 / 履带暗色 / 高光 */
-  PLAYER_BODY: '#e4c490',
-  PLAYER_TREAD: '#a08000',
-  PLAYER_HIGHLIGHT: '#fcfcfc',
+  PLAYER_BODY: '#fc9838',
+  PLAYER_TREAD: '#887000',
+  PLAYER_HIGHLIGHT: '#fce4a0',
 
-  /** 玩家满星形态（更亮的金色） */
-  PLAYER_BODY_MAX: '#f0d040',
-  PLAYER_HIGHLIGHT_MAX: '#fff8c0',
+  ENEMY_BODY: '#bcbcbc',
+  ENEMY_TREAD: '#183c5c',
+  ENEMY_HIGHLIGHT: '#fcfcfc',
 
-  ENEMY_BASIC_BODY: '#c8c8c8',
-  ENEMY_BASIC_TREAD: '#7c7c7c',
-  ENEMY_BASIC_HIGHLIGHT: '#f0f0f0',
-
-  ENEMY_FAST_BODY: '#f0f0f0',
-  ENEMY_FAST_TREAD: '#9c9c9c',
-  ENEMY_FAST_HIGHLIGHT: '#ffffff',
-
-  ENEMY_POWER_BODY: '#bcbcbc',
-  ENEMY_POWER_TREAD: '#747474',
-  ENEMY_POWER_HIGHLIGHT: '#fcfcfc',
-
-  /** 重甲坦克按剩余装甲变色 */
-  ENEMY_ARMOR_BODY: ['#c85028', '#c8a028', '#5c9c3c', '#b8b8b8'] as const,
-  ENEMY_ARMOR_TREAD: '#5c3018',
-  ENEMY_ARMOR_HIGHLIGHT: '#ffd8a0',
-
-  BULLET: '#e8e8e8',
-
-  BASE_EAGLE: '#bcbcbc',
+  BULLET: '#fcfcfc',
+  BASE_EAGLE: '#747474',
+  BASE_DETAIL: '#a40000',
   BASE_DESTROYED: '#747474',
 
-  SHIELD_OUTER: '#7cd8f0',
-  SHIELD_INNER: '#ffffff',
+  SHIELD_OUTER: '#fcfcfc',
+  SHIELD_INNER: '#183c5c',
 
-  EXPLOSION_CORE: '#fff4c0',
-  EXPLOSION_MID: '#f09028',
-  EXPLOSION_OUTER: '#c84018',
+  EXPLOSION_CORE: '#fcfcfc',
+  EXPLOSION_MID: '#fcbcb0',
+  EXPLOSION_OUTER: '#d82800',
 
-  TEXT_PRIMARY: '#ffffff',
+  TEXT_PRIMARY: '#fcfcfc',
   TEXT_DIM: '#000000',
-  TEXT_HIGHLIGHT: '#f0d040',
+  TEXT_HIGHLIGHT: '#fce4a0',
 } as const
 
-/** 与 Canvas 和指南 SVG 共用的道具色表。 */
+export interface TankPalette {
+  readonly body: string
+  readonly tread: string
+  readonly highlight: string
+}
+
+export const PLAYER_PALETTES: readonly TankPalette[] = [
+  { body: COLORS.PLAYER_BODY, tread: COLORS.PLAYER_TREAD, highlight: COLORS.PLAYER_HIGHLIGHT },
+  { body: '#80d010', tread: '#005800', highlight: '#b8f818' },
+]
+
+/** 从一发到四发装甲；仍通过换色反馈受损，避免额外亮点改变车体图案。 */
+export const ARMOR_PALETTES: readonly TankPalette[] = [
+  { body: COLORS.ENEMY_BODY, tread: COLORS.ENEMY_TREAD, highlight: COLORS.ENEMY_HIGHLIGHT },
+  { body: '#fc9838', tread: '#a40000', highlight: '#fce4a0' },
+  { body: '#80d010', tread: '#005800', highlight: '#fce4a0' },
+  { body: '#80d010', tread: '#005800', highlight: '#b8f818' },
+]
+
+/** 道具的平面白色符号与深蓝底，不使用立体阴影边框。 */
 export const POWERUP_PALETTE: Readonly<Record<string, string>> = {
-  B: '#203858',
+  B: '#183c5c',
   W: '#fcfcfc',
-  S: '#bcbcbc',
-  D: '#747474',
   '1': '#fcfcfc',
-  '2': '#203858',
-  '3': '#bcbcbc',
+  '2': '#183c5c',
 }

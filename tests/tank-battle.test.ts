@@ -7,6 +7,13 @@ import {
   updatePowerUpTimers,
   dropPowerUp,
 } from '../src/games/tank-battle/system/PowerUpSystem.ts'
+import { Explosion } from '../src/games/tank-battle/entity/Explosion.ts'
+import {
+  PLAYER_TANK_SPRITES,
+  PLAYER_TREAD_SPRITES,
+  ENEMY_TANK_SPRITES,
+  ENEMY_TREAD_SPRITES,
+} from '../src/games/tank-battle/data/sprites.ts'
 import { PowerUp } from '../src/games/tank-battle/entity/PowerUp.ts'
 import { SceneManager } from '../src/games/tank-battle/scene/SceneManager.ts'
 import { LEVELS } from '../src/games/tank-battle/data/levels.ts'
@@ -17,7 +24,13 @@ import { canMoveTank, tryMoveTank } from '../src/games/tank-battle/system/Moveme
 import { updatePlayer } from '../src/games/tank-battle/system/PlayerController.ts'
 import { updateEnemyAi } from '../src/games/tank-battle/system/EnemyAiSystem.ts'
 import { fireBullet, updateBullets } from '../src/games/tank-battle/system/BulletSystem.ts'
-import { drawTank } from '../src/games/tank-battle/render/drawSprites.ts'
+import {
+  drawTank,
+  drawTerrainCell,
+  drawTreeCell,
+  drawPowerUp,
+  drawExplosion,
+} from '../src/games/tank-battle/render/drawSprites.ts'
 import { drawHud } from '../src/games/tank-battle/render/Hud.ts'
 import { renderBattlefield } from '../src/games/tank-battle/render/renderBattlefield.ts'
 import { BattleScene } from '../src/games/tank-battle/scene/BattleScene.ts'
@@ -864,5 +877,94 @@ test('only solo campaigns update progress; final-stage victory does not offer re
     }
     assert.equal(manager.getCurrentKind(), SceneKind.GAME_OVER)
     assert.equal(manager.getRetryStage(), null)
+  }
+})
+
+test('tank art and tread frames retain a 16px footprint through every rotation and upgrade', () => {
+  const staticSets = [...PLAYER_TANK_SPRITES, ...Object.values(ENEMY_TANK_SPRITES)]
+  const movingSets = [...PLAYER_TREAD_SPRITES, ...Object.values(ENEMY_TREAD_SPRITES)]
+  for (const [index, directions] of staticSets.entries()) {
+    const pixels = directions[0].join('').replaceAll(' ', '').length
+    for (let direction = 0; direction < 4; direction += 1) {
+      const still = directions[direction]
+      const moving = movingSets[index][direction]
+      for (const sprite of [still, moving]) {
+        assert.equal(sprite.length, 16)
+        assert.ok(sprite.every((row) => row.length === 16 && /^[ 123]+$/.test(row)))
+        assert.equal(sprite.join('').replaceAll(' ', '').length, pixels)
+      }
+      assert.deepEqual(
+        moving.map((row) => row.replace(/[123]/g, 'x')),
+        still.map((row) => row.replace(/[123]/g, 'x')),
+        'tread animation must not add pixels outside the tank silhouette',
+      )
+    }
+  }
+})
+
+test('wall artwork agrees with collision after partial destruction; foliage remains opaque', () => {
+  for (const tile of ['#', '@', '>', 'v', '<', '^', 'r', 'b', 'l', 't']) {
+    const rows = emptyMap()
+    rows[2] = '..' + tile + '.'.repeat(10)
+    const terrain = new TerrainGrid(rows)
+    for (let hit = 0; hit < 3; hit += 1) {
+      const frame = canvasRecorder()
+      drawTerrainCell(frame.context, 2, 2, terrain.getKind(2, 2), terrain.getWallMask(2, 2), 0)
+      const painted = new Set(frame.rectangles.map(({ x, y }) => `${x},${y}`))
+      for (let y = 32; y < 48; y += 1) {
+        for (let x = 32; x < 48; x += 1) {
+          assert.equal(painted.has(`${x},${y}`), terrain.blocksTank({ x, y, width: 1, height: 1 }))
+        }
+      }
+      terrain.hitByBullet({ x: 34 + hit * 4, y: 44, width: 4, height: 4 }, 2, Direction.UP)
+    }
+  }
+  const forest = canvasRecorder()
+  drawTreeCell(forest.context, 0, 0)
+  assert.equal(new Set(forest.rectangles.map(({ x, y }) => `${x},${y}`)).size, 256)
+  assert.ok(forest.rectangles.every(({ color }) => /^#[0-9a-f]{6}$/i.test(String(color))))
+})
+
+test('powerups and burst frames render valid pixels without advancing their game timers', () => {
+  for (const kind of Object.values(PowerUpKind)) {
+    const powerUp = new PowerUp(kind, 2, 3)
+    const before = JSON.stringify(powerUp)
+    const frame = canvasRecorder()
+    drawPowerUp(frame.context, powerUp)
+    assert.equal(JSON.stringify(powerUp), before)
+    assert.ok(frame.rectangles.length > 0)
+    assert.ok(
+      frame.rectangles.every(
+        ({ x, y, color }) =>
+          x >= 32 && x < 48 && y >= 48 && y < 64 && /^#[0-9a-f]{6}$/i.test(String(color)),
+      ),
+    )
+  }
+  for (const big of [false, true]) {
+    const burst = new Explosion(48, 48, big)
+    const total = burst.ticksLeft
+    const frames = new Set<string>()
+    for (const progress of [0, 0.3, 0.6, 0.9]) {
+      burst.ticksLeft = Math.ceil(total * (1 - progress))
+      const before = JSON.stringify(burst)
+      const frame = canvasRecorder()
+      drawExplosion(frame.context, burst)
+      assert.equal(JSON.stringify(burst), before)
+      assert.ok(frame.rectangles.length > 0)
+      assert.ok(
+        frame.rectangles.every(
+          ({ x, y, width, height, color }) =>
+            Number.isInteger(x) &&
+            Number.isInteger(y) &&
+            width === 1 &&
+            height === 1 &&
+            Math.abs(x - 48) <= (big ? 16 : 8) &&
+            Math.abs(y - 48) <= (big ? 16 : 8) &&
+            /^#[0-9a-f]{6}$/i.test(String(color)),
+        ),
+      )
+      frames.add(JSON.stringify(frame.rectangles))
+    }
+    assert.ok(frames.size >= 2)
   }
 })
