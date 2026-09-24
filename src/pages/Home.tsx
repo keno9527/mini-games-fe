@@ -5,7 +5,7 @@ import GameLaunchLink from '@/components/GameLaunchLink'
 import { GameCardSkeleton } from '@/components/Skeleton'
 import type { Game, PlayRankItem } from '@/types'
 
-const hiddenGameIds = new Set(['animal-chess', 'animal-chess-ai', 'whack-a-mole', 'tetris'])
+const hiddenGameIds = new Set(['animal-chess', 'whack-a-mole', 'tetris'])
 
 function formatDuration(seconds: number): string {
   const totalSeconds = Math.floor(seconds)
