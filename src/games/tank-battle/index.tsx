@@ -23,7 +23,14 @@ import {
   type TankBattleControllers,
   type TankBattleMenu,
 } from '@/games/tank-battle/runtime.ts'
-import { loadProgress, saveProgress } from './progress.ts'
+import {
+  loadProgress,
+  saveProgress,
+  loadSelectedCampaign,
+  saveSelectedCampaign,
+  type CampaignProgress,
+} from './progress.ts'
+import { CAMPAIGNS, type CampaignId } from './data/campaigns.ts'
 import { PLAYER_INITIAL_LIVES } from './constants.ts'
 import { TankMenu, TankPauseMenu } from './TankMenu.tsx'
 import { POWERUP_SPRITES } from '@/games/tank-battle/data/sprites.ts'
@@ -106,12 +113,18 @@ function TankBattlePlayer({
   const gameRef = useRef<TankBattleHandle | null>(null)
   const customGameStarted = useRef(false)
   const [ready, setReady] = useState(false)
+  const [campaignId, setCampaignId] = useState<CampaignId>(() => loadSelectedCampaign())
+  const changeCampaign = useCallback((id: CampaignId) => {
+    saveSelectedCampaign(id)
+    setReady(false)
+    setCampaignId(id)
+  }, [])
   const [uiState, setUiState] = useState<TankBattleUiState>('title')
   useGamePlay(gameId, uiState === 'playing' || uiState === 'paused' ? uiState : 'idle')
   const [menu, setMenu] = useState<TankBattleMenu>({
     mode: 'single',
     page: 'modes',
-    highestStage: 0,
+    progress: { single: 0, coop: 0 },
     retryStage: null,
     startSelection: 0,
     continued: false,
@@ -140,7 +153,7 @@ function TankBattlePlayer({
 
     const startGame = async () => {
       let initialHighScore = 0
-      if (userId) {
+      if (userId && campaignId === 'battle-city') {
         try {
           const stats = await getUserStats(userId)
           initialHighScore = stats.gameStats.find((stat) => stat.gameId === gameId)?.bestScore ?? 0
@@ -150,22 +163,26 @@ function TankBattlePlayer({
       }
 
       if (cancelled) return
-      let initialProgress = 0
+      const initialProgress: CampaignProgress = { single: 0, coop: 0 }
       setProgressError('')
       if (!customMap) {
-        try {
-          initialProgress = loadProgress(userId)
-        } catch {
-          setProgressError('无法读取关卡进度，本次仍可正常游玩和重试。')
+        for (const mode of ['single', 'coop'] as const) {
+          try {
+            initialProgress[mode] = loadProgress(userId, undefined, campaignId, mode)
+          } catch {
+            setProgressError('无法读取部分关卡进度，本次仍可正常游玩和重试。')
+          }
         }
       }
       game = mountTankBattle(canvas, stage, {
+        campaignId,
+        onCampaignChange: customMap ? undefined : changeCampaign,
         customLevel: customMap,
         initialHighScore,
         initialProgress,
-        onStageReached: (stage) => {
+        onStageReached: (stage, mode) => {
           try {
-            saveProgress(stage, userId)
+            saveProgress(stage, userId, undefined, campaignId, mode)
             setProgressError('')
           } catch {
             setProgressError('进度未能保存，当前页面仍可重试；关闭后可能丢失进度。')
@@ -175,7 +192,8 @@ function TankBattlePlayer({
         onControllersChange: setControllers,
         onMenuChange: setMenu,
         onGameOver: (result) => {
-          if (!userId || result.practice || result.continued) return
+          if (!userId || result.practice || result.continued || result.campaignId !== 'battle-city')
+            return
           createRecord(userId, {
             gameId,
             score: result.score,
@@ -195,7 +213,7 @@ function TankBattlePlayer({
       gameRef.current = null
       game?.destroy()
     }
-  }, [gameId, userId, customMap])
+  }, [gameId, userId, customMap, campaignId, changeCampaign])
 
   useLayoutEffect(() => {
     if (!ready) return
@@ -269,7 +287,9 @@ function TankBattlePlayer({
         {compactBattle && (
           <div className="tank-toolbar" data-tank-chrome>
             <div className="tank-mode">
-              <span className="tank-eyebrow">BATTLE CITY · 1985</span>
+              <span className="tank-eyebrow">
+                {campaignId === 'tank-a' ? 'TANK A · 50 STAGES' : 'BATTLE CITY · 1985'}
+              </span>
               {compactBattle && (
                 <span className="tank-battle-mode-label">
                   {customMap
@@ -277,7 +297,7 @@ function TankBattlePlayer({
                     : menu.mode !== 'practice'
                       ? menu.continued
                         ? '续关挑战'
-                        : '经典战役'
+                        : `${CAMPAIGNS[campaignId].label} 战役`
                       : `关卡练习 · 第 ${menu.practiceStage + 1} 关`}
                 </span>
               )}
@@ -364,17 +384,21 @@ function TankBattlePlayer({
             </div>
           </div>
         )}
-        {compactBattle && (customMap || menu.mode === 'practice' || menu.continued) && (
-          <p className="tank-practice-note" data-tank-chrome>
-            {customMap
-              ? `自定义地图 · ${customMap.name}`
-              : menu.continued
-                ? '续关挑战'
-                : '单关练习'}{' '}
-            · {PLAYER_INITIAL_LIVES} 条生命 · 战绩不计入排行榜
-            {customMap && ' · 试玩破坏不会写回原稿'}
-          </p>
-        )}
+        {compactBattle &&
+          (customMap || menu.mode === 'practice' || menu.continued || campaignId === 'tank-a') && (
+            <p className="tank-practice-note" data-tank-chrome>
+              {customMap
+                ? `自定义地图 · ${customMap.name}`
+                : menu.continued
+                  ? '续关挑战'
+                  : menu.mode === 'practice'
+                    ? '单关练习'
+                    : 'Tank A 地图战役'}{' '}
+              · {menu.mode === 'coop' ? '每人 ' : ''}
+              {PLAYER_INITIAL_LIVES} 条生命 · 战绩不计入排行榜
+              {customMap && ' · 试玩破坏不会写回原稿'}
+            </p>
+          )}
         {uiState === 'gameOver' && menu.retryStage !== null && (
           <div className="tank-retry-actions" aria-label="失败后选择" data-tank-chrome>
             {[`重试第 ${menu.retryStage + 1} 关`, '从头开始'].map((label, index) => (
@@ -392,7 +416,10 @@ function TankBattlePlayer({
                 {label}
               </button>
             ))}
-            <small>重试恢复 {PLAYER_INITIAL_LIVES} 条命，分数和升级重置 · 续关不计入经典战绩</small>
+            <small>
+              重试{menu.mode === 'coop' ? '每人' : ''}恢复 {PLAYER_INITIAL_LIVES}{' '}
+              条命，分数和升级重置 · 续关不计入经典战绩
+            </small>
           </div>
         )}
         {progressError && !customMap && (
@@ -429,6 +456,8 @@ function TankBattlePlayer({
           />
           {uiState === 'title' && (
             <TankMenu
+              campaignId={campaignId}
+              onCampaignChange={customMap ? undefined : changeCampaign}
               menu={menu}
               controllers={controllers}
               ready={ready}

@@ -8,7 +8,6 @@ import {
 import type { AudioEngine } from '@/games/tank-battle/core/AudioEngine.ts'
 import { ENEMY_SPECS } from '@/games/tank-battle/data/tankSpecs.ts'
 import { drawText } from '@/games/tank-battle/render/drawSprites.ts'
-import { LEVELS } from '@/games/tank-battle/data/levels.ts'
 import { drawCenteredBanner, drawCurtain, drawDimOverlay } from '@/games/tank-battle/render/Hud.ts'
 import { COLORS } from '@/games/tank-battle/render/palette.ts'
 import { renderBattlefield } from '@/games/tank-battle/render/renderBattlefield.ts'
@@ -184,7 +183,7 @@ export class BattleScene implements Scene {
     if (this.phaseTicks > 0 && !(elapsed > 240 && (input.confirmEdge || input.fire))) return
 
     const nextLevel = this.world.levelIndex + 1
-    if (this.callbacks.practice || nextLevel >= LEVELS.length) {
+    if (this.callbacks.practice || nextLevel >= this.world.levelCount) {
       this.callbacks.onGameOver(true)
       return
     }

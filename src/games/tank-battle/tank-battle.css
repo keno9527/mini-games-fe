@@ -411,6 +411,13 @@
   margin: 24px auto;
   max-width: 340px;
 }
+.tank-menu-progress {
+  display: block;
+  color: #f2cf64;
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
 .tank-menu-players > div {
   display: flex;
   flex: 1;
@@ -464,6 +471,28 @@
   border: 1px solid #666;
   color: #f2cf64;
   padding: 6px;
+}
+.tank-campaign-picker label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #deded8;
+  font-size: 13px;
+}
+.tank-campaign-picker select {
+  max-width: 100%;
+  border: 1px solid #666;
+  background: #111;
+  color: #f2cf64;
+  padding: 8px;
+}
+.tank-campaign-picker p {
+  margin-top: 6px;
+  color: #85857d;
+  font-size: 12px;
+  line-height: 1.5;
 }
 .tank-connection-hint {
   font-size: 13px;

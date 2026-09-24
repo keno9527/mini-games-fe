@@ -1,4 +1,4 @@
-import { LEVELS } from '@/games/tank-battle/data/levels.ts'
+import { CAMPAIGNS, type CampaignId } from '@/games/tank-battle/data/campaigns.ts'
 import type { AudioEngine } from '@/games/tank-battle/core/AudioEngine.ts'
 import { resetEntityIds } from '@/games/tank-battle/core/ids.ts'
 import { World } from '@/games/tank-battle/system/World.ts'
@@ -11,10 +11,11 @@ import {
 import { BattleScene } from '@/games/tank-battle/scene/BattleScene.ts'
 import { GameOverScene } from '@/games/tank-battle/scene/GameOverScene.ts'
 import type { Scene } from '@/games/tank-battle/scene/Scene.ts'
-import { isValidStage } from '../progress.ts'
+import { isValidStage, type CampaignMode } from '../progress.ts'
 import { TitleScene } from '@/games/tank-battle/scene/TitleScene.ts'
 
 export interface TankBattleResult {
+  readonly campaignId: CampaignId
   readonly continued: boolean
   readonly practice: boolean
   readonly victory: boolean
@@ -25,7 +26,8 @@ export interface TankBattleResult {
 }
 
 export interface SceneManagerOptions {
-  readonly onStageReached?: (stage: number) => void
+  readonly campaignId?: CampaignId
+  readonly onStageReached?: (stage: number, mode: CampaignMode) => void
   readonly customLevel?: LevelData
   readonly initialHighScore?: number
   readonly onGameOver?: (result: TankBattleResult) => void
@@ -38,10 +40,11 @@ export interface SceneManagerOptions {
  * 避免场景之间形成循环依赖。
  */
 export class SceneManager {
+  private readonly campaignId: CampaignId
   private readonly customLevel?: LevelData
   private readonly audio: AudioEngine
   private readonly onGameOver?: (result: TankBattleResult) => void
-  private readonly onStageReached?: (stage: number) => void
+  private readonly onStageReached?: (stage: number, mode: CampaignMode) => void
   private startStage: number | null = null
   private continued = false
   private practiceStage: number | null = null
@@ -72,6 +75,7 @@ export class SceneManager {
   }
 
   constructor(audio: AudioEngine, seed: number, options: SceneManagerOptions = {}) {
+    this.campaignId = options.campaignId ?? 'battle-city'
     this.customLevel = options.customLevel
       ? {
           terrain: [...options.customLevel.terrain],
@@ -83,15 +87,17 @@ export class SceneManager {
     this.onStageReached = options.onStageReached
     this.world = new World(
       seed,
-      this.customLevel ? 0 : options.initialHighScore,
+      this.customLevel || this.campaignId !== 'battle-city' ? 0 : options.initialHighScore,
       this.playerCount,
       this.customLevel,
+      this.campaignId,
     )
     this.campaignHighScore = options.initialHighScore ?? 0
 
     this.titleScene = new TitleScene(
       { onStart: (): void => this.startNewGame() },
       (): number => this.world.highScore,
+      (): number => this.world.levelCount,
     )
 
     this.gameOverScene = new GameOverScene({ onRestart: (): void => this.startNewGame() }, () => ({
@@ -112,7 +118,8 @@ export class SceneManager {
     return new BattleScene(this.world, this.audio, {
       onGameOver: (victory: boolean): void => this.finishGame(victory),
       onLevelStart: (stage) => {
-        if (this.isSingleCampaign()) this.onStageReached?.(stage)
+        if (this.isCampaign())
+          this.onStageReached?.(stage, this.playerCount === 2 ? 'coop' : 'single')
       },
       practice: this.practiceStage !== null || this.customLevel !== undefined,
     })
@@ -120,11 +127,17 @@ export class SceneManager {
 
   /** 开始新一局：重置世界状态但保留最高分 */
   private startNewGame(): void {
-    this.continued = this.isSingleCampaign() && this.startStage !== null
+    this.continued = this.isCampaign() && this.startStage !== null
     const highScore = this.isRankedRun() ? this.campaignHighScore : 0
 
     resetEntityIds()
-    this.world = new World(Date.now() >>> 0, highScore, this.playerCount, this.customLevel)
+    this.world = new World(
+      Date.now() >>> 0,
+      highScore,
+      this.playerCount,
+      this.customLevel,
+      this.campaignId,
+    )
     this.world.score = 0
     this.world.levelIndex = this.practiceStage ?? (this.continued ? this.startStage! : 0)
     this.startStage = null
@@ -149,6 +162,7 @@ export class SceneManager {
     this.finalLevel = this.world.levelIndex + 1
     this.startStage = this.getRetryStage()
     this.onGameOver?.({
+      campaignId: this.campaignId,
       continued: this.continued,
       practice: this.practiceStage !== null || this.customLevel !== undefined,
       victory,
@@ -160,12 +174,17 @@ export class SceneManager {
     this.switchTo(SceneKind.GAME_OVER)
   }
 
-  private isSingleCampaign(): boolean {
-    return this.playerCount === 1 && this.practiceStage === null && !this.customLevel
+  private isCampaign(): boolean {
+    return this.practiceStage === null && !this.customLevel
   }
 
   private isRankedRun(): boolean {
-    return this.practiceStage === null && !this.customLevel && !this.continued
+    return (
+      this.campaignId === 'battle-city' &&
+      this.practiceStage === null &&
+      !this.customLevel &&
+      !this.continued
+    )
   }
 
   isContinued(): boolean {
@@ -173,12 +192,12 @@ export class SceneManager {
   }
 
   getRetryStage(): number | null {
-    return this.isSingleCampaign() && !this.finalVictory ? this.finalLevel - 1 : null
+    return this.isCampaign() && !this.finalVictory ? this.finalLevel - 1 : null
   }
 
   setStartStage(stage: number | null): void {
     if (this.currentKind === SceneKind.BATTLE) return
-    this.startStage = this.isSingleCampaign() && isValidStage(stage) ? stage : null
+    this.startStage = this.isCampaign() && isValidStage(stage, this.campaignId) ? stage : null
   }
 
   switchTo(kind: SceneKind): void {
@@ -209,7 +228,9 @@ export class SceneManager {
   setPracticeStage(stage: number | null): void {
     if (this.currentKind === SceneKind.BATTLE || this.customLevel) return
     this.practiceStage =
-      stage === null ? null : Math.max(0, Math.min(LEVELS.length - 1, Math.floor(stage)))
+      stage === null
+        ? null
+        : Math.max(0, Math.min(CAMPAIGNS[this.campaignId].levels.length - 1, Math.floor(stage)))
   }
 
   getCurrentKind(): SceneKind {
