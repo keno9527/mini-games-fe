@@ -83,7 +83,7 @@ test('teammates block movement but player bullets do not damage teammates', () =
   )
   updateBullets(w, silent)
   assert.equal(b.alive, true)
-  assert.equal(w.players[1].lives, 6)
+  assert.equal(w.players[1].lives, 10)
 })
 
 test('enemy hits P2, independent respawn waits for a free spawn point', () => {
@@ -103,8 +103,8 @@ test('enemy hits P2, independent respawn waits for a free spawn point', () => {
   )
   updateBullets(w, silent)
   assert.equal(w.players[1].tank, null)
-  assert.equal(w.players[1].lives, 5)
-  assert.equal(w.players[0].lives, 6)
+  assert.equal(w.players[1].lives, 9)
+  assert.equal(w.players[0].lives, 10)
   w.players[1].respawnDelayTicks = 1
   const p1 = w.players[0].tank!
   p1.x = p2.x
@@ -147,8 +147,8 @@ test('personal powerups affect the collector, global powerups and score are shar
   updatePowerUps(w, silent)
   assert.equal(p2.star, 1)
   assert.equal(w.players[0].tank!.star, 0)
-  assert.equal(w.players[0].lives, 6)
-  assert.equal(w.players[1].lives, 7)
+  assert.equal(w.players[0].lives, 10)
+  assert.equal(w.players[1].lives, 11)
   assert.ok(w.freezeTicks > 0)
   assert.ok(w.score > 0)
   const score = w.score
@@ -194,7 +194,7 @@ test('game over restart keeps selected player count and resets independent lives
   assert.equal(getWorld().players.length, 2)
   assert.deepEqual(
     getWorld().players.map((p) => p.lives),
-    [6, 6],
+    [10, 10],
   )
 })
 
@@ -220,12 +220,12 @@ test('cooperative bonus life rewards active players once without reviving elimin
   w.addScore(20000)
   assert.deepEqual(
     w.players.map((player) => player.lives),
-    [7, 7],
+    [11, 11],
   )
   w.addScore(20000)
   assert.deepEqual(
     w.players.map((player) => player.lives),
-    [7, 7],
+    [11, 11],
   )
   const depleted = world()
   depleted.players[0].lives = 1
@@ -233,7 +233,7 @@ test('cooperative bonus life rewards active players once without reviving elimin
   depleted.addScore(20000)
   assert.deepEqual(
     depleted.players.map((player) => player.lives),
-    [0, 7],
+    [0, 11],
   )
 })
 
@@ -251,6 +251,6 @@ test('two-player practice preserves player count after returning to title', () =
   assert.equal(getWorld().levelIndex, 34)
   assert.deepEqual(
     getWorld().players.map((player) => player.lives),
-    [6, 6],
+    [10, 10],
   )
 })

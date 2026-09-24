@@ -164,15 +164,28 @@ export function TankMenu({
               <span className="tank-menu-pointer">
                 <TankSprite pointer />
               </span>
-              <span>{label}</span>
+              <span>
+                {label}
+                {onCampaignChange && mode !== 'practice' && menu.progress[mode] > 0 && (
+                  <small className="tank-menu-progress">
+                    可续关 · 第 {menu.progress[mode] + 1} 关
+                  </small>
+                )}
+              </span>
             </button>
           ))}
         </nav>
       ) : menu.page === 'campaign' ? (
-        <div className="tank-practice-menu" aria-label="单人战役进度">
-          <h3>单人作战</h3>
+        <div
+          className="tank-practice-menu"
+          aria-label={`${menu.mode === 'coop' ? '双人' : '单人'}战役进度`}
+        >
+          <h3>{menu.mode === 'coop' ? '双人合作' : '单人作战'}</h3>
           <div className="tank-campaign-actions">
-            {[`从第 ${menu.highestStage + 1} 关继续`, '从头开始'].map((label, index) => (
+            {[
+              `从第 ${menu.progress[menu.mode === 'coop' ? 'coop' : 'single'] + 1} 关继续`,
+              '从头开始',
+            ].map((label, index) => (
               <button
                 key={label}
                 type="button"
@@ -196,7 +209,10 @@ export function TankMenu({
               返回
             </button>
           </div>
-          <p>续关从关卡开头挑战 · {PLAYER_INITIAL_LIVES} 条命 · 不计入经典战绩</p>
+          <p>
+            续关从关卡开头挑战 · {menu.mode === 'coop' ? '每人 ' : ''}
+            {PLAYER_INITIAL_LIVES} 条命 · 分数和升级重置 · 不计入经典战绩
+          </p>
           <p>进度自动保存在当前浏览器，从头开始不会清除进度</p>
         </div>
       ) : (
@@ -285,6 +301,9 @@ export function TankMenu({
       <footer className="tank-menu-footer">
         <p>{menu.page === 'practice' ? '← → 选关' : '↑ ↓ 选择'} · Enter / A / × 确认</p>
         <small>点击菜单即可开始</small>
+        {onCampaignChange && menu.page === 'modes' && (
+          <small>单人 / 双人分别自动保存关卡 · 刷新后可从关卡开头续玩</small>
+        )}
         {onCampaignChange && menu.page === 'modes' && <small>← → 切换关卡版本</small>}
       </footer>
     </div>

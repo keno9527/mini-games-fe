@@ -12,7 +12,7 @@ import {
   type MenuAction,
   type PadMenuAction,
 } from '@/games/tank-battle/core/TankLobby.ts'
-import { isValidStage } from './progress.ts'
+import { isValidStage, type CampaignMode, type CampaignProgress } from './progress.ts'
 import { CAMPAIGNS, type CampaignId } from '@/games/tank-battle/data/campaigns.ts'
 import { PixelCanvas } from '@/games/tank-battle/render/PixelCanvas.ts'
 import { SceneManager, type TankBattleResult } from '@/games/tank-battle/scene/SceneManager.ts'
@@ -22,7 +22,7 @@ export type TankBattleUiState = 'title' | 'playing' | 'paused' | 'gameOver'
 export interface TankBattleMenu {
   mode: TankMode
   page: 'modes' | 'practice' | 'campaign'
-  highestStage: number
+  progress: CampaignProgress
   retryStage: number | null
   startSelection: number
   continued: boolean
@@ -55,8 +55,8 @@ export interface TankBattleControllers {
 export interface TankBattleOptions {
   readonly campaignId?: CampaignId
   readonly onCampaignChange?: (campaignId: CampaignId) => void
-  readonly initialProgress?: number
-  readonly onStageReached?: (stage: number) => void
+  readonly initialProgress?: Partial<CampaignProgress>
+  readonly onStageReached?: (stage: number, mode: CampaignMode) => void
   readonly customLevel?: LevelData
   readonly onControllersChange?: (state: TankBattleControllers) => void
   readonly onMenuChange?: (state: TankBattleMenu) => void
@@ -80,7 +80,14 @@ export function mountTankBattle(
   const menu: TankBattleMenu = {
     mode: 'single',
     page: 'modes',
-    highestStage: isValidStage(options.initialProgress, campaignId) ? options.initialProgress : 0,
+    progress: {
+      single: isValidStage(options.initialProgress?.single, campaignId)
+        ? options.initialProgress.single
+        : 0,
+      coop: isValidStage(options.initialProgress?.coop, campaignId)
+        ? options.initialProgress.coop
+        : 0,
+    },
     retryStage: null,
     startSelection: 0,
     continued: false,
@@ -91,9 +98,9 @@ export function mountTankBattle(
   }
   const sceneManager = new SceneManager(audio, Date.now() >>> 0, {
     ...options,
-    onStageReached: (stage) => {
-      menu.highestStage = Math.max(menu.highestStage, stage)
-      options.onStageReached?.(menu.highestStage)
+    onStageReached: (stage, mode) => {
+      menu.progress = { ...menu.progress, [mode]: Math.max(menu.progress[mode], stage) }
+      options.onStageReached?.(menu.progress[mode], mode)
       notifyMenu()
     },
   })
@@ -201,8 +208,9 @@ export function mountTankBattle(
   }
   const selectStart = (selection: number) => {
     menu.startSelection = selection
+    const highestStage = menu.mode === 'practice' ? null : menu.progress[menu.mode]
     sceneManager.setStartStage(
-      selection === 0 ? (isTitle() ? menu.highestStage : menu.retryStage) : null,
+      selection === 0 ? (isTitle() ? highestStage : menu.retryStage) : null,
     )
     notifyMenu()
   }
@@ -245,7 +253,7 @@ export function mountTankBattle(
         if (menu.mode === 'practice') {
           menu.page = 'practice'
           notifyMenu()
-        } else if (menu.mode === 'single' && !options.customLevel && menu.highestStage > 0) {
+        } else if (!options.customLevel && menu.progress[menu.mode] > 0) {
           menu.page = 'campaign'
           selectStart(0)
         } else requestStart()

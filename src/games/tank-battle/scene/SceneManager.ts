@@ -11,7 +11,7 @@ import {
 import { BattleScene } from '@/games/tank-battle/scene/BattleScene.ts'
 import { GameOverScene } from '@/games/tank-battle/scene/GameOverScene.ts'
 import type { Scene } from '@/games/tank-battle/scene/Scene.ts'
-import { isValidStage } from '../progress.ts'
+import { isValidStage, type CampaignMode } from '../progress.ts'
 import { TitleScene } from '@/games/tank-battle/scene/TitleScene.ts'
 
 export interface TankBattleResult {
@@ -27,7 +27,7 @@ export interface TankBattleResult {
 
 export interface SceneManagerOptions {
   readonly campaignId?: CampaignId
-  readonly onStageReached?: (stage: number) => void
+  readonly onStageReached?: (stage: number, mode: CampaignMode) => void
   readonly customLevel?: LevelData
   readonly initialHighScore?: number
   readonly onGameOver?: (result: TankBattleResult) => void
@@ -44,7 +44,7 @@ export class SceneManager {
   private readonly customLevel?: LevelData
   private readonly audio: AudioEngine
   private readonly onGameOver?: (result: TankBattleResult) => void
-  private readonly onStageReached?: (stage: number) => void
+  private readonly onStageReached?: (stage: number, mode: CampaignMode) => void
   private startStage: number | null = null
   private continued = false
   private practiceStage: number | null = null
@@ -118,7 +118,8 @@ export class SceneManager {
     return new BattleScene(this.world, this.audio, {
       onGameOver: (victory: boolean): void => this.finishGame(victory),
       onLevelStart: (stage) => {
-        if (this.isSingleCampaign()) this.onStageReached?.(stage)
+        if (this.isCampaign())
+          this.onStageReached?.(stage, this.playerCount === 2 ? 'coop' : 'single')
       },
       practice: this.practiceStage !== null || this.customLevel !== undefined,
     })
@@ -126,7 +127,7 @@ export class SceneManager {
 
   /** 开始新一局：重置世界状态但保留最高分 */
   private startNewGame(): void {
-    this.continued = this.isSingleCampaign() && this.startStage !== null
+    this.continued = this.isCampaign() && this.startStage !== null
     const highScore = this.isRankedRun() ? this.campaignHighScore : 0
 
     resetEntityIds()
@@ -173,8 +174,8 @@ export class SceneManager {
     this.switchTo(SceneKind.GAME_OVER)
   }
 
-  private isSingleCampaign(): boolean {
-    return this.playerCount === 1 && this.practiceStage === null && !this.customLevel
+  private isCampaign(): boolean {
+    return this.practiceStage === null && !this.customLevel
   }
 
   private isRankedRun(): boolean {
@@ -191,12 +192,12 @@ export class SceneManager {
   }
 
   getRetryStage(): number | null {
-    return this.isSingleCampaign() && !this.finalVictory ? this.finalLevel - 1 : null
+    return this.isCampaign() && !this.finalVictory ? this.finalLevel - 1 : null
   }
 
   setStartStage(stage: number | null): void {
     if (this.currentKind === SceneKind.BATTLE) return
-    this.startStage = this.isSingleCampaign() && isValidStage(stage, this.campaignId) ? stage : null
+    this.startStage = this.isCampaign() && isValidStage(stage, this.campaignId) ? stage : null
   }
 
   switchTo(kind: SceneKind): void {

@@ -164,7 +164,7 @@ test('Tank A stage 50 supports continuation, failure retry and single-stage prac
       manager.update({ ...idle, confirmEdge: true })
       world = (manager as unknown as { world: World }).world
       assert.equal(world.levelIndex, 49)
-      assert.equal(world.players[0].lives, 6)
+      assert.equal(world.players[0].lives, 10)
       for (let tick = 0; tick < LEVEL_INTRO_TICKS; tick++) manager.update(idle)
     }
     world.pendingEnemies = []
@@ -175,4 +175,74 @@ test('Tank A stage 50 supports continuation, failure retry and single-stage prac
     assert.equal(results.at(-1)?.practice, practice)
     assert.deepEqual(reached, practice ? [] : [49, 49])
   }
+})
+
+test('Tank A coop saves stage 9 and restores both players after a reload or failure', () => {
+  const values = new Map<string, string>()
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      values.set(key, value)
+    },
+  }
+  const results: TankBattleResult[] = []
+  const createManager = () =>
+    new SceneManager(audio, 42, {
+      campaignId: 'tank-a',
+      onStageReached: (stage, mode) => saveProgress(stage, undefined, storage, 'tank-a', mode),
+      onGameOver: (result) => results.push(result),
+    })
+  let manager = createManager()
+  manager.setPlayerCount(2)
+  manager.update({ ...idle, confirmEdge: true })
+  const getWorld = () => (manager as unknown as { world: World }).world
+  assert.deepEqual(
+    getWorld().players.map((player) => player.lives),
+    [10, 10],
+  )
+  for (let stage = 0; stage < 8; stage++) {
+    assert.equal(getWorld().levelIndex, stage)
+    for (let tick = 0; tick < LEVEL_INTRO_TICKS; tick++) manager.update(idle)
+    getWorld().pendingEnemies = []
+    getWorld().enemies = []
+    manager.update(idle)
+    for (let tick = 0; tick < LEVEL_CLEAR_TICKS; tick++) manager.update(idle)
+  }
+  assert.equal(getWorld().levelIndex, 8)
+  assert.equal(loadProgress(undefined, storage, 'tank-a', 'coop'), 8)
+  assert.equal(loadProgress(undefined, storage, 'tank-a', 'single'), 0)
+  assert.equal(loadProgress(undefined, storage, 'battle-city', 'coop'), 0)
+
+  manager = createManager()
+  manager.setPlayerCount(2)
+  manager.setStartStage(loadProgress(undefined, storage, 'tank-a', 'coop'))
+  manager.update({ ...idle, confirmEdge: true })
+  assert.equal(getWorld().levelIndex, 8)
+  assert.equal(manager.isContinued(), true)
+  assert.deepEqual(
+    getWorld().players.map((player) => player.lives),
+    [10, 10],
+  )
+  for (let tick = 0; tick < LEVEL_INTRO_TICKS; tick++) manager.update(idle)
+  getWorld().players[0].lives = 0
+  getWorld().players[1].lives = 1
+  getWorld().players[1].tank!.star = 3
+  getWorld().score = 3000
+  getWorld().onBaseDestroyed()
+  manager.update(idle)
+  assert.equal(manager.getRetryStage(), 8)
+  assert.equal(results[0].continued, true)
+  for (let tick = 0; tick < 45; tick++) manager.update(idle)
+  manager.update({ ...idle, confirmEdge: true })
+  assert.equal(getWorld().levelIndex, 8)
+  assert.equal(getWorld().score, 0)
+  assert.equal(getWorld().base.destroyed, false)
+  assert.equal(getWorld().getEnemiesRemaining(), 20)
+  assert.deepEqual(
+    getWorld().players.map((player) => [player.lives, player.tank?.star]),
+    [
+      [10, 0],
+      [10, 0],
+    ],
+  )
 })

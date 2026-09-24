@@ -6,6 +6,7 @@ import {
   type TankBattleMenu,
   type TankBattleUiState,
 } from '../src/games/tank-battle/runtime.ts'
+import { loadProgress, saveProgress } from '../src/games/tank-battle/progress.ts'
 
 function pad(index: number, buttons: number[] = []): Gamepad {
   return {
@@ -73,20 +74,34 @@ for (const campaignId of ['battle-city', 'tank-a'] as const) {
     let controllers: TankBattleControllers | undefined
     let menu: TankBattleMenu | undefined
     const campaignChanges: string[] = []
-    const handle = mountTankBattle(canvas, stage, {
-      onCampaignChange: (next) => campaignChanges.push(next),
-      campaignId,
-      initialProgress,
-      onStateChange: (next) => {
-        state = next
+    const saved = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => saved.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        saved.set(key, value)
       },
-      onControllersChange: (next) => {
-        controllers = next
-      },
-      onMenuChange: (next) => {
-        menu = next
-      },
-    })
+    }
+    saveProgress(initialProgress, undefined, storage, campaignId)
+    const mount = () =>
+      mountTankBattle(canvas, stage, {
+        onCampaignChange: (next) => campaignChanges.push(next),
+        campaignId,
+        initialProgress: {
+          single: loadProgress(undefined, storage, campaignId, 'single'),
+          coop: loadProgress(undefined, storage, campaignId, 'coop'),
+        },
+        onStageReached: (stage, mode) => saveProgress(stage, undefined, storage, campaignId, mode),
+        onStateChange: (next) => {
+          state = next
+        },
+        onControllersChange: (next) => {
+          controllers = next
+        },
+        onMenuChange: (next) => {
+          menu = next
+        },
+      })
+    let handle = mount()
     const frames = (count = 4) => {
       for (let i = 0; i < count; i++) {
         now += 17
@@ -169,7 +184,7 @@ for (const campaignId of ['battle-city', 'tank-a'] as const) {
       frames()
       assert.equal(state, 'title')
       assert.equal(menu?.page, 'campaign')
-      assert.equal(menu?.highestStage, initialProgress)
+      assert.equal(menu?.progress.single, initialProgress)
       handle.menuAction('down')
       assert.equal(menu?.startSelection, 1)
       handle.confirm()
@@ -177,7 +192,7 @@ for (const campaignId of ['battle-city', 'tank-a'] as const) {
       assert.equal(state, 'playing')
       assert.equal(menu?.continued, false)
       assert.equal(
-        menu?.highestStage,
+        menu?.progress.single,
         initialProgress,
         'starting over preserves the saved progress',
       )
@@ -229,6 +244,40 @@ for (const campaignId of ['battle-city', 'tank-a'] as const) {
       assert.equal(state, 'playing')
       assert.equal(menu?.continued, true)
       assert.deepEqual(controllers?.bindings, [0, null])
+
+      // Reload with a saved two-player run: continuation must still require both controllers.
+      handle.destroy()
+      pads = []
+      saveProgress(8, undefined, storage, campaignId, 'coop')
+      handle = mount()
+      handle.selectMode('coop')
+      handle.confirm()
+      frames()
+      assert.equal(state, 'title')
+      assert.equal(menu?.page, 'campaign')
+      assert.equal(menu?.progress.coop, 8)
+      assert.equal(menu?.progress.single, initialProgress)
+      handle.chooseStart(true)
+      frames()
+      assert.equal(menu?.awaitingControllers, true)
+      send(pad(0))
+      assert.equal(state, 'title', 'continuing coop still needs the second controller')
+      send(pad(0), pad(1))
+      assert.equal(state, 'playing')
+      assert.equal(menu?.continued, true)
+      assert.deepEqual(controllers?.bindings, [0, 1])
+      assert.equal(loadProgress(undefined, storage, campaignId, 'coop'), 8)
+      assert.equal(loadProgress(undefined, storage, campaignId, 'single'), initialProgress)
+      handle.togglePause()
+      frames()
+      handle.returnToTitle()
+      handle.confirm()
+      handle.chooseStart(false)
+      frames()
+      assert.equal(state, 'playing')
+      assert.equal(menu?.continued, false)
+      assert.equal(menu?.progress.coop, 8, 'starting over keeps the two-player save')
+      assert.equal(loadProgress(undefined, storage, campaignId, 'coop'), 8)
     } finally {
       handle.destroy()
       for (const [key, descriptor] of originals) {
