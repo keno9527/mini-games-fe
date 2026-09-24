@@ -5,6 +5,8 @@ import GameLaunchLink from '@/components/GameLaunchLink'
 import { GameCardSkeleton } from '@/components/Skeleton'
 import type { Game, PlayRankItem } from '@/types'
 
+const hiddenGameIds = new Set(['animal-chess', 'whack-a-mole', 'tetris'])
+
 function formatDuration(seconds: number): string {
   const totalSeconds = Math.floor(seconds)
   if (totalSeconds < 60) return `${totalSeconds} 秒`
@@ -21,12 +23,12 @@ export default function Home() {
 
   useEffect(() => {
     getGames()
-      .then(setGames)
+      .then((games) => setGames(games.filter((game) => !hiddenGameIds.has(game.id))))
       .catch(() => setError('本地游戏配置读取失败，请刷新页面重试'))
       .finally(() => setLoading(false))
     const refreshRanking = () => {
       getPlayRanking()
-        .then(setRanking)
+        .then((ranking) => setRanking(ranking.filter((item) => !hiddenGameIds.has(item.gameId))))
         .catch(() => {})
     }
     refreshRanking()
