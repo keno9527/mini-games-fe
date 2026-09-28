@@ -159,6 +159,8 @@ function resolveBulletCollisions(
         if (player.takeHit()) {
           world.onPlayerDestroyed(player.playerSlot)
           playSound(SoundEffect.EXPLODE_BIG)
+        } else {
+          playSound(SoundEffect.HIT_ARMOR)
         }
         return
       }

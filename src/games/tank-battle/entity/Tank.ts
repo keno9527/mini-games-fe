@@ -42,6 +42,10 @@ export class Tank {
   playerSlot = 0
   star = 0
 
+  /** 本条命、本关有效的个人装备；重复拾取不叠加。 */
+  hasBoat = false
+  hasArmor = false
+
   /** 无敌剩余帧数（重生保护 / 头盔道具） */
   shieldTicks = 0
   /** 出生闪烁保护剩余帧数：期间不可被击毁也不造成伤害 */
@@ -122,6 +126,10 @@ export class Tank {
       return false
     }
     this.hitFlashTicks = 8
+    if (this.side === TankSide.PLAYER && this.hasArmor && this.armor === 1) {
+      this.hasArmor = false
+      return false
+    }
     this.armor -= 1
     if (this.armor <= 0) {
       this.alive = false
