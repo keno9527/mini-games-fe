@@ -11,7 +11,8 @@
       "progress": {
         "rook-ladder": 3,
         "cannon-screen": 3,
-        "rook-pursuit": 3
+        "rook-pursuit": 3,
+        "chapter-1-puzzle-1-v2": 3
       },
       "records": [
         {
@@ -33,6 +34,40 @@
           "result": "win",
           "playedAt": "2026-09-28T08:09:52.831Z",
           "level": 3
+        },
+        {
+          "id": "afa7d7ed-382a-43b8-92d7-54a011cba657",
+          "userId": "25856be4-043e-40b0-93bc-ce87326a77dc",
+          "gameId": "xiangqi",
+          "score": 300,
+          "duration": 51,
+          "result": "win",
+          "playedAt": "2026-09-28T09:31:33.689Z",
+          "level": 1
+        }
+      ]
+    },
+    "snake": {
+      "progress": {
+        "adventure": {
+          "results": {
+            "garden-01": {
+              "medal": 2,
+              "bestMoves": 46
+            }
+          }
+        }
+      },
+      "records": [
+        {
+          "id": "172c1ab7-250c-478f-98a4-8c29236f87c5",
+          "userId": "25856be4-043e-40b0-93bc-ce87326a77dc",
+          "gameId": "snake",
+          "score": 30,
+          "duration": 14,
+          "result": "win",
+          "playedAt": "2026-09-28T09:34:22.855Z",
+          "level": 1
         }
       ]
     }

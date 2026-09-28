@@ -11,7 +11,7 @@ import {
   type Board,
   type Piece,
 } from '../src/games/xiangqi/engine.ts'
-import { levels } from '../src/games/xiangqi/levels.ts'
+import { chapters, LEVELS_PER_CHAPTER, levels } from '../src/games/xiangqi/levels.ts'
 import { newSession, sessionReducer } from '../src/games/xiangqi/session.ts'
 import { readProgress, saveProgress, unlockedLevel } from '../src/games/xiangqi/progression.ts'
 import { getCatalogGame } from '../src/features/games/data.ts'
@@ -23,6 +23,9 @@ function position(entries: [Piece, number, number][]): Board {
   for (const [piece, x, y] of entries) board[y * 9 + x] = piece
   return board
 }
+const pursuit = { ...levels[0], moves: 2, board: parseBoard('4k4/9/R8/1R7/9/4P4/9/9/9/4K4') }
+const ladder = { ...levels[0], moves: 1, board: parseBoard('4k4/R8/1R7/9/9/4P4/9/9/9/4K4') }
+
 const canMove = (board: Board, x: number, y: number, tx: number, ty: number) =>
   legalMoves(board, board[y * 9 + x] === board[y * 9 + x]?.toUpperCase() ? 'red' : 'black').some(
     (m) => m.from === y * 9 + x && m.to === ty * 9 + tx,
@@ -188,9 +191,13 @@ for (const level of levels) {
     assert.ok(proof.move)
 
     // Check the hint continuation against EVERY legal black response, through the actual session reducer.
+    const visited = new Set<string>()
     function prove(state: ReturnType<typeof newSession>) {
       if (state.phase === 'won') return
       assert.equal(state.phase, 'red')
+      const key = `${state.board.map((piece) => piece ?? '.').join('')}:${state.moves}`
+      if (visited.has(key)) return
+      visited.add(key)
       const hint = solve(state.board, 'red', level.moves - state.moves)
       assert.equal(hint.proof, 'win')
       assert.ok(hint.move)
@@ -204,12 +211,72 @@ for (const level of levels) {
   })
 }
 
+test('campaign has six chapters of five distinct, legally placed puzzles', () => {
+  assert.equal(chapters.length, 6)
+  assert.equal(levels.length, chapters.length * LEVELS_PER_CHAPTER)
+  assert.equal(new Set(levels.map((level) => level.id)).size, 30)
+  const positions = new Set<string>()
+  const advisorSquares = new Set([3, 5, 13, 21, 23])
+  const elephantSquares = new Set([2, 6, 18, 22, 26, 38, 42])
+  for (const level of levels) {
+    const normal = level.board.map((piece) => piece ?? '.').join('')
+    const mirrored = Array.from({ length: 10 }, (_, row) =>
+      normal
+        .slice(row * 9, row * 9 + 9)
+        .split('')
+        .reverse()
+        .join(''),
+    ).join('')
+    const canonical = [normal, mirrored].sort()[0]
+    assert.ok(!positions.has(canonical), `${level.name}: duplicate or mirrored puzzle`)
+    positions.add(canonical)
+    for (const side of ['red', 'black']) {
+      const pieces = level.board.filter(
+        (piece) =>
+          piece && (side === 'red' ? piece === piece.toUpperCase() : piece === piece.toLowerCase()),
+      )
+      for (const [kind, max] of Object.entries({ K: 1, A: 2, B: 2, R: 2, N: 2, C: 2, P: 5 }))
+        assert.ok(pieces.filter((piece) => piece!.toUpperCase() === kind).length <= max)
+    }
+    level.board.forEach((piece, square) => {
+      if (!piece) return
+      const relative = piece === piece.toUpperCase() ? 89 - square : square
+      const x = relative % 9
+      const y = Math.floor(relative / 9)
+      if (piece.toUpperCase() === 'K') assert.ok(x >= 3 && x <= 5 && y <= 2)
+      if (piece.toUpperCase() === 'A') assert.ok(advisorSquares.has(relative))
+      if (piece.toUpperCase() === 'B') assert.ok(elephantSquares.has(relative))
+      if (piece.toUpperCase() === 'P') assert.ok(y >= 3 && (y >= 5 || x % 2 === 0))
+    })
+  }
+})
+
+test('finishing a chapter unlocks its successor and legacy progress does not skip puzzles', () => {
+  const firstChapter = Object.fromEntries(levels.slice(0, 5).map((level) => [level.id, 3]))
+  assert.equal(unlockedLevel(firstChapter), 5)
+  assert.equal(unlockedLevel({ ...firstChapter, [levels[9].id]: 3 }), 5)
+  assert.equal(unlockedLevel({ 'rook-ladder': 3, 'cannon-screen': 3 }), 0)
+})
+
+test('black chooses the longest proven resistance instead of an immediate loss', () => {
+  const level = levels[2]
+  const first = solve(level.board, 'red', level.moves).move!
+  const board = applyMove(level.board, first)
+  const replies = legalMoves(board, 'black')
+  assert.ok(replies.some((move) => solve(applyMove(board, move), 'red', 1).proof === 'win'))
+  const response = solve(board, 'black', 2)
+  assert.equal(response.proof, 'win')
+  assert.ok(response.move)
+  assert.equal(solve(applyMove(board, response.move), 'red', 1).proof, 'escape')
+  assert.equal(solve(applyMove(board, response.move), 'red', 2).proof, 'win')
+})
+
 test('search budget exhaustion is not falsely reported as a proven escape', () => {
   assert.equal(solve(levels[7].board, 'red', 3, 0).proof, 'unknown')
 })
 
 test('black takes an available escape after a mistaken red move', () => {
-  const state = sessionReducer(newSession(levels[2]), { type: 'move', move: { from: 18, to: 19 } })
+  const state = sessionReducer(newSession(pursuit), { type: 'move', move: { from: 18, to: 19 } })
   assert.equal(state.phase, 'black')
   const response = solve(state.board, 'black', 1)
   assert.equal(response.proof, 'escape')
@@ -218,7 +285,7 @@ test('black takes an available escape after a mistaken red move', () => {
 })
 
 test('undo restores a whole round, including while black is thinking', () => {
-  const initial = newSession(levels[2])
+  const initial = newSession(pursuit)
   const move = solve(initial.board, 'red', 2).move!
   const pending = sessionReducer(initial, { type: 'move', move })
   assert.equal(pending.phase, 'black')
@@ -230,7 +297,7 @@ test('undo restores a whole round, including while black is thinking', () => {
 })
 
 test('wrong moves fail at the budget; illegal and terminal actions are ignored', () => {
-  const initial = newSession(levels[0])
+  const initial = newSession(ladder)
   assert.equal(sessionReducer(initial, { type: 'move', move: { from: 9, to: 20 } }), initial)
   const lost = sessionReducer(initial, { type: 'move', move: { from: 9, to: 10 } })
   assert.equal(lost.phase, 'lost')

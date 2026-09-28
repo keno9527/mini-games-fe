@@ -229,6 +229,17 @@ export function solve(board: Board, side: Side, redMoves: number, budget = 60000
     uncertain ||= proof === 'unknown'
     if (nodes > budget) break
   }
+  // Once every reply is proven losing, prefer a reply that needs the most
+  // red moves to finish. Reuse the proof cache and the same node budget.
+  if (side === 'black' && !uncertain) {
+    for (let depth = redMoves - 1; depth > 0; depth--) {
+      for (const move of moves) {
+        const proof = search(applyMove(board, move), 'red', depth)
+        if (proof === 'escape') return { proof: 'win', move, nodes }
+        if (proof === 'unknown') return { proof: 'win', move: moves[0], nodes }
+      }
+    }
+  }
   return {
     proof: uncertain ? 'unknown' : side === 'red' ? 'escape' : 'win',
     move: side === 'black' ? moves[0] : null,

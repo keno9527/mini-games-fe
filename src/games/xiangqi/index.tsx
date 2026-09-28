@@ -23,6 +23,7 @@ import {
 import { levels, type Level } from './levels'
 import { readProgress, saveProgress, unlockedLevel } from './progression'
 import { newSession, sessionReducer } from './session'
+import LevelPicker from './LevelPicker'
 import './xiangqi.css'
 
 export default function Xiangqi(props: GameComponentProps) {
@@ -34,6 +35,7 @@ function Campaign({ gameId, userId }: GameComponentProps) {
   const [current, setCurrent] = useState(() => unlockedLevel(progress))
   const [attempt, setAttempt] = useState(0)
   const [saveError, setSaveError] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
   const unlocked = unlockedLevel(progress)
   const rulesDialog = useRef<HTMLDialogElement>(null)
   const complete = useCallback(
@@ -58,28 +60,26 @@ function Campaign({ gameId, userId }: GameComponentProps) {
         >
           <CaretLeft size={18} />
         </button>
-        <label className="xq-level-select">
+        <button
+          type="button"
+          className="xq-level-select"
+          aria-label={`选择关卡，当前第 ${current + 1} 关，共 ${levels.length} 关`}
+          aria-haspopup="dialog"
+          aria-expanded={pickerOpen}
+          onClick={(event) => {
+            event.currentTarget.focus()
+            setPickerOpen(true)
+          }}
+        >
           选关
           <span className="xq-level-picker">
             <span className="xq-selected-number" aria-hidden="true">
               {String(current + 1).padStart(2, '0')}
               <CaretDown size={12} />
             </span>
-            <select
-              aria-label="当前关卡"
-              value={current}
-              onChange={(event) => setCurrent(Number(event.target.value))}
-            >
-              {levels.map((level, i) => (
-                <option key={level.id} value={i} disabled={i > unlocked}>
-                  {String(i + 1).padStart(2, '0')} · {level.name}
-                  {i > unlocked ? '（未解锁）' : ''}
-                </option>
-              ))}
-            </select>
           </span>
           <span>/ {String(levels.length).padStart(2, '0')}</span>
-        </label>
+        </button>
         <button
           type="button"
           className="xq-level-arrow"
@@ -89,21 +89,6 @@ function Campaign({ gameId, userId }: GameComponentProps) {
         >
           <CaretRight size={18} />
         </button>
-        <div className="xq-level-dots">
-          {levels.map((level, i) => (
-            <button
-              type="button"
-              key={level.id}
-              aria-label={`第 ${i + 1} 关 ${level.name}${i > unlocked ? '，未解锁' : ''}`}
-              aria-current={current === i ? 'step' : undefined}
-              disabled={i > unlocked}
-              className={progress[level.id] ? 'is-complete' : ''}
-              onClick={() => setCurrent(i)}
-            >
-              <span />
-            </button>
-          ))}
-        </div>
         <button
           type="button"
           className="xq-rules-button"
@@ -112,6 +97,18 @@ function Campaign({ gameId, userId }: GameComponentProps) {
           规则
         </button>
       </nav>
+      {pickerOpen && (
+        <LevelPicker
+          current={current}
+          progress={progress}
+          onClose={() => setPickerOpen(false)}
+          onStart={(index) => {
+            setCurrent(index)
+            setAttempt((value) => value + 1)
+            setPickerOpen(false)
+          }}
+        />
+      )}
       <dialog ref={rulesDialog} className="xq-rules-dialog" aria-labelledby="xq-rules-title">
         <div className="xq-rules-heading">
           <h2 id="xq-rules-title">棋局思路与规则</h2>
@@ -131,6 +128,12 @@ function Campaign({ gameId, userId }: GameComponentProps) {
           星；使用提示、使用悔棋各减 1 星，最低 1 星。
         </p>
         <p>每局结算后保存到玩家存档，每关最高 300 分。</p>
+        <p>
+          棋局选自公开棋谱：{levels[current].sourcePuzzle}。
+          <a href="/licenses/xiangqi-puzzles.txt" target="_blank" rel="noreferrer">
+            来源与许可
+          </a>
+        </p>
       </dialog>
       <Puzzle
         key={`${current}:${attempt}`}

@@ -1,6 +1,7 @@
 import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
+import { LevelSettlement } from './settlement'
 import { readPlayerProgress, stageProgress } from '@/api/playerFiles'
 import { PencilSimple } from '@phosphor-icons/react'
 import '../game-surfaces.css'
@@ -216,7 +217,7 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
   const resumeStatusRef = useRef<'playing' | 'ready'>('playing')
   const dryStreakRef = useRef(0)
   const noticeRef = useRef({ text: '', frames: 0 })
-  const submittedRef = useRef(false)
+  const settlementRef = useRef(new LevelSettlement())
   const flashRef = useRef(0) // 屏幕闪烁
   const keysRef = useRef<Set<string>>(new Set()) // 键盘按下状态
   const PADDLE_KEY_SPEED = 8
@@ -226,23 +227,20 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
   // ===== 成绩提交 =====
   const submitEnd = useCallback(
     async (result: 'win' | 'lose', finalScore: number) => {
-      if (customLevel || !userId || submittedRef.current) return
-      submittedRef.current = true
-      const dur = Math.max(1, Math.floor(playTicksRef.current / 60))
+      if (customLevel || !userId) return
+      const settlement = settlementRef.current.finish(
+        result,
+        finalScore,
+        playTicksRef.current,
+        LEVEL_LAYOUTS.length,
+      )
+      if (!settlement) return
+      const { progress, ...record } = settlement
       try {
-        stageProgress(gameId, userId, {
-          highestUnlockedLevel: levelIdxRef.current + 1,
-          lastPlayedLevel: levelIdxRef.current + 1,
-        })
-        await createRecord(userId, {
-          gameId,
-          score: finalScore,
-          duration: dur,
-          result,
-          level: levelIdxRef.current + 1,
-        })
+        stageProgress(gameId, userId, progress)
+        await createRecord(userId, { gameId, ...record })
       } catch {
-        /* ignore */
+        // The global save queue retains this record for an idempotent retry.
       }
     },
     [userId, gameId, customLevel],
@@ -363,7 +361,7 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
       setCombo(0)
       setStatus('idle')
       statusRef.current = 'idle'
-      submittedRef.current = false
+      settlementRef.current.begin(index)
       draw()
     },
     // draw reads refs and is declared below the reset callback.
@@ -382,6 +380,7 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
     audioRef.current?.stopAll()
     audioRef.current?.play('clear')
     const next = levelIdxRef.current + 1
+    settlementRef.current.begin(next, scoreRef.current, playTicksRef.current)
     levelIdxRef.current = next
     setLevelIdx(next)
     bricksRef.current = parseBricks(LEVEL_LAYOUTS[next])
@@ -859,6 +858,7 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
       } else {
         scoreRef.current += 200
         setScore(scoreRef.current)
+        void submitEnd('win', scoreRef.current)
         nextLevel()
       }
       return
