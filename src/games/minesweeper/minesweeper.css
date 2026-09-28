@@ -885,3 +885,177 @@
   accent-color: #42644f;
   height: 8px;
 }
+
+/* Compact campaign: the board is the primary surface; selection stays in a popover. */
+.ms-game.ms-logic {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.ms-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #d8d0bd;
+}
+.ms-chapter-label {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.ms-picker {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.ms-picker summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #cec5ad;
+  border-radius: 5px;
+  background: #faf7ed;
+  font-size: 13px;
+  cursor: pointer;
+  list-style: none;
+}
+.ms-picker summary::-webkit-details-marker {
+  display: none;
+}
+.ms-picker-panel {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(370px, calc(100vw - 64px));
+  max-height: min(460px, 65vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  background: #faf7ed;
+  border: 1px solid #cec5ad;
+  border-radius: 7px;
+  box-shadow: 0 12px 32px #223c3026;
+}
+.ms-picker-panel h3 {
+  margin: 14px 0 8px;
+  font-size: 13px;
+}
+.ms-picker-panel h3 small {
+  font-weight: normal;
+  color: #77725f;
+}
+.ms-picker-panel p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #716b58;
+}
+.ms-picker-panel .ms-level-list {
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+.ms-picker-panel .ms-level-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ms-picker-panel .ms-level-list small {
+  margin: 0;
+}
+.ms-picker-progress {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #d8d0bd;
+}
+.ms-picker-note {
+  margin-top: 14px;
+}
+.ms-level-arrows {
+  display: flex;
+  gap: 6px;
+}
+.ms-level-arrows button,
+.ms-compact-tools button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #cec5ad;
+  border-radius: 5px;
+  background: #faf7ed;
+  color: #34513f;
+}
+.ms-level-arrows button:disabled,
+.ms-compact-tools button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ms-round-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0;
+  font-size: 12px;
+  color: #626957;
+  font-variant-numeric: tabular-nums;
+}
+.ms-compact-round .ms-board-frame {
+  max-width: 470px;
+  margin: 0 auto;
+}
+.ms-compact-tools {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 40px;
+  gap: 8px;
+  margin: 22px 0 0;
+}
+.ms-compact-tools button {
+  font-size: 13px;
+}
+.ms-compact-tools button[aria-pressed='true'] {
+  background: #34513f;
+  border-color: #34513f;
+  color: #fff9e8;
+}
+.ms-compact-round .ms-hint,
+.ms-compact-round .ms-status,
+.ms-compact-round .ms-help {
+  margin-top: 16px;
+}
+.ms-compact-round .ms-status::before {
+  display: none;
+}
+.ms-compact-round .ms-status h3 {
+  font-size: 17px;
+  margin: 0 0 5px;
+}
+@media (max-width: 540px) {
+  .ms-game.ms-logic {
+    padding: 12px;
+  }
+  .ms-selection-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+  .ms-chapter-label {
+    width: 100%;
+    font-size: 12px;
+  }
+  .ms-picker-panel {
+    left: 0;
+    right: auto;
+  }
+  .ms-round-stats {
+    font-size: 11px;
+    margin: 12px 0;
+  }
+  .ms-compact-tools {
+    gap: 5px;
+    grid-template-columns: repeat(4, 1fr) 32px;
+    margin-top: 16px;
+  }
+  .ms-compact-tools button {
+    padding: 8px 4px;
+  }
+}

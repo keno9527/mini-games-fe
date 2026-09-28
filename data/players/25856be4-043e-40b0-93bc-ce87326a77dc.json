@@ -54,6 +54,10 @@
             "garden-01": {
               "medal": 2,
               "bestMoves": 46
+            },
+            "garden-02": {
+              "medal": 2,
+              "bestMoves": 34
             }
           }
         }
@@ -68,6 +72,36 @@
           "result": "win",
           "playedAt": "2026-09-28T09:34:22.855Z",
           "level": 1
+        },
+        {
+          "id": "e1fa4254-6577-439c-9515-2d738da0795e",
+          "userId": "25856be4-043e-40b0-93bc-ce87326a77dc",
+          "gameId": "snake",
+          "score": 40,
+          "duration": 10,
+          "result": "win",
+          "playedAt": "2026-09-28T09:52:38.049Z",
+          "level": 2
+        }
+      ]
+    },
+    "minesweeper": {
+      "progress": {
+        "logic": {
+          "1": 1,
+          "2": 2
+        }
+      },
+      "records": [
+        {
+          "id": "bd4692bf-ad10-48c5-81df-9c1101b7f53d",
+          "userId": "25856be4-043e-40b0-93bc-ce87326a77dc",
+          "gameId": "minesweeper",
+          "score": 0,
+          "duration": 10,
+          "result": "win",
+          "playedAt": "2026-09-28T09:52:06.201Z",
+          "level": 2
         }
       ]
     }
