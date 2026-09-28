@@ -2,14 +2,15 @@ import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
 import '../game-surfaces.css'
-import { LEVEL_LAYOUTS } from './levels'
+import { BRICK_COLORS, LEVEL_LAYOUTS } from './levels'
+import LevelEditor from './LevelEditor'
+import type { CustomLevel } from './editor'
 
 interface Props {
   userId?: string
   gameId: string
 }
 
-type Level = '简单' | '中等' | '复杂'
 type Status = 'idle' | 'ready' | 'playing' | 'won' | 'lost'
 type PowerUpType = 'wider' | 'multiball' | 'laser' | 'slow' | 'pierce' | 'life'
 type BrickType = 'normal' | 'hard' | 'explosive' | 'indestructible'
@@ -32,7 +33,7 @@ const LASER_COOLDOWN = 16 // frames
 const EFFECT_FRAMES = 540 // 9s @ 60fps
 const MAX_PARTICLES = 220
 
-// ===== 难度配置 =====
+// ===== 游戏配置 =====
 interface Cfg {
   paddle: number
   ballSpeed: number
@@ -40,24 +41,12 @@ interface Cfg {
   maxLevel: number
 }
 
-const CONFIG: Record<Level, Cfg> = {
-  简单: { paddle: 110, ballSpeed: 4.5, powerUpRate: 0.28, maxLevel: 0 },
-  中等: { paddle: 88, ballSpeed: 5.6, powerUpRate: 0.2, maxLevel: 1 },
-  复杂: { paddle: 66, ballSpeed: 7, powerUpRate: 0.14, maxLevel: 2 },
+const CONFIG: Cfg = {
+  paddle: 88,
+  ballSpeed: 5.6,
+  powerUpRate: 0.2,
+  maxLevel: LEVEL_LAYOUTS.length - 1,
 }
-
-const BRICK_COLORS = [
-  '#d88978',
-  '#d9a56c',
-  '#dcca87',
-  '#87bba0',
-  '#7bbdc5',
-  '#7d9dbd',
-  '#9e94c4',
-  '#c28da8',
-  '#74b5b1',
-  '#c78687',
-]
 
 const POWERUP_META: Record<
   PowerUpType,
@@ -184,10 +173,52 @@ function randPowerUp(): PowerUpType {
   return POWERUP_TYPES[Math.floor(Math.random() * 5)]
 }
 
-export default function Breakout({ userId, gameId }: Props) {
-  const [level, setLevel] = useState<Level>('中等')
+export default function Breakout(props: Props) {
+  const [view, setView] = useState<'game' | 'editor' | 'test'>('game')
+  const [customLevel, setCustomLevel] = useState<CustomLevel>()
+  return (
+    <>
+      {view !== 'game' && (
+        <div hidden={view !== 'editor'}>
+          <LevelEditor
+            active={view === 'editor'}
+            onBack={() => setView('game')}
+            onPlay={(level) => {
+              setCustomLevel(level)
+              setView('test')
+            }}
+          />
+        </div>
+      )}
+      {view !== 'editor' && (
+        <BreakoutPlayer
+          key={view}
+          {...props}
+          customLevel={view === 'test' ? customLevel : undefined}
+          onEditor={() => setView('editor')}
+        />
+      )}
+    </>
+  )
+}
+
+interface PlayerProps extends Props {
+  customLevel?: CustomLevel
+  onEditor: () => void
+}
+
+function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) {
   const [status, setStatus] = useState<Status>('idle')
-  useGamePlay(gameId, status === 'playing' ? 'playing' : status === 'ready' ? 'paused' : 'idle')
+  useGamePlay(
+    gameId,
+    customLevel
+      ? 'idle'
+      : status === 'playing'
+        ? 'playing'
+        : status === 'ready'
+          ? 'paused'
+          : 'idle',
+  )
   const [score, setScore] = useState(0)
   const [lives, setLives] = useState(3)
   const [levelIdx, setLevelIdx] = useState(0)
@@ -209,7 +240,7 @@ export default function Breakout({ userId, gameId }: Props) {
   const particlesRef = useRef<Particle[]>([])
   const effectsRef = useRef<Effects>({ wider: 0, laser: 0, slow: 0, pierce: 0 })
   const laserCdRef = useRef(0)
-  const cfgRef = useRef<Cfg>(CONFIG['中等'])
+  const cfgRef = useRef<Cfg>({ ...CONFIG, maxLevel: customLevel ? 0 : CONFIG.maxLevel })
   const rafRef = useRef<number | null>(null)
   const startTimeRef = useRef(0)
   const submittedRef = useRef(false)
@@ -222,7 +253,7 @@ export default function Breakout({ userId, gameId }: Props) {
   // ===== 成绩提交 =====
   const submitEnd = useCallback(
     async (result: 'win' | 'lose', finalScore: number) => {
-      if (!userId || submittedRef.current) return
+      if (customLevel || !userId || submittedRef.current) return
       submittedRef.current = true
       const dur = Math.max(1, Math.floor((Date.now() - startTimeRef.current) / 1000))
       try {
@@ -231,7 +262,7 @@ export default function Breakout({ userId, gameId }: Props) {
         /* ignore */
       }
     },
-    [userId, gameId],
+    [userId, gameId, customLevel],
   )
 
   // ===== 粒子生成 =====
@@ -308,37 +339,41 @@ export default function Breakout({ userId, gameId }: Props) {
   }
 
   // ===== 重置整局 =====
-  const resetGame = useCallback(() => {
-    const cfg = CONFIG[level]
-    cfgRef.current = cfg
-    bricksRef.current = parseBricks(LEVEL_LAYOUTS[0])
-    paddleXRef.current = W / 2
-    ballsRef.current = []
-    powerupsRef.current = []
-    lasersRef.current = []
-    particlesRef.current = []
-    effectsRef.current = { wider: 0, laser: 0, slow: 0, pierce: 0 }
-    laserCdRef.current = 0
-    comboRef.current = 0
-    comboTimerRef.current = 0
-    flashRef.current = 0
-    levelIdxRef.current = 0
-    setLevelIdx(0)
-    setScore(0)
-    scoreRef.current = 0
-    setLives(3)
-    livesRef.current = 3
-    setCombo(0)
-    setStatus('idle')
-    statusRef.current = 'idle'
-    submittedRef.current = false
-    draw()
+  const resetGame = useCallback(
+    (startLevel = 0) => {
+      const index = customLevel ? 0 : startLevel
+      bricksRef.current = parseBricks(customLevel?.layout ?? LEVEL_LAYOUTS[index])
+      paddleXRef.current = W / 2
+      ballsRef.current = []
+      powerupsRef.current = []
+      lasersRef.current = []
+      particlesRef.current = []
+      effectsRef.current = { wider: 0, laser: 0, slow: 0, pierce: 0 }
+      laserCdRef.current = 0
+      comboRef.current = 0
+      comboTimerRef.current = 0
+      flashRef.current = 0
+      keysRef.current.clear()
+      levelIdxRef.current = index
+      setLevelIdx(index)
+      setScore(0)
+      scoreRef.current = 0
+      setLives(3)
+      livesRef.current = 3
+      setCombo(0)
+      setStatus('idle')
+      statusRef.current = 'idle'
+      submittedRef.current = false
+      draw()
+    },
+    // draw reads refs and is declared below the reset callback.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [level])
+    [customLevel],
+  )
 
   useEffect(() => {
     resetGame()
-  }, [level, resetGame])
+  }, [resetGame])
 
   // ===== 进入下一关 =====
   const nextLevel = () => {
@@ -932,6 +967,11 @@ export default function Breakout({ userId, gameId }: Props) {
   // ===== 键盘：空格发射激光 =====
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest('button, input, select, textarea, [contenteditable="true"]')
+      )
+        return
       if (e.code === 'Space') {
         e.preventDefault()
         if (statusRef.current === 'idle' || statusRef.current === 'ready') {
@@ -976,7 +1016,7 @@ export default function Breakout({ userId, gameId }: Props) {
   }
 
   const restart = () => {
-    resetGame()
+    resetGame(levelIdxRef.current)
   }
 
   const pickingIdle = status === 'idle' || status === 'won' || status === 'lost'
@@ -994,22 +1034,37 @@ export default function Breakout({ userId, gameId }: Props) {
         </span>
       </header>
       <div className="gs-toolbar">
-        <div className="gs-segments" aria-label="游戏难度">
-          {(['简单', '中等', '复杂'] as const).map((lv) => (
-            <button
-              key={lv}
-              disabled={!pickingIdle}
-              aria-pressed={level === lv}
-              onClick={() => setLevel(lv)}
-            >
-              {lv}
-            </button>
-          ))}
-        </div>
+        {!customLevel && (
+          <div className="gs-segments" aria-label="选择关卡">
+            {LEVEL_LAYOUTS.map((_, index) => (
+              <button
+                key={index}
+                disabled={!pickingIdle}
+                aria-pressed={levelIdx === index}
+                onClick={() => resetGame(index)}
+              >
+                第 {index + 1} 关
+              </button>
+            ))}
+          </div>
+        )}
+        {!customLevel && (
+          <button className="gs-secondary" disabled={!pickingIdle} onClick={onEditor}>
+            关卡编辑
+          </button>
+        )}
         <span className="gs-caption">
           {combo > 1 ? `${combo} 连击 · 保持节奏` : '找准角度，清空砖墙'}
         </span>
       </div>
+      {customLevel && (
+        <div className="breakout-custom-banner">
+          <p>试玩 · {customLevel.name} · 不计入排行榜</p>
+          <button className="gs-secondary" onClick={onEditor}>
+            返回编辑
+          </button>
+        </div>
+      )}
       <div className="gs-metrics">
         <div>
           <span>本局得分</span>
@@ -1067,16 +1122,27 @@ export default function Breakout({ userId, gameId }: Props) {
               {status === 'idle'
                 ? '下一次反弹，由你掌控'
                 : status === 'won'
-                  ? '漂亮！全部通关'
-                  : '再来一次，突破纪录'}
+                  ? customLevel
+                    ? '漂亮！试玩通关'
+                    : '漂亮！全部通关'
+                  : '再来一次，拿下这一关'}
             </h3>
             <p>
               {status === 'idle' ? '移动鼠标或拖动画面控制挡板。' : `最终得分 ${score}`}
               <br />
-              {status === 'idle' ? '接住道具，解锁更多击球方式。' : `到达第 ${levelIdx + 1} 关`}
+              {status === 'idle'
+                ? '接住道具，解锁更多击球方式。'
+                : customLevel
+                  ? customLevel.name
+                  : `到达第 ${levelIdx + 1} 关`}
             </p>
             <button className="gs-primary" onClick={status === 'idle' ? handleLaunch : restart}>
-              {status === 'idle' ? '发球，开始挑战' : '再来一局'} ↗
+              {status === 'idle'
+                ? '发球，开始挑战'
+                : customLevel
+                  ? '重新试玩'
+                  : `重试第 ${levelIdx + 1} 关`}{' '}
+              ↗
             </button>
           </div>
         )}
