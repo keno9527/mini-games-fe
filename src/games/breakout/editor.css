@@ -1,0 +1,311 @@
+.breakout-level-select {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 100%;
+  font-size: 12px;
+}
+.breakout-level-select select {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--gs-line);
+  border-radius: 6px;
+  background: var(--gs-panel);
+  color: var(--gs-text);
+  padding: 10px 12px;
+}
+.breakout-level-select select:focus-visible {
+  outline: 2px solid var(--gs-accent);
+  outline-offset: 2px;
+}
+.breakout-level-select select:disabled {
+  opacity: 0.5;
+}
+.breakout-editor .gs-heading {
+  flex-wrap: wrap;
+}
+.breakout-editor button:disabled {
+  opacity: 0.4;
+  transform: none;
+}
+.breakout-editor-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.breakout-editor label {
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.breakout-editor input,
+.breakout-editor select {
+  border: 1px solid var(--gs-line);
+  border-radius: 6px;
+  background: var(--gs-panel);
+  color: var(--gs-text);
+  padding: 10px 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+.breakout-editor input {
+  width: 280px;
+  font-weight: 400;
+}
+.breakout-editor input:focus-visible,
+.breakout-editor select:focus-visible {
+  outline: 2px solid var(--gs-accent);
+  outline-offset: 2px;
+}
+.breakout-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 20px;
+  align-items: start;
+}
+.breakout-editor-workspace {
+  min-width: 0;
+}
+.breakout-editor-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.breakout-editor-actions .gs-secondary {
+  padding: 9px 12px;
+}
+.breakout-editor-stage {
+  margin-top: 12px;
+  padding: 24px 10px 0;
+  border: 1px solid var(--gs-line);
+  border-radius: 8px;
+  background: #102833;
+  overflow: hidden;
+}
+.breakout-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.breakout-editor-grid .breakout-editor-cell {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  min-height: 22px;
+  min-width: 0;
+  padding: 0;
+  border: 2px solid #102833;
+  border-radius: 4px;
+  background: var(--brick-color);
+  color: #263e48;
+  font-size: 12px;
+  box-shadow:
+    inset 0 -3px #0001,
+    inset 0 2px #fff3;
+  touch-action: none;
+}
+.breakout-editor-grid .tile-H,
+.breakout-editor-swatch.swatch-H {
+  background: #94a3b8;
+  color: #172b3f;
+}
+.breakout-editor-grid .tile-X,
+.breakout-editor-swatch.swatch-X {
+  background: #ef4444;
+  color: white;
+}
+.breakout-editor-grid .tile-steel,
+.breakout-editor-swatch.swatch-steel {
+  background: #475569;
+  color: #e2e8f0;
+}
+.breakout-editor-grid .tile-empty {
+  background: #203b46;
+  box-shadow: inset 0 0 0 1px #35515b;
+}
+.breakout-editor-grid button:hover {
+  filter: brightness(1.12);
+}
+.breakout-editor-grid button:focus-visible {
+  outline: 2px solid var(--gs-accent);
+  outline-offset: -2px;
+}
+.breakout-editor-flight {
+  position: relative;
+  height: 118px;
+  display: flex;
+  justify-content: center;
+  padding-top: 23px;
+  color: #759798;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+.breakout-editor-flight i {
+  position: absolute;
+  bottom: 33px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #387787;
+}
+.breakout-editor-flight b {
+  position: absolute;
+  bottom: 16px;
+  width: 76px;
+  height: 9px;
+  background: #397384;
+  border-radius: 6px;
+}
+.breakout-editor-help {
+  color: var(--gs-muted);
+  font-size: 11px;
+  line-height: 1.8;
+  margin-top: 10px;
+}
+.breakout-editor-palette {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid var(--gs-line);
+  border-radius: 8px;
+  background: var(--gs-panel);
+}
+.breakout-editor-palette h3 {
+  font-size: 13px;
+  font-weight: 650;
+  margin-bottom: 5px;
+}
+.breakout-editor-brush {
+  display: flex;
+  text-align: left;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 7px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+}
+.breakout-editor-brush[aria-pressed='true'] {
+  border-color: var(--gs-accent);
+  background: #334b50;
+}
+.breakout-editor-brush strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+}
+.breakout-editor-brush small,
+.breakout-editor-template small {
+  display: block;
+  font-size: 10px;
+  color: var(--gs-muted);
+  margin-top: 3px;
+}
+.breakout-editor-swatch {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  height: 21px;
+  border-radius: 3px;
+  background: #d88978;
+  font-size: 12px;
+}
+.breakout-editor-swatch.swatch-empty {
+  background: transparent;
+  border: 1px dashed var(--gs-muted);
+}
+.breakout-editor-template {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--gs-line);
+}
+.breakout-editor-template select {
+  width: 100%;
+  font-size: 12px;
+  padding: 8px;
+}
+.breakout-editor-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--gs-line);
+}
+.breakout-editor-footer p {
+  font-size: 11px;
+  color: var(--gs-muted);
+}
+.breakout-editor-notice,
+.breakout-editor-error {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.breakout-editor-notice {
+  background: #deeeea;
+  color: #285e50;
+}
+.breakout-editor-error {
+  background: #fbe6e1;
+  color: #963e31;
+}
+.breakout-custom-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.breakout-custom-banner p {
+  color: var(--gs-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+@container (max-width: 640px) {
+  .breakout-editor-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .breakout-editor-palette {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .breakout-editor-palette h3,
+  .breakout-editor-template {
+    grid-column: 1 / -1;
+  }
+  .breakout-editor-template {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .breakout-editor-template label,
+  .breakout-editor-template small {
+    grid-column: 1 / -1;
+  }
+  .breakout-editor-stage {
+    padding: 18px 4px 0;
+  }
+  .breakout-editor-grid .breakout-editor-cell {
+    border-width: 1px;
+    font-size: 10px;
+  }
+  .breakout-editor-meta label,
+  .breakout-editor input {
+    width: 100%;
+  }
+  .breakout-editor-flight {
+    height: 94px;
+  }
+}
