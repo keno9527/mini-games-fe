@@ -51,6 +51,8 @@ import {
   SHOVEL_TICKS,
   HELMET_SHIELD_TICKS,
   LEVEL_CLEAR_TICKS,
+  LEVEL_FINISH_TICKS,
+  LEVEL_FINISH_FADE_TICKS,
   LEVEL_INTRO_TICKS,
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -85,27 +87,35 @@ function canvasRecorder() {
     width: number
     height: number
     color: string | CanvasGradient | CanvasPattern
+    alpha: number
   }[] = []
   let offsetX = 0
   let offsetY = 0
-  const stack: [number, number][] = []
+  const stack: [number, number, number][] = []
   const context = {
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
     globalAlpha: 1,
     fillRect(x: number, y: number, width: number, height: number) {
-      rectangles.push({ x: x + offsetX, y: y + offsetY, width, height, color: this.fillStyle })
+      rectangles.push({
+        x: x + offsetX,
+        y: y + offsetY,
+        width,
+        height,
+        color: this.fillStyle,
+        alpha: this.globalAlpha,
+      })
     },
     strokeRect() {},
     beginPath() {},
     rect() {},
     clip() {},
     save() {
-      stack.push([offsetX, offsetY])
+      stack.push([offsetX, offsetY, this.globalAlpha])
     },
     restore() {
-      ;[offsetX, offsetY] = stack.pop()!
+      ;[offsetX, offsetY, this.globalAlpha] = stack.pop()!
     },
     translate(x: number, y: number) {
       offsetX += x
@@ -517,6 +527,84 @@ test('all 35 stages can initialize, render and simulate with valid coordinates',
   }
 })
 
+test('last kill finishes its explosion and audio before fading to scores; pause and held fire preserve the transition', () => {
+  for (const playerCount of [1, 2] as const) {
+    const world = new World(1, 0, playerCount)
+    const sounds: SoundEffect[] = []
+    const motors: (SoundEffect | null)[] = []
+    let stops = 0
+    const audio = {
+      ...silentAudio(),
+      play(effect: SoundEffect) {
+        sounds.push(effect)
+      },
+      setMotor(effect: SoundEffect | null) {
+        motors.push(effect)
+      },
+      stopAll() {
+        stops += 1
+      },
+    } as unknown as AudioEngine
+    const scene = new BattleScene(world, audio, { onGameOver() {} })
+    const overlayAlpha = () => {
+      const { context, rectangles } = canvasRecorder()
+      scene.render(context)
+      return (
+        rectangles
+          .filter(
+            (rect) =>
+              rect.x === FIELD_OFFSET_X &&
+              rect.y === FIELD_OFFSET_Y &&
+              rect.width === FIELD_PIXELS &&
+              rect.height === FIELD_PIXELS &&
+              rect.color === '#000000',
+          )
+          .at(-1)?.alpha ?? 1
+      )
+    }
+    scene.onEnter()
+    for (let i = 0; i < LEVEL_INTRO_TICKS; i++) scene.update(idle)
+    world.terrain.load(emptyMap())
+    world.pendingEnemies = []
+    const player = world.players[0].tank!
+    player.x = 64
+    player.y = 96
+    const enemy = tank(64, 80, EnemyKind.BASIC)
+    enemy.aiDecisionTicks = 100
+    world.enemies = [enemy]
+    assert.equal(fireBullet(world, player), true)
+    const stopsBeforeKill = stops
+    scene.update(idle)
+    assert.equal(world.enemiesKilled, 1)
+    assert.ok(sounds.includes(SoundEffect.EXPLODE_SMALL))
+    assert.equal(stops, stopsBeforeKill, 'last explosion sound must not be stopped')
+    assert.equal(motors.at(-1), null)
+    assert.equal(overlayAlpha(), 1, 'the unshaded battlefield remains visible after the kill')
+    const explosion = world.explosions[0]
+    const ticksBeforePause = explosion.ticksLeft
+    scene.suspend()
+    for (let i = 0; i < 90; i++) scene.update(idle)
+    assert.equal(explosion.ticksLeft, ticksBeforePause)
+    scene.update({ ...idle, pauseEdge: true })
+    const stopsAfterResume = stops
+    const heldInput = { ...idle, right: true, fire: true, confirmEdge: true }
+    for (let i = 0; i < LEVEL_FINISH_TICKS - LEVEL_FINISH_FADE_TICKS; i++) scene.update(heldInput)
+    assert.equal(world.explosions.length, 0, 'explosion plays to completion')
+    assert.equal(player.x, 64, 'combat input is disabled during the outro')
+    assert.equal(world.bullets.length, 0, 'held fire cannot spawn more bullets')
+    assert.equal(overlayAlpha(), 1, 'fade starts only after the initial hold')
+    for (let i = 0; i < LEVEL_FINISH_FADE_TICKS / 2; i++) scene.update(heldInput)
+    assert.equal(overlayAlpha(), 0.46)
+    for (let i = 0; i < LEVEL_FINISH_FADE_TICKS / 2; i++) scene.update(heldInput)
+    assert.equal(overlayAlpha(), 0.92)
+    assert.equal(sounds.includes(SoundEffect.SCORE_TICK), false, 'counting starts after the outro')
+    assert.equal(stops, stopsAfterResume)
+    for (let i = 0; i < 8; i++) scene.update(idle)
+    assert.ok(sounds.includes(SoundEffect.SCORE_TICK))
+    assert.equal(world.levelIndex, 0)
+  }
+})
+
 test('campaign transitions through all 35 stages, keeps upgrades, and reports victory once', () => {
   const world = new World(1)
   let victories = 0
@@ -534,7 +622,8 @@ test('campaign transitions through all 35 stages, keeps upgrades, and reports vi
     world.pendingEnemies = []
     world.enemies = []
     scene.update(idle)
-    for (let frame = 0; frame < LEVEL_CLEAR_TICKS; frame += 1) scene.update(idle)
+    for (let frame = 0; frame < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; frame += 1)
+      scene.update(idle)
   }
   assert.equal(victories, 1)
 })
@@ -566,7 +655,7 @@ test('practice clears only the selected stage; title return preserves mode', () 
   world.pendingEnemies = []
   world.enemies = []
   scene.update(idle)
-  for (let frame = 0; frame < LEVEL_CLEAR_TICKS; frame += 1) scene.update(idle)
+  for (let frame = 0; frame < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; frame += 1) scene.update(idle)
   assert.equal(completed, true)
   assert.equal(world.levelIndex, 14)
 
@@ -833,7 +922,7 @@ test('solo retry rebuilds the failed stage with ten lives and resets score, upgr
   world().pendingEnemies = []
   world().enemies = []
   manager.update(idle)
-  for (let i = 0; i < LEVEL_CLEAR_TICKS; i++) manager.update(idle)
+  for (let i = 0; i < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; i++) manager.update(idle)
   assert.equal(world().levelIndex, 5, 'continued games advance to the next stage')
   assert.deepEqual(reached, [4, 4, 5])
   for (let i = 0; i < LEVEL_INTRO_TICKS; i++) manager.update(idle)
@@ -870,7 +959,7 @@ test('solo and coop campaigns update progress; final-stage victory does not offe
       world.pendingEnemies = []
       world.enemies = []
       manager.update(idle)
-      for (let i = 0; i < LEVEL_CLEAR_TICKS; i++) manager.update(idle)
+      for (let i = 0; i < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; i++) manager.update(idle)
       assert.deepEqual(reached, [LEVELS.length - 1])
     } else {
       world.onBaseDestroyed()

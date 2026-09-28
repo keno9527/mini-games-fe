@@ -23,7 +23,11 @@ import { LEVELS } from '../src/games/tank-battle/data/levels.ts'
 import { World, LevelOutcome } from '../src/games/tank-battle/system/World.ts'
 import { SceneManager, type TankBattleResult } from '../src/games/tank-battle/scene/SceneManager.ts'
 import type { AudioEngine } from '../src/games/tank-battle/core/AudioEngine.ts'
-import { LEVEL_CLEAR_TICKS, LEVEL_INTRO_TICKS } from '../src/games/tank-battle/constants.ts'
+import {
+  LEVEL_CLEAR_TICKS,
+  LEVEL_FINISH_TICKS,
+  LEVEL_INTRO_TICKS,
+} from '../src/games/tank-battle/constants.ts'
 import { SceneKind, TerrainKind, type InputSnapshot } from '../src/games/tank-battle/types.ts'
 
 const idle: InputSnapshot = {
@@ -195,7 +199,7 @@ for (const playerCount of [1, 2] as const) {
     inspect.world.highScore = 700
     inspect.world.outcome = LevelOutcome.CLEARED
     manager.update(idle)
-    for (let i = 0; i < LEVEL_CLEAR_TICKS; i += 1) manager.update(idle)
+    for (let i = 0; i < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; i += 1) manager.update(idle)
     assert.equal(manager.getCurrentKind(), SceneKind.GAME_OVER)
     assert.equal(results.length, 1)
     assert.equal(results[0].practice, true)

@@ -3,6 +3,8 @@ import {
   FIELD_OFFSET_X,
   FIELD_OFFSET_Y,
   LEVEL_CLEAR_TICKS,
+  LEVEL_FINISH_TICKS,
+  LEVEL_FINISH_FADE_TICKS,
   LEVEL_INTRO_TICKS,
 } from '@/games/tank-battle/constants.ts'
 import type { AudioEngine } from '@/games/tank-battle/core/AudioEngine.ts'
@@ -26,6 +28,7 @@ enum BattlePhase {
   INTRO = 'intro',
   FIGHTING = 'fighting',
   PAUSED = 'paused',
+  FINISHING = 'finishing',
   LEVEL_CLEAR = 'levelClear',
 }
 
@@ -107,6 +110,10 @@ export class BattleScene implements Scene {
         this.updateLevelClear(input)
         break
 
+      case BattlePhase.FINISHING:
+        this.updateFinishing()
+        break
+
       default:
         break
     }
@@ -164,15 +171,28 @@ export class BattleScene implements Scene {
 
   private handleOutcome(): void {
     if (this.world.outcome === LevelOutcome.CLEARED) {
-      this.audio.stopAll()
-      this.phase = BattlePhase.LEVEL_CLEAR
-      this.phaseTicks = LEVEL_CLEAR_TICKS
+      // Stop the motor without cutting off the final explosion's sound.
+      this.audio.setMotor(null)
+      for (const player of this.world.getPlayerTanks()) player.moving = false
+      this.phase = BattlePhase.FINISHING
+      this.phaseTicks = LEVEL_FINISH_TICKS
       return
     }
 
     if (this.world.outcome === LevelOutcome.FAILED) {
       this.audio.setMotor(null)
       this.callbacks.onGameOver(false)
+    }
+  }
+
+  private updateFinishing(): void {
+    // Advance visual feedback only; combat can no longer change the result.
+    this.tickEntityTimers()
+    this.world.removeDeadEntities()
+    this.phaseTicks -= 1
+    if (this.phaseTicks <= 0) {
+      this.phase = BattlePhase.LEVEL_CLEAR
+      this.phaseTicks = LEVEL_CLEAR_TICKS
     }
   }
 
@@ -208,6 +228,12 @@ export class BattleScene implements Scene {
         drawDimOverlay(context, 0.5)
         drawCenteredBanner(context, ['PAUSE'], COLORS.TEXT_HIGHLIGHT)
         break
+
+      case BattlePhase.FINISHING: {
+        const progress = Math.max(0, 1 - this.phaseTicks / LEVEL_FINISH_FADE_TICKS)
+        if (progress > 0) drawDimOverlay(context, 0.92 * progress)
+        break
+      }
 
       case BattlePhase.LEVEL_CLEAR: {
         drawDimOverlay(context, 0.92)

@@ -8,7 +8,11 @@ import { SceneManager, type TankBattleResult } from '../src/games/tank-battle/sc
 import { BattleScene } from '../src/games/tank-battle/scene/BattleScene.ts'
 import type { AudioEngine } from '../src/games/tank-battle/core/AudioEngine.ts'
 import { idleControls } from '../src/features/gamepad/players.ts'
-import { LEVEL_CLEAR_TICKS, LEVEL_INTRO_TICKS } from '../src/games/tank-battle/constants.ts'
+import {
+  LEVEL_CLEAR_TICKS,
+  LEVEL_FINISH_TICKS,
+  LEVEL_INTRO_TICKS,
+} from '../src/games/tank-battle/constants.ts'
 import { SceneKind, TerrainKind } from '../src/games/tank-battle/types.ts'
 import { isValidStage, loadProgress, saveProgress } from '../src/games/tank-battle/progress.ts'
 
@@ -126,7 +130,7 @@ test('Tank A campaign advances past 35, keeps upgrades, saves stage 50 and ends 
     world.pendingEnemies = []
     world.enemies = []
     manager.update(idle)
-    for (let tick = 0; tick < LEVEL_CLEAR_TICKS; tick++) manager.update(idle)
+    for (let tick = 0; tick < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; tick++) manager.update(idle)
   }
   assert.equal(manager.getCurrentKind(), SceneKind.GAME_OVER)
   for (let tick = 0; tick < 100; tick++) manager.update(idle)
@@ -170,7 +174,7 @@ test('Tank A stage 50 supports continuation, failure retry and single-stage prac
     world.pendingEnemies = []
     world.enemies = []
     manager.update(idle)
-    for (let tick = 0; tick < LEVEL_CLEAR_TICKS; tick++) manager.update(idle)
+    for (let tick = 0; tick < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; tick++) manager.update(idle)
     assert.equal(results.at(-1)?.victory, true)
     assert.equal(results.at(-1)?.practice, practice)
     assert.deepEqual(reached, practice ? [] : [49, 49])
@@ -206,7 +210,7 @@ test('Tank A coop saves stage 9 and restores both players after a reload or fail
     getWorld().pendingEnemies = []
     getWorld().enemies = []
     manager.update(idle)
-    for (let tick = 0; tick < LEVEL_CLEAR_TICKS; tick++) manager.update(idle)
+    for (let tick = 0; tick < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; tick++) manager.update(idle)
   }
   assert.equal(getWorld().levelIndex, 8)
   assert.equal(loadProgress(undefined, storage, 'tank-a', 'coop'), 8)
