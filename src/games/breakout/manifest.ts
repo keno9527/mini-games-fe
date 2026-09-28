@@ -1,10 +1,11 @@
+import { LEVEL_LAYOUTS } from './levels'
 import type { GameManifest } from '@/games/manifest.ts'
 
 export default {
   game: {
     id: 'breakout',
     name: '打砖块',
-    description: '鼠标控制挡板反弹小球，击碎砖墙通关。6种道具、4类砖块、多关卡与连击加分。',
+    description: `控制挡板反弹小球，挑战${LEVEL_LAYOUTS.length}个递进关卡。6种道具、自动激光、连锁爆破与连击加分。`,
     tags: ['反应', '物理'],
     difficulties: ['简单', '中等', '复杂'],
   },

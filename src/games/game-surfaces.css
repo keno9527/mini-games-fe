@@ -997,6 +997,49 @@
   font-size: 36px;
   color: #efd09c;
 }
+.breakout-stage {
+  max-width: 560px;
+  margin: 0 auto 14px;
+  font-size: 12px;
+}
+.breakout-stage > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.breakout-stage span,
+.breakout-stage p {
+  color: var(--gs-muted);
+}
+.breakout-stage p {
+  margin-top: 6px;
+  font-size: 11px;
+}
+.breakout-stage progress {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--gs-panel);
+}
+.breakout-stage progress::-webkit-progress-bar {
+  background: var(--gs-panel);
+}
+.breakout-stage progress::-webkit-progress-value {
+  background: var(--gs-accent);
+}
+.breakout-stage progress::-moz-progress-bar {
+  background: var(--gs-accent);
+}
+.breakout-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .breakout-frame {
   position: relative;
   padding: 10px;
