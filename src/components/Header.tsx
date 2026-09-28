@@ -14,7 +14,7 @@ export default function Header() {
         </Link>
         <nav aria-label="主导航">
           <Link to="/" aria-current={pathname === '/' ? 'page' : undefined}>
-            游戏库
+            首页
           </Link>
           <Link to="/profile" aria-current={pathname === '/profile' ? 'page' : undefined}>
             {currentUser?.name ?? '我的'}

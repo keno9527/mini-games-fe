@@ -2,6 +2,8 @@ import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
 import '../game-surfaces.css'
+import './gomoku.css'
+import PuzzleCampaign from './PuzzleCampaign'
 
 interface Props {
   userId?: string
@@ -163,7 +165,7 @@ const STONE = 28
 const MARGIN = 22
 const BOARD_PX = MARGIN * 2 + (SIZE - 1) * STONE
 
-export default function Gomoku({ userId, gameId }: Props) {
+function ClassicGomoku({ userId, gameId }: Props) {
   const [level, setLevel] = useState<Level>('中等')
   const [board, setBoard] = useState<Cell[][]>(emptyBoard)
   const [status, setStatus] = useState<Status>('idle')
@@ -212,6 +214,7 @@ export default function Gomoku({ userId, gameId }: Props) {
   )
 
   const reset = useCallback(() => {
+    if (aiTimerRef.current) clearTimeout(aiTimerRef.current)
     setBoard(emptyBoard())
     setStatus('idle')
     setTurn('X')
@@ -284,14 +287,7 @@ export default function Gomoku({ userId, gameId }: Props) {
   const moves = board.flat().filter(Boolean).length
 
   return (
-    <section className="game-surface gomoku-room">
-      <header className="gs-heading">
-        <div>
-          <p className="gs-eyebrow">GOMOKU · 黑白之间</p>
-          <h2>一局，静心落子</h2>
-        </div>
-        <span className="gs-seal">弈</span>
-      </header>
+    <section className="gomoku-classic" aria-label="人机对战">
       <div className="gs-toolbar">
         <div className="gs-segments" aria-label="对局难度">
           {(['简单', '中等', '复杂'] as const).map((lv) => (
@@ -416,6 +412,28 @@ export default function Gomoku({ userId, gameId }: Props) {
           </div>
         </aside>
       </div>
+    </section>
+  )
+}
+
+export default function Gomoku(props: Props) {
+  const [mode, setMode] = useState<'puzzle' | 'classic'>('puzzle')
+  return (
+    <section className="game-surface gomoku-room gomoku-game" data-mode={mode}>
+      <header className="gomoku-modebar">
+        <div className="gs-segments" aria-label="五子棋模式">
+          <button aria-pressed={mode === 'classic'} onClick={() => setMode('classic')}>
+            人机对战
+          </button>
+          <button aria-pressed={mode === 'puzzle'} onClick={() => setMode('puzzle')}>
+            残局挑战
+          </button>
+        </div>
+        <span className="gomoku-mode-note">
+          {mode === 'puzzle' ? '5 章 · 30 关' : '落子无悔，步步为营'}
+        </span>
+      </header>
+      {mode === 'puzzle' ? <PuzzleCampaign {...props} /> : <ClassicGomoku {...props} />}
     </section>
   )
 }

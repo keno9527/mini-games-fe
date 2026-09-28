@@ -70,9 +70,9 @@ export default function Profile() {
   }, [currentUser])
 
   return (
-    <main className="profile-page">
-      <header className="profile-heading">
-        <h1>个人中心</h1>
+    <main className="page-shell profile-page">
+      <header className="page-heading">
+        <h1 className="page-title">个人中心</h1>
         <p>管理玩家，查看游戏记录。</p>
       </header>
       <div className="profile-layout">

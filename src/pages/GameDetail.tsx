@@ -33,8 +33,8 @@ export default function GameDetail() {
     return (
       <main className="game-placeholder">
         <h1>{error || '游戏不存在'}</h1>
-        <Link to="/" className="game-back" aria-label="返回游戏库">
-          返回游戏库
+        <Link to="/" className="game-back" aria-label="返回首页">
+          返回首页
         </Link>
       </main>
     )
@@ -44,7 +44,7 @@ export default function GameDetail() {
   return (
     <main className={`game-page game-page--${id}`}>
       <header className="game-page-toolbar">
-        <Link to="/" className="game-back" aria-label="返回游戏库">
+        <Link to="/" className="game-back" aria-label="返回首页">
           <ArrowLeft size={20} aria-hidden="true" />
           <span>返回</span>
         </Link>

@@ -4,7 +4,7 @@ export default {
   game: {
     id: 'gomoku',
     name: '五子棋',
-    description: '15x15 棋盘，你执黑先手。简单随机、中等会守必杀、复杂启用棋形评估。',
+    description: '15×15 自由五子棋，保留三档人机对战；30 关残局挑战，从一步成五到五步连续冲四。',
     tags: ['对战', '策略'],
     difficulties: ['简单', '中等', '复杂'],
   },

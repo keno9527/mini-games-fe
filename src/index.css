@@ -164,41 +164,46 @@ body {
   }
 }
 
-.plaza-library {
+.page-shell {
+  --page-section-size: 18px;
+  --page-gap: 24px;
+  --page-sidebar: 320px;
   max-width: 1600px;
-  margin: auto;
+  margin: 0 auto;
   padding: 32px 4% 40px;
+  color: #283d35;
+  font-size: 14px;
+  line-height: 1.7;
 }
-.library-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #d6d1c3;
-  color: #2d463a;
-}
-.library-heading-title {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  min-width: 0;
-}
-.library-heading h1 {
-  font:
-    700 32px 'Songti SC',
-    'SimSun',
-    serif;
+.page-title {
   margin: 0;
+  color: #304b3d;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
 }
-.library-heading > p {
-  font-size: 13px;
+.page-heading {
+  margin-bottom: var(--page-gap);
+}
+.page-heading > p {
+  margin-top: 8px;
   color: #697466;
+  font-size: 14px;
+}
+@media (max-width: 600px) {
+  .page-shell {
+    --page-gap: 20px;
+    padding: 24px 16px 32px;
+  }
+  .page-title {
+    font-size: 20px;
+  }
 }
 .library-count {
   white-space: nowrap;
-  padding: 8px 12px;
-  font-size: 13px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 400;
   border: 1px solid #d1cab9;
   border-radius: 6px;
   color: #687464;
@@ -206,19 +211,15 @@ body {
 .library-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 244px;
-  gap: 24px;
-  margin-top: 24px;
+  gap: var(--page-gap);
 }
 .library-games {
   min-width: 0;
 }
-.library-section-heading,
-.library-popular h2 {
-  font-size: 19px;
-  font-weight: 700;
-  color: #304b3d;
-}
 .library-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 16px;
 }
 .library-grid {
@@ -313,10 +314,10 @@ body {
   padding-left: 24px;
 }
 .library-popular h2 {
-  font:
-    700 23px/1.3 'Songti SC',
-    'SimSun',
-    serif;
+  font-size: var(--page-section-size);
+  font-weight: 700;
+  line-height: 1.4;
+  color: #304b3d;
 }
 .library-popular > p {
   margin-top: 8px;
@@ -403,30 +404,11 @@ body {
     border-top: 1px solid #d6d1c3;
     padding: 20px 0 0;
   }
-  .library-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
-  }
   .library-rank-link {
     padding: 14px 0;
   }
 }
 @media (max-width: 600px) {
-  .plaza-library {
-    padding: 24px 16px 32px;
-  }
-  .library-heading-title {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  .library-heading h1 {
-    font-size: 28px;
-  }
-  .library-count {
-    padding: 5px 8px;
-    font-size: 12px;
-  }
   .library-grid {
     grid-template-columns: 1fr;
     gap: 14px;
@@ -612,30 +594,10 @@ body {
   }
 }
 
-.profile-page {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 36px 24px 48px;
-  color: #283d35;
-}
-.profile-heading {
-  margin-bottom: 26px;
-}
-.profile-heading h1 {
-  font:
-    700 42px/1.25 'Songti SC',
-    'SimSun',
-    serif;
-  color: #25483e;
-}
-.profile-heading p {
-  margin-top: 8px;
-  color: #697466;
-}
 .profile-layout {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-  gap: 24px;
+  grid-template-columns: var(--page-sidebar) minmax(0, 1fr);
+  gap: var(--page-gap);
   align-items: start;
 }
 .profile-content {
@@ -648,16 +610,19 @@ body {
 .profile-overview > div {
   background: #fcfaf4;
   border: 1px solid #ded7c7;
-  border-radius: 12px;
-  padding: clamp(16px, 2.5cqw, 24px);
+  border-radius: 10px;
+  padding: 20px;
 }
 .profile-panel h2,
 .profile-page .player-selector h2 {
-  color: #25483e;
-  font:
-    700 24px/1.4 'Songti SC',
-    'SimSun',
-    serif;
+  color: #304b3d;
+  font-size: var(--page-section-size);
+  font-weight: 700;
+  line-height: 1.4;
+}
+.profile-page .player-selector {
+  padding: 20px;
+  border-radius: 10px;
 }
 .profile-page .player-list li:has(.player-choice[aria-pressed='true']) {
   background: #edf0e3;
@@ -824,12 +789,6 @@ body {
   }
 }
 @media (max-width: 480px) {
-  .profile-page {
-    padding: 24px 16px 32px;
-  }
-  .profile-heading h1 {
-    font-size: 32px;
-  }
   .profile-overview {
     gap: 8px;
   }

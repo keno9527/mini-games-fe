@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "player": {
+    "id": "f06e9867-50a2-4f11-be40-ddd19c4aaf04",
+    "name": "残局验收",
+    "avatar": "default",
+    "createdAt": "2026-09-28T11:07:41.834Z"
+  },
+  "games": {
+    "gomoku": {
+      "progress": {
+        "puzzles": {
+          "1": 2,
+          "30": 1
+        }
+      },
+      "records": [
+        {
+          "id": "0a74e1bb-e3cd-4053-84aa-091cc1784592",
+          "userId": "f06e9867-50a2-4f11-be40-ddd19c4aaf04",
+          "gameId": "gomoku",
+          "score": 100,
+          "duration": 37,
+          "result": "win",
+          "playedAt": "2026-09-28T11:08:24.107Z",
+          "level": 1
+        },
+        {
+          "id": "ff0822b5-ed87-4999-a042-9a1e416bedeb",
+          "userId": "f06e9867-50a2-4f11-be40-ddd19c4aaf04",
+          "gameId": "gomoku",
+          "score": 60,
+          "duration": 6,
+          "result": "win",
+          "playedAt": "2026-09-28T11:09:46.889Z",
+          "level": 30
+        }
+      ]
+    }
+  }
+}

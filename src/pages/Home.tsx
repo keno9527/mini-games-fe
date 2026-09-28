@@ -5,7 +5,13 @@ import GameLaunchLink from '@/components/GameLaunchLink'
 import { GameCardSkeleton } from '@/components/Skeleton'
 import type { Game, PlayRankItem } from '@/types'
 
-const hiddenGameIds = new Set(['animal-chess', 'animal-chess-ai', 'whack-a-mole', 'tetris'])
+const hiddenGameIds = new Set([
+  'animal-chess',
+  'animal-chess-ai',
+  'whack-a-mole',
+  'tetris',
+  'laser-mirror',
+])
 
 function formatDuration(seconds: number): string {
   const totalSeconds = Math.floor(seconds)
@@ -51,19 +57,13 @@ export default function Home() {
   )
 
   return (
-    <main className="plaza-library">
-      <header className="library-heading">
-        <div className="library-heading-title">
-          <h1>发现下一份乐趣</h1>
-          <span className="library-count">{loading ? '—' : games.length} 款游戏</span>
-        </div>
-        <p>即点即玩 · 结算后保存玩家进度</p>
-      </header>
+    <main className="page-shell plaza-library">
       <div className="library-layout">
         <section className="library-games" aria-labelledby="games-title" aria-busy={loading}>
-          <h2 id="games-title" className="library-section-heading">
+          <h1 id="games-title" className="page-title library-section-heading">
             全部游戏
-          </h2>
+            <span className="library-count">{loading ? '—' : games.length} 款游戏</span>
+          </h1>
           {loading && (
             <>
               <span role="status" className="sr-only">
