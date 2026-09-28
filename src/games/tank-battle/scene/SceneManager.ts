@@ -15,6 +15,7 @@ import { isValidStage, type CampaignMode } from '../progress.ts'
 import { TitleScene } from '@/games/tank-battle/scene/TitleScene.ts'
 
 export interface TankBattleResult {
+  readonly mode: CampaignMode
   readonly campaignId: CampaignId
   readonly continued: boolean
   readonly practice: boolean
@@ -162,6 +163,7 @@ export class SceneManager {
     this.finalLevel = this.world.levelIndex + 1
     this.startStage = this.getRetryStage()
     this.onGameOver?.({
+      mode: this.playerCount === 2 ? 'coop' : 'single',
       campaignId: this.campaignId,
       continued: this.continued,
       practice: this.practiceStage !== null || this.customLevel !== undefined,

@@ -1,37 +1,45 @@
 import { useEffect, useState } from 'react'
 import { getUserStats, getRecords } from '@/api'
-import { getGameRecordTitle, getResultBadgeMeta } from '@/features/games/catalog'
+import { getCatalogGame } from '@/features/games/data'
+import { GameIcon } from '@/components/GameCard'
 import { useUserStore } from '@/store/userStore'
 import UserSelector from '@/components/UserSelector'
 import type { UserStats, GameRecord } from '@/types'
 
 function formatTime(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`
+  if (seconds < 60) return `${seconds}秒`
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
-  if (m < 60) return `${m}m ${s}s`
-  return `${Math.floor(m / 60)}h ${m % 60}m`
+  if (m < 60) return `${m}分 ${s}秒`
+  return `${Math.floor(m / 60)}小时 ${m % 60}分`
 }
 
 function ResultBadge({ result }: { result: string }) {
-  const { label, className } = getResultBadgeMeta(result)
+  const labels: Record<string, string> = { win: '胜利', lose: '失败', complete: '完成' }
   return (
-    <span
-      className={`font-pixel text-[8px] px-2 py-0.5 border-2 bg-transparent tracking-widest ${className}`}
-    >
-      {label}
+    <span className="profile-result" data-result={result}>
+      {labels[result] ?? result}
     </span>
   )
 }
 
-const statColors = ['text-crt-cyan', 'text-crt-pink', 'text-crt-yellow']
-const statShadows = ['0 0 10px #00F0FF', '0 0 10px #FF2EC8', '0 0 10px #FFE500']
+function GameTitle({ gameId, name }: { gameId: string; name?: string }) {
+  return (
+    <div className="profile-game-title">
+      <span className="profile-game-icon">
+        <GameIcon gameId={gameId} size={26} />
+      </span>
+      <strong>{name || getCatalogGame(gameId)?.name || gameId}</strong>
+    </div>
+  )
+}
 
 export default function Profile() {
   const { currentUser } = useUserStore()
   const [stats, setStats] = useState<UserStats | null>(null)
   const [records, setRecords] = useState<GameRecord[]>([])
   const [loadingStats, setLoadingStats] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!currentUser) {
@@ -39,170 +47,128 @@ export default function Profile() {
       setRecords([])
       return
     }
+    let active = true
     setLoadingStats(true)
+    setError('')
+    setStats(null)
+    setRecords([])
     Promise.all([getUserStats(currentUser.id), getRecords(currentUser.id)])
       .then(([s, r]) => {
+        if (!active) return
         setStats(s)
         setRecords(r.reverse())
       })
-      .finally(() => setLoadingStats(false))
+      .catch((error: unknown) => {
+        if (active) setError(error instanceof Error ? error.message : '读取存档失败')
+      })
+      .finally(() => {
+        if (active) setLoadingStats(false)
+      })
+    return () => {
+      active = false
+    }
   }, [currentUser])
 
   return (
-    <main className="max-w-7xl mx-auto px-6 py-10">
-      <h1
-        className="font-pixel text-2xl md:text-3xl text-crt-cyan tracking-widest mb-8"
-        style={{ textShadow: '0 0 12px #00F0FF' }}
-      >
-        &gt; PROFILE
-      </h1>
-
-      <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-8 items-start">
-        {/* Left: user selector */}
+    <main className="page-shell profile-page">
+      <header className="page-heading">
+        <h1 className="page-title">个人中心</h1>
+        <p>管理玩家，查看游戏记录。</p>
+      </header>
+      <div className="profile-layout">
         <UserSelector />
-
-        {/* Right: stats */}
-        <div className="space-y-6">
+        <div className="profile-content" aria-busy={loadingStats}>
+          {error && (
+            <p role="alert" className="player-error">
+              {error}
+            </p>
+          )}
           {!currentUser && (
-            <div className="bg-crt-bg-card border-2 border-dashed border-crt-yellow/50 shadow-crt-card flex flex-col items-center justify-center py-24">
-              <div className="font-pixel text-crt-yellow text-sm tracking-widest mb-4 animate-blink">
-                PRESS START
-              </div>
-              <p className="font-mono-crt text-crt-text-dim text-lg tracking-wide">
-                &gt; SELECT OR CREATE PLAYER
-              </p>
+            <div className="profile-panel profile-empty">
+              <h2>开启你的游戏档案</h2>
+              <p>选择或创建玩家，查看你的游戏统计与历史记录。</p>
             </div>
           )}
-
           {currentUser && loadingStats && (
-            <div className="flex flex-col items-center py-16 gap-4">
-              <div className="font-pixel text-crt-yellow text-sm tracking-widest animate-blink">
-                LOADING...
-              </div>
-              <div className="font-mono-crt text-crt-cyan text-lg tracking-widest">▓▓▓▓▒▒▒▒</div>
+            <div className="profile-panel profile-empty" role="status">
+              <p>正在读取游戏记录…</p>
             </div>
           )}
-
           {currentUser && !loadingStats && stats && (
             <>
-              {/* Overview stats */}
-              <div className="grid grid-cols-3 gap-4">
+              <dl className="profile-overview">
                 {[
-                  { label: 'TOTAL GAMES', value: stats.totalGames, suffix: '' },
-                  { label: 'TOTAL SCORE', value: stats.totalScore, suffix: '' },
-                  { label: 'PLAY TIME', value: formatTime(stats.totalTime), suffix: '' },
-                ].map(({ label, value, suffix }, i) => (
-                  <div
-                    key={label}
-                    className="bg-crt-bg-card border-2 border-crt-border shadow-crt-card p-5 text-center"
-                  >
-                    <p
-                      className={`font-pixel text-2xl md:text-3xl mb-2 ${statColors[i]}`}
-                      style={{ textShadow: statShadows[i] }}
-                    >
-                      {value}
-                      {suffix}
-                    </p>
-                    <p className="font-pixel text-[9px] text-crt-text-dim tracking-widest">
-                      {label}
-                    </p>
+                  { label: '游戏局数', value: stats.totalGames },
+                  { label: '累计得分', value: stats.totalScore },
+                  { label: '游玩时长', value: formatTime(stats.totalTime) },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
                   </div>
                 ))}
-              </div>
-
-              {/* Per-game stats */}
+              </dl>
               {stats.gameStats.length > 0 && (
-                <div className="bg-crt-bg-card border-2 border-crt-cyan shadow-crt-card p-6">
-                  <h3
-                    className="font-pixel text-sm text-crt-cyan tracking-widest mb-4"
-                    style={{ textShadow: '0 0 8px #00F0FF' }}
-                  >
-                    ▸ GAME STATS
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <section className="profile-panel" aria-labelledby="profile-games-title">
+                  <h2 id="profile-games-title">游戏统计</h2>
+                  <div className="profile-games">
                     {stats.gameStats.map((gs) => (
-                      <div key={gs.gameId} className="bg-black/40 border border-crt-border p-4">
-                        <p className="font-pixel text-[10px] text-crt-yellow mb-3 tracking-wider truncate">
-                          {getGameRecordTitle(gs.gameId, gs.gameName)}
-                        </p>
-                        <div className="space-y-1.5 font-mono-crt text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-crt-text-dim tracking-wider">PLAYS</span>
-                            <span className="text-crt-text">{gs.playCount}</span>
+                      <article key={gs.gameId} className="profile-game-row">
+                        <GameTitle gameId={gs.gameId} name={gs.gameName} />
+                        <dl className="profile-game-metrics">
+                          <div>
+                            <dt>游玩次数</dt>
+                            <dd>{gs.playCount}</dd>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-crt-text-dim tracking-wider">BEST</span>
-                            <span
-                              className="text-crt-pink font-bold"
-                              style={{ textShadow: '0 0 6px #FF2EC8' }}
-                            >
-                              {gs.bestScore}
-                            </span>
+                          <div>
+                            <dt>最高得分</dt>
+                            <dd>{gs.bestScore}</dd>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-crt-text-dim tracking-wider">TIME</span>
-                            <span className="text-crt-text">{formatTime(gs.totalTime)}</span>
+                          <div>
+                            <dt>累计时长</dt>
+                            <dd>{formatTime(gs.totalTime)}</dd>
                           </div>
-                        </div>
-                      </div>
+                        </dl>
+                      </article>
                     ))}
                   </div>
-                </div>
+                </section>
               )}
-
-              {/* Record history */}
-              <div className="bg-crt-bg-card border-2 border-crt-pink shadow-crt-card p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3
-                    className="font-pixel text-sm text-crt-pink tracking-widest"
-                    style={{ textShadow: '0 0 8px #FF2EC8' }}
-                  >
-                    ▸ HISTORY LOG
-                  </h3>
-                  <span className="font-mono-crt text-xs text-crt-yellow bg-black px-2 py-0.5 border border-crt-yellow/50 tracking-widest">
-                    LAST {records.length}
+              <section className="profile-panel" aria-labelledby="profile-history-title">
+                <header className="profile-section-heading">
+                  <h2 id="profile-history-title">最近记录</h2>
+                  <span>
+                    {records.length > 30
+                      ? `最近 30 条 · 共 ${records.length} 条`
+                      : `共 ${records.length} 条`}
                   </span>
-                </div>
+                </header>
                 {records.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="font-pixel text-crt-text-dim text-xs tracking-widest mb-2">
-                      NO RECORDS
-                    </div>
-                    <p className="font-mono-crt text-crt-text-dim text-base tracking-wide">
-                      &gt; go play a round!
-                    </p>
+                  <div className="profile-empty">
+                    <h3>还没有游戏记录</h3>
+                    <p>去玩一局，留下你的第一份成绩吧。</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <ul className="profile-history">
                     {records.slice(0, 30).map((r) => (
-                      <div
-                        key={r.id}
-                        className="flex items-center gap-4 px-4 py-3 bg-black/40 border border-crt-border hover:border-crt-cyan/60 transition-colors font-mono-crt text-sm tracking-wide"
-                      >
-                        <span className="text-crt-text font-bold w-24 flex-shrink-0 truncate">
-                          {getGameRecordTitle(r.gameId)}
-                        </span>
+                      <li key={r.id} className="profile-history-row">
+                        <GameTitle gameId={r.gameId} />
                         <ResultBadge result={r.result} />
-                        <span
-                          className="text-crt-pink font-bold ml-auto tracking-wider"
-                          style={{ textShadow: '0 0 6px #FF2EC8' }}
-                        >
-                          {r.score}PT
-                        </span>
-                        <span className="text-crt-text-dim">{formatTime(r.duration)}</span>
-                        <span className="text-crt-text-dim text-xs">
+                        <strong className="profile-record-score">{r.score}分</strong>
+                        <span className="profile-record-duration">{formatTime(r.duration)}</span>
+                        <time dateTime={r.playedAt}>
                           {new Date(r.playedAt).toLocaleString('zh-CN', {
                             month: '2-digit',
                             day: '2-digit',
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
-                        </span>
-                      </div>
+                        </time>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
-              </div>
+              </section>
             </>
           )}
         </div>

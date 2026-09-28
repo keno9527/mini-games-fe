@@ -10,6 +10,7 @@ interface UseGameRecordOptions {
 }
 
 interface SubmitOptions {
+  level?: number
   score: number
   result?: RecordResult
   /** 不传则自动使用 start() 之后的经过时间 */
@@ -17,7 +18,7 @@ interface SubmitOptions {
 }
 
 /**
- * 统一封装游戏记录提交：防重复提交、自动计时、错误静默。
+ * 统一封装游戏记录提交：防重复提交、自动计时、失败由全局存档提示提供重试。
  *
  * 用法：
  *   const record = useGameRecord({ userId, gameId })
@@ -43,14 +44,14 @@ export function useGameRecord({ userId, gameId }: UseGameRecordOptions) {
   }, [])
 
   const submit = useCallback(
-    async ({ score, result = 'complete', duration }: SubmitOptions) => {
+    async ({ score, result = 'complete', duration, level }: SubmitOptions) => {
       if (!userId || submittedRef.current) return
       submittedRef.current = true
       const dur = duration ?? Math.max(1, Math.floor((Date.now() - startTimeRef.current) / 1000))
       try {
-        await createRecord(userId, { gameId, score, duration: dur, result })
+        await createRecord(userId, { gameId, score, duration: dur, result, level })
       } catch {
-        // 记录提交失败不影响游戏体验，静默处理
+        // 全局存档提示保留失败记录，以相同 ID 重试。
       }
     },
     [userId, gameId],

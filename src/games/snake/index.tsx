@@ -2,6 +2,7 @@ import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback, useId } from 'react'
 import './snake.css'
 import { useGameRecord } from '@/hooks/useGameRecord'
+import Adventure from './Adventure'
 
 interface Props {
   userId?: string
@@ -46,7 +47,32 @@ function randFood(snake: Pos[], cols: number, rows: number): Pos {
   return pos
 }
 
-export default function Snake({ userId, gameId }: Props) {
+export default function Snake(props: Props) {
+  const [mode, setMode] = useState<'adventure' | 'classic'>('adventure')
+  return (
+    <div className="snake-experience">
+      <div className="snake-mode-switch" role="group" aria-label="游戏模式">
+        <button
+          type="button"
+          aria-pressed={mode === 'adventure'}
+          onClick={() => setMode('adventure')}
+        >
+          机关闯关 <span>9 关花园奇遇</span>
+        </button>
+        <button type="button" aria-pressed={mode === 'classic'} onClick={() => setMode('classic')}>
+          经典模式 <span>三档难度 · 自由挑战</span>
+        </button>
+      </div>
+      {mode === 'adventure' ? (
+        <Adventure key={`${props.gameId}:${props.userId}`} {...props} />
+      ) : (
+        <ClassicSnake {...props} />
+      )}
+    </div>
+  )
+}
+
+function ClassicSnake({ userId, gameId }: Props) {
   const artId = useId().replace(/:/g, '')
   const [level, setLevel] = useState<Level>('中等')
   const cfg = CONFIG[level]

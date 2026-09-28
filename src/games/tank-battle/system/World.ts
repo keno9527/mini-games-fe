@@ -131,7 +131,7 @@ export class World {
     })
   }
 
-  /** 在出生点放置玩家坦克。keepStar 为 false 时星级归零（阵亡后降级）。 */
+  /** 重建坦克会移除船和护甲；仅过关时保留星级，阵亡后星级归零。 */
   spawnPlayer(keepStar: boolean, slot = 0): void {
     const player = this.players[slot]
     if (!player || player.lives <= 0) return

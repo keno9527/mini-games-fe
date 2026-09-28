@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "player": {
+    "id": "1de99bc9-c92d-405e-82e1-08c67ba1d915",
+    "name": "duoduo",
+    "avatar": "default",
+    "createdAt": "2026-09-28T07:04:11.378Z"
+  },
+  "games": {
+    "gomoku": {
+      "progress": {},
+      "records": [
+        {
+          "id": "c9ef9665-a34c-40d5-a8f9-78da4fde074a",
+          "userId": "1de99bc9-c92d-405e-82e1-08c67ba1d915",
+          "gameId": "gomoku",
+          "score": 100,
+          "duration": 26,
+          "result": "win",
+          "playedAt": "2026-09-28T08:32:06.699Z"
+        }
+      ]
+    }
+  }
+}

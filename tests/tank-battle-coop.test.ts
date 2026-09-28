@@ -141,12 +141,20 @@ test('one eliminated player does not end coop or return on next level; both elim
 test('personal powerups affect the collector, global powerups and score are shared', () => {
   const w = world()
   const p2 = w.players[1].tank!
-  w.powerUps = [PowerUpKind.STAR, PowerUpKind.TANK, PowerUpKind.TIMER].map(
-    (kind) => new PowerUp(kind, p2.x / 16, p2.y / 16),
-  )
+  w.powerUps = [
+    PowerUpKind.STAR,
+    PowerUpKind.TANK,
+    PowerUpKind.TIMER,
+    PowerUpKind.BOAT,
+    PowerUpKind.ARMOR,
+  ].map((kind) => new PowerUp(kind, p2.x / 16, p2.y / 16))
   updatePowerUps(w, silent)
   assert.equal(p2.star, 1)
   assert.equal(w.players[0].tank!.star, 0)
+  assert.equal(p2.hasBoat, true)
+  assert.equal(p2.hasArmor, true)
+  assert.equal(w.players[0].tank!.hasBoat, false)
+  assert.equal(w.players[0].tank!.hasArmor, false)
   assert.equal(w.players[0].lives, 10)
   assert.equal(w.players[1].lives, 11)
   assert.ok(w.freezeTicks > 0)

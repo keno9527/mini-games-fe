@@ -11,6 +11,7 @@ import {
   type CellState,
   type Difficulty,
 } from './engine'
+import { LogicCampaign } from './LogicCampaign'
 import './minesweeper.css'
 
 function Icon({ name }: { name: 'flag' | 'mine' | 'restart' | 'reveal' | 'clock' }) {
@@ -55,7 +56,24 @@ function Icon({ name }: { name: 'flag' | 'mine' | 'restart' | 'reveal' | 'clock'
 }
 
 export default function Minesweeper(props: GameComponentProps) {
-  return <Minefield key={JSON.stringify([props.gameId, props.userId])} {...props} />
+  const [variant, setVariant] = useState<'logic' | 'classic'>('logic')
+  return (
+    <>
+      <div className="ms-variant" role="group" aria-label="扫雷玩法">
+        <button aria-pressed={variant === 'logic'} onClick={() => setVariant('logic')}>
+          逻辑闯关 · 20 关
+        </button>
+        <button aria-pressed={variant === 'classic'} onClick={() => setVariant('classic')}>
+          经典扫雷
+        </button>
+      </div>
+      {variant === 'logic' ? (
+        <LogicCampaign key={JSON.stringify([props.gameId, props.userId])} {...props} />
+      ) : (
+        <Minefield key={JSON.stringify([props.gameId, props.userId])} {...props} />
+      )}
+    </>
+  )
 }
 
 function Minefield({ userId, gameId }: GameComponentProps) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, GameController, Plug, SlidersHorizontal } from '@phosphor-icons/react'
+import { GameController, Plug, SlidersHorizontal } from '@phosphor-icons/react'
 import {
   browserGamepadPlatform,
   monitorGamepads,
@@ -51,22 +51,10 @@ export default function GamepadTest() {
     : []
 
   return (
-    <main className="gamepad-page">
-      <Link className="gamepad-back" to="/">
-        <ArrowLeft size={17} aria-hidden="true" /> 返回游戏库
-      </Link>
-      <header className="gamepad-heading">
-        <div>
-          <p className="gamepad-eyebrow">外设实验室 · INPUT LAB</p>
-          <h1>先连接，再试试手感。</h1>
-          <p>USB 手柄检测与按键测试。每一次按下，都看得见。</p>
-        </div>
-        <GameController
-          className="gamepad-heading-icon"
-          size={88}
-          weight="duotone"
-          aria-hidden="true"
-        />
+    <main className="page-shell gamepad-page">
+      <header className="page-heading">
+        <h1 className="page-title">手柄检测</h1>
+        <p>连接手柄，查看按钮、扳机与摇杆的实时反馈。</p>
       </header>
 
       <section

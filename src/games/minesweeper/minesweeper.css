@@ -734,3 +734,328 @@
     box-shadow: 0 1px 3px #68563812;
   }
 }
+
+.ms-variant {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ms-variant button {
+  padding: 10px 18px;
+  border: 1px solid #b9c1ad;
+  border-radius: 6px;
+  color: #34513f;
+  background: #f4f0e4;
+}
+.ms-variant button[aria-pressed='true'] {
+  background: #34513f;
+  color: #fff9e8;
+}
+.ms-chapters {
+  margin: 20px 0;
+}
+.ms-chapters summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.ms-chapters h3 {
+  margin: 18px 0 8px;
+  font-size: 14px;
+}
+.ms-chapters h3 small {
+  color: #77725f;
+  margin-left: 8px;
+  font-weight: normal;
+}
+.ms-chapters p,
+.ms-round-heading p,
+.ms-extra-clues p,
+.ms-hint p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #716b58;
+}
+.ms-level-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 7px;
+}
+.ms-level-list button {
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #cec5ad;
+  border-radius: 5px;
+  background: #faf7ed;
+  font-size: 12px;
+}
+.ms-level-list small {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+}
+.ms-level-list button[aria-pressed='true'] {
+  background: #34513f;
+  color: #fff9e8;
+  border-color: #34513f;
+}
+.ms-level-list button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ms-round-heading {
+  border-top: 1px solid #d8d0bd;
+  padding: 16px 0;
+}
+.ms-round-heading h3 {
+  font-size: 20px;
+  font-family: 'Songti SC', serif;
+}
+.ms-coordinate-cols {
+  display: grid;
+  margin-left: 20px;
+  text-align: center;
+  font-size: 11px;
+  padding-bottom: 5px;
+}
+.ms-coordinate-field {
+  display: flex;
+}
+.ms-coordinate-rows {
+  width: 20px;
+  flex-shrink: 0;
+  display: grid;
+  font-size: 11px;
+}
+.ms-coordinate-rows span {
+  display: grid;
+  place-items: center;
+}
+.ms-coordinate-field .ms-board {
+  min-width: 0;
+  flex: 1;
+}
+.ms-cell.ms-highlight {
+  outline: 2px solid #d9a12f;
+  outline-offset: -3px;
+}
+.ms-extra-clues {
+  margin-top: 16px;
+  order: 5;
+}
+.ms-extra-clues h4 {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.ms-extra-clues button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px;
+  border: 1px solid #b8b69c;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.ms-extra-clues button[aria-pressed='true'] {
+  background: #ecd8a7;
+}
+.ms-round-actions {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+.ms-hint {
+  padding: 12px;
+  background: #f8f3e5;
+  border: 1px solid #d8cfb8;
+  border-radius: 6px;
+}
+.ms-hint > p {
+  font-size: 10px;
+}
+.ms-hint p {
+  overflow-wrap: anywhere;
+}
+.ms-hint button:not(.ms-new-game) {
+  text-decoration: underline;
+  font-size: 12px;
+}
+.ms-logic progress {
+  width: 100%;
+  accent-color: #42644f;
+  height: 8px;
+}
+
+/* Compact campaign: the board is the primary surface; selection stays in a popover. */
+.ms-game.ms-logic {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.ms-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #d8d0bd;
+}
+.ms-chapter-label {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.ms-picker {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.ms-picker summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #cec5ad;
+  border-radius: 5px;
+  background: #faf7ed;
+  font-size: 13px;
+  cursor: pointer;
+  list-style: none;
+}
+.ms-picker summary::-webkit-details-marker {
+  display: none;
+}
+.ms-picker-panel {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(370px, calc(100vw - 64px));
+  max-height: min(460px, 65vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  background: #faf7ed;
+  border: 1px solid #cec5ad;
+  border-radius: 7px;
+  box-shadow: 0 12px 32px #223c3026;
+}
+.ms-picker-panel h3 {
+  margin: 14px 0 8px;
+  font-size: 13px;
+}
+.ms-picker-panel h3 small {
+  font-weight: normal;
+  color: #77725f;
+}
+.ms-picker-panel p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #716b58;
+}
+.ms-picker-panel .ms-level-list {
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+.ms-picker-panel .ms-level-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ms-picker-panel .ms-level-list small {
+  margin: 0;
+}
+.ms-picker-progress {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #d8d0bd;
+}
+.ms-picker-note {
+  margin-top: 14px;
+}
+.ms-level-arrows {
+  display: flex;
+  gap: 6px;
+}
+.ms-level-arrows button,
+.ms-compact-tools button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #cec5ad;
+  border-radius: 5px;
+  background: #faf7ed;
+  color: #34513f;
+}
+.ms-level-arrows button:disabled,
+.ms-compact-tools button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ms-round-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0;
+  font-size: 12px;
+  color: #626957;
+  font-variant-numeric: tabular-nums;
+}
+.ms-compact-round .ms-board-frame {
+  max-width: 470px;
+  margin: 0 auto;
+}
+.ms-compact-tools {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 40px;
+  gap: 8px;
+  margin: 22px 0 0;
+}
+.ms-compact-tools button {
+  font-size: 13px;
+}
+.ms-compact-tools button[aria-pressed='true'] {
+  background: #34513f;
+  border-color: #34513f;
+  color: #fff9e8;
+}
+.ms-compact-round .ms-hint,
+.ms-compact-round .ms-status,
+.ms-compact-round .ms-help {
+  margin-top: 16px;
+}
+.ms-compact-round .ms-status::before {
+  display: none;
+}
+.ms-compact-round .ms-status h3 {
+  font-size: 17px;
+  margin: 0 0 5px;
+}
+@media (max-width: 540px) {
+  .ms-game.ms-logic {
+    padding: 12px;
+  }
+  .ms-selection-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+  .ms-chapter-label {
+    width: 100%;
+    font-size: 12px;
+  }
+  .ms-picker-panel {
+    left: 0;
+    right: auto;
+  }
+  .ms-round-stats {
+    font-size: 11px;
+    margin: 12px 0;
+  }
+  .ms-compact-tools {
+    gap: 5px;
+    grid-template-columns: repeat(4, 1fr) 32px;
+    margin-top: 16px;
+  }
+  .ms-compact-tools button {
+    padding: 8px 4px;
+  }
+}

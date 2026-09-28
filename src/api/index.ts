@@ -1,86 +1,36 @@
 import { gameCatalog, getCatalogGame } from '@/features/games/data'
-import { comparePlayTotals, type PlayTotals } from '@/features/games/playStats'
+import { comparePlayTotals } from '@/features/games/playStats'
+import { commitSettlement, fileRequest, readPlayerProgress } from './playerFiles'
+import { validId, type PlayerFile } from '@/features/players/schema'
 import type { Game, User, GameRecord, UserStats, PlayRankItem } from '@/types'
-
-const USERS_KEY = 'mini-games-local-users'
-const RECORDS_KEY = 'mini-games-local-records'
-const PLAY_STATS_KEY = 'mini-games-local-play-stats'
-
-function readStorage<T>(key: string, fallback: T): T {
-  try {
-    const raw = window.localStorage.getItem(key)
-    return raw ? (JSON.parse(raw) as T) : fallback
-  } catch {
-    return fallback
-  }
-}
-
-function writeStorage<T>(key: string, value: T) {
-  window.localStorage.setItem(key, JSON.stringify(value))
-}
-
-function createId(prefix: string) {
-  if (window.crypto?.randomUUID) return window.crypto.randomUUID()
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`
-}
-
-function getStoredUsers(): User[] {
-  return readStorage<User[]>(USERS_KEY, [])
-}
-
-function setStoredUsers(users: User[]) {
-  writeStorage(USERS_KEY, users)
-}
-
-function getStoredRecords(): GameRecord[] {
-  return readStorage<GameRecord[]>(RECORDS_KEY, [])
-}
-
-function setStoredRecords(records: GameRecord[]) {
-  writeStorage(RECORDS_KEY, records)
-}
 
 function getGameName(gameId: string) {
   return getCatalogGame(gameId)?.name ?? gameId
 }
 
-// Games
 export const getGames = async (): Promise<Game[]> => gameCatalog
-
 export const getGame = async (id: string): Promise<Game> => {
   const game = getCatalogGame(id)
-  if (!game) throw new Error('game not found')
+  if (!game) throw new Error('游戏不存在')
   return game
 }
+export const getUsers = async (): Promise<User[]> =>
+  (await fileRequest<PlayerFile[]>()).map((file) => file.player)
 
-// Users
-export const getUsers = async (): Promise<User[]> => getStoredUsers()
+export const createUser = async (name: string, avatar = 'default'): Promise<User> =>
+  (await fileRequest<PlayerFile>('', 'POST', { name: name.trim(), avatar })).player
 
-export const createUser = async (name: string, avatar = 'default'): Promise<User> => {
-  const trimmed = name.trim()
-  if (!trimmed) throw new Error('user name is required')
-
-  const user: User = {
-    id: createId('user'),
-    name: trimmed,
-    avatar,
-    createdAt: new Date().toISOString(),
-  }
-  const users = [...getStoredUsers(), user]
-  setStoredUsers(users)
-  return user
-}
-
+// Archive rather than erase a player's Git-tracked history.
 export const deleteUser = async (id: string): Promise<void> => {
-  setStoredUsers(getStoredUsers().filter((user) => user.id !== id))
-  setStoredRecords(getStoredRecords().filter((record) => record.userId !== id))
+  await fileRequest(`/${id}`, 'DELETE')
 }
 
 export const getUserStats = async (id: string): Promise<UserStats> => {
-  const user = getStoredUsers().find((item) => item.id === id)
+  const file = await fileRequest<PlayerFile>(`/${id}`)
+  const user = file.player
   if (!user) throw new Error('user not found')
 
-  const records = getStoredRecords().filter((record) => record.userId === id)
+  const records = Object.values(file.games).flatMap((game) => game.records)
   const gameStatsById = new Map<
     string,
     {
@@ -117,89 +67,49 @@ export const getUserStats = async (id: string): Promise<UserStats> => {
   }
 }
 
-// Records
-export const getRecords = async (userId: string): Promise<GameRecord[]> =>
-  getStoredRecords().filter((record) => record.userId === userId)
+export const getRecords = async (userId: string): Promise<GameRecord[]> => {
+  const file = await fileRequest<PlayerFile>(`/${userId}`)
+  return Object.values(file.games)
+    .flatMap((game) => game.records)
+    .sort((a, b) => a.playedAt.localeCompare(b.playedAt) || a.id.localeCompare(b.id))
+}
 
 export const createRecord = async (
   userId: string,
-  data: { gameId: string; score: number; duration: number; result: GameRecord['result'] },
+  data: Pick<GameRecord, 'gameId' | 'score' | 'duration' | 'result'> &
+    Partial<Pick<GameRecord, 'id' | 'level' | 'campaignId' | 'mode'>>,
 ): Promise<GameRecord> => {
-  if (!getStoredUsers().some((user) => user.id === userId)) {
-    throw new Error('user not found')
-  }
-  if (!getCatalogGame(data.gameId)) {
-    throw new Error('game not found')
-  }
-
+  if (!validId(userId)) throw new Error('请先选择玩家')
+  if (!getCatalogGame(data.gameId)) throw new Error('游戏不存在')
   const record: GameRecord = {
-    id: createId('record'),
+    ...data,
+    id: data.id ?? crypto.randomUUID(),
     userId,
-    gameId: data.gameId,
     score: Math.max(0, Math.round(data.score)),
     duration: Math.max(0, Math.round(data.duration)),
     playedAt: new Date().toISOString(),
-    result: data.result,
   }
-  const records = [...getStoredRecords(), record]
-  setStoredRecords(records)
+  await commitSettlement({ record, progress: readPlayerProgress(data.gameId, userId) })
   return record
 }
 
-// Anonymous, browser-local gameplay totals. Personal score records do not affect these totals.
-function getStoredPlayStats(): Record<string, PlayTotals> {
-  const stored = readStorage<unknown>(PLAY_STATS_KEY, {})
-  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {}
-  return Object.fromEntries(
-    Object.entries(stored)
-      .filter(
-        ([, value]) =>
-          value &&
-          Number.isSafeInteger(value.playCount) &&
-          value.playCount >= 0 &&
-          Number.isFinite(value.totalDuration) &&
-          value.totalDuration >= 0,
-      )
-      .map(([gameId, value]) => [
+export const getPlayRanking = async (): Promise<PlayRankItem[]> => {
+  const totals = new Map<string, PlayRankItem>()
+  for (const file of await fileRequest<PlayerFile[]>()) {
+    for (const [gameId, game] of Object.entries(file.games)) {
+      if (!getCatalogGame(gameId) || game.records.length === 0) continue
+      const current = totals.get(gameId) ?? {
         gameId,
-        {
-          playCount: value.playCount,
-          totalDuration: value.totalDuration,
-        },
-      ]),
-  )
-}
-
-export function addGamePlayStats(gameId: string, delta: PlayTotals): void {
-  if (
-    !getCatalogGame(gameId) ||
-    !Number.isSafeInteger(delta.playCount) ||
-    delta.playCount < 0 ||
-    !Number.isFinite(delta.totalDuration) ||
-    delta.totalDuration < 0
-  )
-    return
-  try {
-    const stats = getStoredPlayStats()
-    const current = stats[gameId] ?? { playCount: 0, totalDuration: 0 }
-    const next = {
-      playCount: current.playCount + delta.playCount,
-      totalDuration: current.totalDuration + delta.totalDuration,
+        gameName: getGameName(gameId),
+        playCount: 0,
+        totalDuration: 0,
+      }
+      current.playCount += game.records.length
+      current.totalDuration += game.records.reduce((sum, record) => sum + record.duration, 0)
+      totals.set(gameId, current)
     }
-    if (!Number.isSafeInteger(next.playCount) || !Number.isFinite(next.totalDuration)) return
-    stats[gameId] = next
-    writeStorage(PLAY_STATS_KEY, stats)
-  } catch {
-    // Storage may be blocked or full; statistics must not interrupt gameplay.
   }
+  return [...totals.values()].sort(
+    (a, b) => comparePlayTotals(a, b) || a.gameId.localeCompare(b.gameId),
+  )
 }
-
-export const getPlayRanking = async (): Promise<PlayRankItem[]> =>
-  Object.entries(getStoredPlayStats())
-    .filter(([gameId, stats]) => getCatalogGame(gameId) && stats.playCount > 0)
-    .map(([gameId, stats]) => ({
-      gameId,
-      gameName: getGameName(gameId),
-      ...stats,
-    }))
-    .sort((a, b) => comparePlayTotals(a, b) || a.gameId.localeCompare(b.gameId))

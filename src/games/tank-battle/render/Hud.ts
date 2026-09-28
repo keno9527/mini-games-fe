@@ -6,7 +6,8 @@ import {
   SIDEBAR_WIDTH,
   TICKS_PER_SECOND,
 } from '@/games/tank-battle/constants.ts'
-import { drawText } from '@/games/tank-battle/render/drawSprites.ts'
+import { drawMatrix, drawText } from '@/games/tank-battle/render/drawSprites.ts'
+import { ARMOR_BADGE, BOAT_BADGE } from '@/games/tank-battle/data/sprites.ts'
 import { COLORS, PLAYER_PALETTES } from '@/games/tank-battle/render/palette.ts'
 import type { World } from '@/games/tank-battle/system/World.ts'
 
@@ -83,6 +84,10 @@ export function drawHud(context: CanvasRenderingContext2D, world: World): void {
     drawHudNumber(context, String(Math.min(99, player.lives)), x + 8, y + 11)
     if (player.tank && player.tank.star > 0)
       drawText(context, `ST${player.tank.star}`, x, y + 25, COLORS.TEXT_DIM)
+    if (player.tank?.hasBoat)
+      drawMatrix(context, BOAT_BADGE, x + 12, y + 25, { '1': COLORS.TEXT_DIM })
+    if (player.tank?.hasArmor)
+      drawMatrix(context, ARMOR_BADGE, x + 18, y + 25, { '1': COLORS.TEXT_DIM })
   })
   context.fillStyle = COLORS.TEXT_DIM
   context.fillRect(x, 184, 2, 18)

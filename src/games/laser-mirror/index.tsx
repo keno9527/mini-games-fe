@@ -22,7 +22,9 @@ interface Props {
 const directionGlyph = { N: '↑', E: '→', S: '↓', W: '←' } as const
 
 export default function LaserMirror({ userId, gameId }: Props) {
-  const [levelIndex, setLevelIndex] = useState(0)
+  const [levelIndex, setLevelIndex] = useState(() =>
+    Math.min(LASER_LEVELS.length - 1, readProgress(gameId, userId).unlocked - 1),
+  )
   const play = useGamePlay(gameId)
   const level = LASER_LEVELS[levelIndex]
   const [mirrors, setMirrors] = useState<Mirror[]>(() => level.mirrors.map((item) => ({ ...item })))
@@ -70,7 +72,11 @@ export default function LaserMirror({ userId, gameId }: Props) {
     )
     setProgression(next)
     saveProgress(gameId, userId, next)
-    void submit({ score: stars * 1000 + Math.max(0, 250 - moves * 10), result: 'win' })
+    void submit({
+      score: stars * 1000 + Math.max(0, 250 - moves * 10),
+      result: 'win',
+      level: levelIndex + 1,
+    })
   }, [
     gameId,
     level.id,

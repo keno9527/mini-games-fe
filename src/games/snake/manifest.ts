@@ -4,8 +4,9 @@ export default {
   game: {
     id: 'snake',
     name: '贪吃蛇',
-    description: '吃食物变长，别撞墙和自己。三档难度对应不同场地大小与速度。',
-    tags: ['休闲', '经典'],
+    description:
+      '探索九关机关花园：收集苹果、寻找钥匙、穿越传送门，带着宝石到家。也可挑战经典三档难度。',
+    tags: ['休闲', '闯关', '经典'],
     difficulties: ['简单', '中等', '复杂'],
   },
   presentation: {

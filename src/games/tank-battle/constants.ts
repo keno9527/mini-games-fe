@@ -97,5 +97,9 @@ export const EXPLOSION_TICKS = 24
 // Let the sampled stage introduction finish before combat begins.
 export const LEVEL_INTRO_TICKS = 270
 
+/** 过关收尾：保留战场 0.5 秒，再用 0.5 秒渐暗进入结算。 */
+export const LEVEL_FINISH_TICKS = 60
+export const LEVEL_FINISH_FADE_TICKS = 30
+
 /** 关卡结算画面的持续时长（逻辑帧） */
 export const LEVEL_CLEAR_TICKS = 420

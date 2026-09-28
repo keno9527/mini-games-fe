@@ -398,6 +398,60 @@ export const ICON_TIMER: readonly string[] = [
   '            ',
 ]
 
+export const ICON_BOAT: readonly string[] = [
+  '     11     ',
+  '     111    ',
+  '     1111   ',
+  '     11111  ',
+  '     11     ',
+  '111111111111',
+  ' 1111111111 ',
+  '  11111111  ',
+  '   111111   ',
+  '            ',
+  ' 11  11  11 ',
+  '            ',
+]
+
+export const ICON_ARMOR: readonly string[] = [
+  '  11    11  ',
+  ' 1111  1111 ',
+  '111111111111',
+  '111111111111',
+  '111122221111',
+  '111121121111',
+  '111121121111',
+  '111122221111',
+  ' 1111111111 ',
+  '  11111111  ',
+  '   111111   ',
+  '    1111    ',
+]
+
+/** 装备船的船体外沿，保留中心坦克图案，四方向均不超出碰撞框。 */
+export const BOAT_HULL_SPRITES = directions([
+  '      1111      ',
+  '    11    11    ',
+  '  11        11  ',
+  ' 1            1 ',
+  '12            21',
+  '12            21',
+  '12            21',
+  '12            21',
+  '12            21',
+  '12            21',
+  '12            21',
+  '12            21',
+  '12            21',
+  ' 12          21 ',
+  '  122222222221  ',
+  '   1111111111   ',
+])
+
+/** 5×5 状态图标，可与星级并排放入每位玩家的侧栏。 */
+export const BOAT_BADGE = ['  1  ', '  11 ', '11111', ' 111 ', '1 1 1'] as const
+export const ARMOR_BADGE = ['11 11', '11111', '11 11', ' 111 ', '  1  '] as const
+
 /** 一像素白框、深蓝底；指南与战斗共用同一图案。 */
 function framedPowerUp(icon: readonly string[]): readonly string[] {
   return [
@@ -415,6 +469,8 @@ export const POWERUP_SPRITES: Readonly<Record<PowerUpKind, readonly string[]>> =
   [PowerUpKind.SHOVEL]: framedPowerUp(ICON_SHOVEL),
   [PowerUpKind.TANK]: framedPowerUp(ICON_TANK),
   [PowerUpKind.TIMER]: framedPowerUp(ICON_TIMER),
+  [PowerUpKind.BOAT]: framedPowerUp(ICON_BOAT),
+  [PowerUpKind.ARMOR]: framedPowerUp(ICON_ARMOR),
 }
 
 export const SPAWN_SMALL: readonly string[] = [

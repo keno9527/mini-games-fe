@@ -51,6 +51,8 @@ import {
   SHOVEL_TICKS,
   HELMET_SHIELD_TICKS,
   LEVEL_CLEAR_TICKS,
+  LEVEL_FINISH_TICKS,
+  LEVEL_FINISH_FADE_TICKS,
   LEVEL_INTRO_TICKS,
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -78,6 +80,11 @@ function tank(x: number, y: number, kind: EnemyKind | null = null): Tank {
     enemyKind: kind,
   })
 }
+function collectPowerUp(world: World, kind: PowerUpKind, slot = 0): void {
+  const player = world.players[slot].tank!
+  world.powerUps = [new PowerUp(kind, player.x / 16, player.y / 16)]
+  updatePowerUps(world, () => {})
+}
 function canvasRecorder() {
   const rectangles: {
     x: number
@@ -85,27 +92,35 @@ function canvasRecorder() {
     width: number
     height: number
     color: string | CanvasGradient | CanvasPattern
+    alpha: number
   }[] = []
   let offsetX = 0
   let offsetY = 0
-  const stack: [number, number][] = []
+  const stack: [number, number, number][] = []
   const context = {
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
     globalAlpha: 1,
     fillRect(x: number, y: number, width: number, height: number) {
-      rectangles.push({ x: x + offsetX, y: y + offsetY, width, height, color: this.fillStyle })
+      rectangles.push({
+        x: x + offsetX,
+        y: y + offsetY,
+        width,
+        height,
+        color: this.fillStyle,
+        alpha: this.globalAlpha,
+      })
     },
     strokeRect() {},
     beginPath() {},
     rect() {},
     clip() {},
     save() {
-      stack.push([offsetX, offsetY])
+      stack.push([offsetX, offsetY, this.globalAlpha])
     },
     restore() {
-      ;[offsetX, offsetY] = stack.pop()!
+      ;[offsetX, offsetY, this.globalAlpha] = stack.pop()!
     },
     translate(x: number, y: number) {
       offsetX += x
@@ -325,21 +340,28 @@ test('pause freezes combat feedback and timed effects until play resumes', () =>
 })
 
 test('HUD counters and simultaneous effects fit the frame without covering the battlefield', () => {
-  const world = new World(1)
-  world.loadLevel(0)
-  world.freezeTicks = 600
-  world.shovelTicks = 900
-  world.players[0].tank!.shieldTicks = 600
-  world.players[0].tank!.star = 3
-  const { context, rectangles } = canvasRecorder()
-  drawHud(context, world)
-  for (const rect of rectangles) {
-    assert.ok(rect.x >= 0 && rect.x + rect.width <= CANVAS_WIDTH, JSON.stringify(rect))
-    assert.ok(rect.y >= 0 && rect.y + rect.height <= CANVAS_HEIGHT, JSON.stringify(rect))
-    assert.ok(
-      rect.x >= FIELD_OFFSET_X + FIELD_PIXELS || rect.y >= FIELD_OFFSET_Y + FIELD_PIXELS,
-      JSON.stringify(rect),
-    )
+  for (const playerCount of [1, 2] as const) {
+    const world = new World(1, 0, playerCount)
+    world.loadLevel(0)
+    world.freezeTicks = 600
+    world.shovelTicks = 900
+    world.players[0].tank!.shieldTicks = 600
+    world.players[0].tank!.star = 3
+    for (const player of world.getPlayerTanks()) {
+      player.hasBoat = true
+      player.hasArmor = true
+      player.star = 3
+    }
+    const { context, rectangles } = canvasRecorder()
+    drawHud(context, world)
+    for (const rect of rectangles) {
+      assert.ok(rect.x >= 0 && rect.x + rect.width <= CANVAS_WIDTH, JSON.stringify(rect))
+      assert.ok(rect.y >= 0 && rect.y + rect.height <= CANVAS_HEIGHT, JSON.stringify(rect))
+      assert.ok(
+        rect.x >= FIELD_OFFSET_X + FIELD_PIXELS || rect.y >= FIELD_OFFSET_Y + FIELD_PIXELS,
+        JSON.stringify(rect),
+      )
+    }
   }
 })
 
@@ -446,7 +468,7 @@ test('a bonus armor tank drops on first hit only; ordinary kills never drop rand
   }
 })
 
-test('six powerups apply their effects, award 500 points, and expire on game ticks', () => {
+test('eight powerups apply their effects, award 500 points, and timed effects expire on game ticks', () => {
   for (const kind of Object.values(PowerUpKind)) {
     const world = new World(3)
     world.loadLevel(0)
@@ -456,6 +478,8 @@ test('six powerups apply their effects, award 500 points, and expire on game tic
     assert.equal(world.score, 500)
     assert.equal(world.powerUps[0].alive, false)
     if (kind === PowerUpKind.STAR) assert.equal(world.players[0].tank?.star, 1)
+    if (kind === PowerUpKind.BOAT) assert.equal(world.players[0].tank?.hasBoat, true)
+    if (kind === PowerUpKind.ARMOR) assert.equal(world.players[0].tank?.hasArmor, true)
     if (kind === PowerUpKind.TANK) assert.equal(world.players[0].lives, 11)
     if (kind === PowerUpKind.HELMET)
       assert.equal(world.players[0].tank?.shieldTicks, HELMET_SHIELD_TICKS)
@@ -470,6 +494,180 @@ test('six powerups apply their effects, award 500 points, and expire on game tic
       assert.equal(world.terrain.getKind(6, 11), TerrainKind.BRICK)
     }
   }
+})
+
+test('new rewards keep stars at 25%, use one slot each, and replace boats with grenades on dry maps', () => {
+  for (const campaign of ['battle-city', 'tank-a'] as const) {
+    for (const water of [false, true]) {
+      const world = new World(1, 0, 1, undefined, campaign)
+      world.loadLevel(0)
+      const rows = emptyMap()
+      if (water) rows[4] = '....~........'
+      world.terrain.load(rows)
+      const counts = Object.fromEntries(Object.values(PowerUpKind).map((kind) => [kind, 0]))
+      for (let slot = 0; slot < 16; slot++) {
+        world.rng.nextInt = (max) => (max === 16 ? slot : 0)
+        dropPowerUp(world)
+        assert.equal(world.powerUps.length, 1, 'the new reward replaces the previous one')
+        counts[world.powerUps[0].kind] += 1
+      }
+      assert.deepEqual(counts, {
+        grenade: water ? 3 : 4,
+        helmet: 2,
+        shovel: 2,
+        star: 4,
+        tank: 1,
+        timer: 2,
+        boat: water ? 1 : 0,
+        armor: 1,
+      })
+      assert.equal(world.pendingEnemies.length, 20)
+    }
+  }
+})
+
+test('a collected boat crosses water in all directions without changing speed, weapons or enemy movement', () => {
+  for (const [direction, dx, dy] of [
+    [Direction.UP, 0, -1],
+    [Direction.RIGHT, 1, 0],
+    [Direction.DOWN, 0, 1],
+    [Direction.LEFT, -1, 0],
+  ] as const) {
+    const world = new World(1)
+    world.loadLevel(0)
+    const rows = emptyMap()
+    rows[6 + dy] = '.'.repeat(6 + dx) + '~' + '.'.repeat(6 - dx)
+    world.terrain.load(rows)
+    const player = world.players[0].tank!
+    player.x = 96
+    player.y = 96
+    const spec = player.getSpec()
+    const context = { terrain: world.terrain, otherTanks: [], baseRect: world.base.getRect() }
+    assert.equal(tryMoveTank(player, direction, context), false)
+    collectPowerUp(world, PowerUpKind.BOAT)
+    collectPowerUp(world, PowerUpKind.BOAT)
+    assert.equal(player.getSpec(), spec)
+    const enemy = tank(96, 96, EnemyKind.BASIC)
+    assert.equal(canMoveTank(enemy, direction, context), false)
+    for (let step = 1; step <= 32; step++) {
+      assert.equal(canMoveTank(player, direction, context), true)
+      assert.equal(tryMoveTank(player, direction, context), true)
+      assert.deepEqual([player.x, player.y], [96 + dx * step, 96 + dy * step])
+    }
+    assert.equal(world.terrain.getKind(6 + dx, 6 + dy), TerrainKind.WATER)
+    assert.equal(player.hasBoat, true, 'landing on shore does not consume the boat')
+  }
+})
+
+test('boats still collide with walls, other tanks, the base and battlefield edges', () => {
+  const world = new World(1)
+  world.loadLevel(0)
+  const player = world.players[0].tank!
+  player.x = 96
+  player.y = 96
+  collectPowerUp(world, PowerUpKind.BOAT)
+  const context = {
+    terrain: world.terrain,
+    otherTanks: [] as Tank[],
+    baseRect: world.base.getRect(),
+  }
+  for (const wall of ['#', '@', 'v', 'b']) {
+    const rows = emptyMap()
+    rows[5] = '......' + wall + '......'
+    world.terrain.load(rows)
+    assert.equal(tryMoveTank(player, Direction.UP, context), false)
+  }
+  world.terrain.load(emptyMap())
+  context.otherTanks = [tank(96, 80)]
+  assert.equal(tryMoveTank(player, Direction.UP, context), false)
+  context.otherTanks = []
+  player.y = 0
+  assert.equal(tryMoveTank(player, Direction.UP, context), false)
+  world.terrain.clearSpawnCell(6, 11)
+  player.y = 176
+  assert.equal(tryMoveTank(player, Direction.DOWN, context), false)
+})
+
+test('armor absorbs one actual enemy shell, does not stack, and is not consumed by helmet protection', () => {
+  const world = new World(1)
+  world.loadLevel(0)
+  const rows = emptyMap()
+  rows[5] = rows[6] = '....~........'
+  world.terrain.load(rows)
+  const player = world.players[0].tank!
+  player.x = 64
+  player.y = 96
+  player.star = 3
+  collectPowerUp(world, PowerUpKind.BOAT)
+  collectPowerUp(world, PowerUpKind.ARMOR)
+  collectPowerUp(world, PowerUpKind.ARMOR)
+  collectPowerUp(world, PowerUpKind.HELMET)
+  const enemy = tank(64, 64, EnemyKind.BASIC)
+  enemy.direction = Direction.DOWN
+  world.enemies = [enemy]
+  const sounds: SoundEffect[] = []
+  const shoot = () => {
+    enemy.fireCooldownTicks = 0
+    assert.equal(fireBullet(world, enemy), true)
+    for (let i = 0; i < 12; i++) updateBullets(world, (effect) => sounds.push(effect))
+  }
+  shoot()
+  assert.equal(player.hasArmor, true)
+  assert.equal(sounds.includes(SoundEffect.HIT_ARMOR), false)
+  for (let i = 0; i < HELMET_SHIELD_TICKS; i++) player.tickTimers()
+  shoot()
+  assert.equal(world.players[0].tank, player)
+  assert.equal(world.players[0].lives, 10)
+  assert.equal(player.hasArmor, false)
+  assert.equal(player.hasBoat, true)
+  assert.equal(player.star, 3)
+  assert.equal(player.hitFlashTicks, 8)
+  assert.ok(sounds.includes(SoundEffect.HIT_ARMOR))
+  shoot()
+  assert.equal(world.players[0].tank, null)
+  assert.equal(world.players[0].lives, 9)
+  assert.ok(sounds.includes(SoundEffect.EXPLODE_BIG))
+})
+
+test('boat and armor expire on stage change and respawn in either campaign while stars retain their rules', () => {
+  for (const campaign of ['battle-city', 'tank-a'] as const) {
+    const world = new World(1, 0, 2, undefined, campaign)
+    world.loadLevel(0)
+    for (const slot of [0, 1]) {
+      world.players[slot].tank!.star = 2
+      collectPowerUp(world, PowerUpKind.BOAT, slot)
+      collectPowerUp(world, PowerUpKind.ARMOR, slot)
+    }
+    world.loadLevel(1)
+    for (const slot of [0, 1]) {
+      const player = world.players[slot].tank!
+      assert.equal(player.hasBoat, false)
+      assert.equal(player.hasArmor, false)
+      assert.equal(player.star, 2)
+      collectPowerUp(world, PowerUpKind.BOAT, slot)
+      collectPowerUp(world, PowerUpKind.ARMOR, slot)
+      world.onPlayerDestroyed(slot)
+      for (let i = 0; i < 30; i++) updateSpawning(world)
+      assert.equal(world.players[slot].tank!.hasBoat, false)
+      assert.equal(world.players[slot].tank!.hasArmor, false)
+      assert.equal(world.players[slot].tank!.star, 0)
+    }
+  }
+})
+
+test('personal equipment cannot protect the base from an enemy shell', () => {
+  const world = new World(1)
+  world.loadLevel(0)
+  world.terrain.load(emptyMap())
+  collectPowerUp(world, PowerUpKind.BOAT)
+  collectPowerUp(world, PowerUpKind.ARMOR)
+  world.terrain.clearSpawnCell(6, 11)
+  const enemy = tank(96, 160, EnemyKind.BASIC)
+  enemy.direction = Direction.DOWN
+  assert.equal(fireBullet(world, enemy), true)
+  for (let i = 0; i < 12; i++) updateBullets(world, () => {})
+  assert.equal(world.base.destroyed, true)
+  assert.equal(world.players[0].tank!.hasArmor, true)
 })
 
 test('rewards never vanish because randomized placement failed on a dense map', () => {
@@ -517,6 +715,84 @@ test('all 35 stages can initialize, render and simulate with valid coordinates',
   }
 })
 
+test('last kill finishes its explosion and audio before fading to scores; pause and held fire preserve the transition', () => {
+  for (const playerCount of [1, 2] as const) {
+    const world = new World(1, 0, playerCount)
+    const sounds: SoundEffect[] = []
+    const motors: (SoundEffect | null)[] = []
+    let stops = 0
+    const audio = {
+      ...silentAudio(),
+      play(effect: SoundEffect) {
+        sounds.push(effect)
+      },
+      setMotor(effect: SoundEffect | null) {
+        motors.push(effect)
+      },
+      stopAll() {
+        stops += 1
+      },
+    } as unknown as AudioEngine
+    const scene = new BattleScene(world, audio, { onGameOver() {} })
+    const overlayAlpha = () => {
+      const { context, rectangles } = canvasRecorder()
+      scene.render(context)
+      return (
+        rectangles
+          .filter(
+            (rect) =>
+              rect.x === FIELD_OFFSET_X &&
+              rect.y === FIELD_OFFSET_Y &&
+              rect.width === FIELD_PIXELS &&
+              rect.height === FIELD_PIXELS &&
+              rect.color === '#000000',
+          )
+          .at(-1)?.alpha ?? 1
+      )
+    }
+    scene.onEnter()
+    for (let i = 0; i < LEVEL_INTRO_TICKS; i++) scene.update(idle)
+    world.terrain.load(emptyMap())
+    world.pendingEnemies = []
+    const player = world.players[0].tank!
+    player.x = 64
+    player.y = 96
+    const enemy = tank(64, 80, EnemyKind.BASIC)
+    enemy.aiDecisionTicks = 100
+    world.enemies = [enemy]
+    assert.equal(fireBullet(world, player), true)
+    const stopsBeforeKill = stops
+    scene.update(idle)
+    assert.equal(world.enemiesKilled, 1)
+    assert.ok(sounds.includes(SoundEffect.EXPLODE_SMALL))
+    assert.equal(stops, stopsBeforeKill, 'last explosion sound must not be stopped')
+    assert.equal(motors.at(-1), null)
+    assert.equal(overlayAlpha(), 1, 'the unshaded battlefield remains visible after the kill')
+    const explosion = world.explosions[0]
+    const ticksBeforePause = explosion.ticksLeft
+    scene.suspend()
+    for (let i = 0; i < 90; i++) scene.update(idle)
+    assert.equal(explosion.ticksLeft, ticksBeforePause)
+    scene.update({ ...idle, pauseEdge: true })
+    const stopsAfterResume = stops
+    const heldInput = { ...idle, right: true, fire: true, confirmEdge: true }
+    for (let i = 0; i < LEVEL_FINISH_TICKS - LEVEL_FINISH_FADE_TICKS; i++) scene.update(heldInput)
+    assert.equal(world.explosions.length, 0, 'explosion plays to completion')
+    assert.equal(player.x, 64, 'combat input is disabled during the outro')
+    assert.equal(world.bullets.length, 0, 'held fire cannot spawn more bullets')
+    assert.equal(overlayAlpha(), 1, 'fade starts only after the initial hold')
+    for (let i = 0; i < LEVEL_FINISH_FADE_TICKS / 2; i++) scene.update(heldInput)
+    assert.equal(overlayAlpha(), 0.46)
+    for (let i = 0; i < LEVEL_FINISH_FADE_TICKS / 2; i++) scene.update(heldInput)
+    assert.equal(overlayAlpha(), 0.92)
+    assert.equal(sounds.includes(SoundEffect.SCORE_TICK), false, 'counting starts after the outro')
+    assert.equal(stops, stopsAfterResume)
+    for (let i = 0; i < 8; i++) scene.update(idle)
+    assert.ok(sounds.includes(SoundEffect.SCORE_TICK))
+    assert.equal(world.levelIndex, 0)
+  }
+})
+
 test('campaign transitions through all 35 stages, keeps upgrades, and reports victory once', () => {
   const world = new World(1)
   let victories = 0
@@ -534,7 +810,8 @@ test('campaign transitions through all 35 stages, keeps upgrades, and reports vi
     world.pendingEnemies = []
     world.enemies = []
     scene.update(idle)
-    for (let frame = 0; frame < LEVEL_CLEAR_TICKS; frame += 1) scene.update(idle)
+    for (let frame = 0; frame < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; frame += 1)
+      scene.update(idle)
   }
   assert.equal(victories, 1)
 })
@@ -566,7 +843,7 @@ test('practice clears only the selected stage; title return preserves mode', () 
   world.pendingEnemies = []
   world.enemies = []
   scene.update(idle)
-  for (let frame = 0; frame < LEVEL_CLEAR_TICKS; frame += 1) scene.update(idle)
+  for (let frame = 0; frame < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; frame += 1) scene.update(idle)
   assert.equal(completed, true)
   assert.equal(world.levelIndex, 14)
 
@@ -833,7 +1110,7 @@ test('solo retry rebuilds the failed stage with ten lives and resets score, upgr
   world().pendingEnemies = []
   world().enemies = []
   manager.update(idle)
-  for (let i = 0; i < LEVEL_CLEAR_TICKS; i++) manager.update(idle)
+  for (let i = 0; i < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; i++) manager.update(idle)
   assert.equal(world().levelIndex, 5, 'continued games advance to the next stage')
   assert.deepEqual(reached, [4, 4, 5])
   for (let i = 0; i < LEVEL_INTRO_TICKS; i++) manager.update(idle)
@@ -870,7 +1147,7 @@ test('solo and coop campaigns update progress; final-stage victory does not offe
       world.pendingEnemies = []
       world.enemies = []
       manager.update(idle)
-      for (let i = 0; i < LEVEL_CLEAR_TICKS; i++) manager.update(idle)
+      for (let i = 0; i < LEVEL_FINISH_TICKS + LEVEL_CLEAR_TICKS; i++) manager.update(idle)
       assert.deepEqual(reached, [LEVELS.length - 1])
     } else {
       world.onBaseDestroyed()
@@ -924,6 +1201,36 @@ test('wall artwork agrees with collision after partial destruction; foliage rema
   drawTreeCell(forest.context, 0, 0)
   assert.equal(new Set(forest.rectangles.map(({ x, y }) => `${x},${y}`)).size, 256)
   assert.ok(forest.rectangles.every(({ color }) => /^#[0-9a-f]{6}$/i.test(String(color))))
+})
+
+test('equipped boat and armor remain visible within the tank footprint across rotations and upgrades', () => {
+  for (let star = 0; star <= 3; star++) {
+    for (const direction of [Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT]) {
+      const player = tank(32, 32)
+      player.star = star
+      player.direction = direction
+      const plain = canvasRecorder()
+      drawTank(plain.context, player)
+      player.hasBoat = true
+      const boat = canvasRecorder()
+      drawTank(boat.context, player)
+      assert.notDeepEqual(boat.rectangles, plain.rectangles)
+      player.hasArmor = true
+      const before = JSON.stringify(player)
+      const equipped = canvasRecorder()
+      drawTank(equipped.context, player)
+      assert.equal(JSON.stringify(player), before)
+      assert.notDeepEqual(equipped.rectangles, boat.rectangles)
+      for (const { x, y, width, height } of equipped.rectangles) {
+        assert.ok(x >= 32 && y >= 32 && x + width <= 48 && y + height <= 48)
+      }
+      assert.equal(player.takeHit(), false)
+      for (let i = 0; i < 8; i++) player.tickTimers()
+      const broken = canvasRecorder()
+      drawTank(broken.context, player)
+      assert.deepEqual(broken.rectangles, boat.rectangles, 'broken armor plates disappear')
+    }
+  }
 })
 
 test('powerups and burst frames render valid pixels without advancing their game timers', () => {

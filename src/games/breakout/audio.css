@@ -1,0 +1,28 @@
+.breakout-audio {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gs-line);
+}
+.breakout-audio label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gs-muted);
+  font-size: 12px;
+}
+.breakout-audio input {
+  min-width: 0;
+  flex: 1;
+  width: 80px;
+  accent-color: var(--gs-accent);
+}
+.breakout-audio input:focus-visible {
+  outline: 2px solid var(--gs-accent);
+  outline-offset: 3px;
+}
+.breakout-audio output {
+  min-width: 3ch;
+  text-align: right;
+}

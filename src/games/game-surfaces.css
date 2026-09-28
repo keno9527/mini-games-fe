@@ -997,6 +997,132 @@
   font-size: 36px;
   color: #efd09c;
 }
+.breakout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 560px) minmax(200px, 240px);
+  align-items: start;
+  gap: 32px;
+  max-width: 832px;
+  margin: 0 auto;
+}
+.breakout-playfield {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+.breakout-sidebar {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  padding-left: 28px;
+  border-left: 1px solid var(--gs-line);
+}
+.breakout-settings {
+  display: grid;
+  gap: 10px;
+}
+.breakout-sidebar .breakout-level-select {
+  display: grid;
+  gap: 8px;
+}
+.breakout-sidebar .breakout-level-select select {
+  width: 100%;
+}
+.breakout-sidebar .gs-secondary {
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  border-color: transparent;
+  background: transparent;
+  font-weight: 400;
+}
+.breakout-sidebar .gs-secondary:disabled {
+  opacity: 0.45;
+}
+.breakout-sidebar .breakout-custom-banner {
+  margin-bottom: 0;
+  gap: 8px;
+}
+.breakout-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 16px;
+  margin: 18px 0;
+  padding: 18px 0;
+  border-block: 1px solid var(--gs-line);
+}
+.breakout-stats dt {
+  color: var(--gs-muted);
+  font-size: 12px;
+}
+.breakout-stats dd {
+  margin: 6px 0 0;
+  font:
+    30px ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+.breakout-stats small {
+  color: var(--gs-muted);
+  font:
+    11px 'PingFang SC',
+    'Microsoft YaHei',
+    sans-serif;
+}
+.breakout-score {
+  grid-column: 1 / -1;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--gs-line);
+}
+.breakout-score dd {
+  font-size: 42px;
+  overflow-wrap: anywhere;
+}
+.breakout-stats > div:last-child {
+  border-left: 1px solid var(--gs-line);
+  padding-left: 16px;
+}
+.breakout-stage {
+  font-size: 12px;
+}
+.breakout-stage span,
+.breakout-stage p {
+  color: var(--gs-muted);
+}
+.breakout-stage p {
+  margin-top: 16px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.breakout-stage .breakout-combo {
+  color: var(--gs-accent);
+}
+.breakout-stage progress {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--gs-panel);
+}
+.breakout-stage progress::-webkit-progress-bar {
+  background: var(--gs-panel);
+}
+.breakout-stage progress::-webkit-progress-value {
+  background: var(--gs-accent);
+}
+.breakout-stage progress::-moz-progress-bar {
+  background: var(--gs-accent);
+}
+.breakout-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .breakout-frame {
   position: relative;
   padding: 10px;
@@ -1084,6 +1210,67 @@
   font-size: 11px;
   color: var(--gs-muted);
   line-height: 1.9;
+}
+@container (max-width: 760px) {
+  .breakout-layout {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 560px;
+    gap: 16px;
+  }
+  .breakout-sidebar {
+    grid-column: 1;
+    grid-row: 1;
+    padding-left: 0;
+    border-left: 0;
+  }
+  .breakout-playfield {
+    grid-row: 2;
+  }
+  .breakout-settings {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .breakout-sidebar .breakout-level-select {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+  }
+  .breakout-sidebar .breakout-level-select select {
+    width: auto;
+    flex: 1;
+  }
+  .breakout-settings > .gs-secondary {
+    flex-shrink: 0;
+  }
+  .breakout-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 12px 0;
+    padding: 12px 0;
+  }
+  .breakout-score {
+    grid-column: auto;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+  .breakout-stats dd {
+    font-size: 24px;
+    margin-top: 2px;
+  }
+  .breakout-stats > div:last-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .breakout-stage p {
+    margin-top: 6px;
+  }
+}
+@container (max-width: 420px) {
+  .breakout-sidebar .breakout-level-select > span {
+    display: none;
+  }
 }
 @container (max-width: 580px) {
   .gs-play-layout {
