@@ -24,6 +24,7 @@ import {
   FONT_GLYPHS,
   FONT_GLYPH_HEIGHT,
   FONT_GLYPH_WIDTH,
+  BOAT_HULL_SPRITES,
 } from '@/games/tank-battle/data/sprites.ts'
 import { MAX_PLAYER_STAR } from '@/games/tank-battle/data/tankSpecs.ts'
 import type { Base } from '@/games/tank-battle/entity/Base.ts'
@@ -93,6 +94,12 @@ export function drawTank(context: CanvasRenderingContext2D, tank: Tank): void {
   }
 
   const palette = getTankPalette(tank)
+  if (tank.side === TankSide.PLAYER && tank.hasBoat) {
+    drawMatrix(context, BOAT_HULL_SPRITES[tank.direction], Math.round(tank.x), Math.round(tank.y), {
+      '1': COLORS.WATER_LIGHT,
+      '2': COLORS.ENEMY_TREAD,
+    })
+  }
   const treadFrame = Math.floor(tank.treadPhase / 2) % 2 === 1
   const players = treadFrame ? PLAYER_TREAD_SPRITES : PLAYER_TANK_SPRITES
   const enemies = treadFrame ? ENEMY_TREAD_SPRITES : ENEMY_TANK_SPRITES
@@ -105,6 +112,19 @@ export function drawTank(context: CanvasRenderingContext2D, tank: Tank): void {
     '2': palette.tread,
     '3': tank.hitFlashTicks > 0 ? COLORS.EXPLOSION_MID : palette.highlight,
   })
+
+  if (tank.side === TankSide.PLAYER && tank.hasArmor) {
+    // Solid corner plates distinguish one-hit armor from the blinking timed shield.
+    const x = Math.round(tank.x)
+    const y = Math.round(tank.y)
+    context.fillStyle = COLORS.STEEL_LIGHT
+    for (const dx of [2, 11]) {
+      for (const dy of [4, 11]) {
+        context.fillRect(x + dx, y + dy, 3, 1)
+        context.fillRect(x + dx + (dx === 2 ? 0 : 2), y + dy + (dy === 4 ? 1 : -1), 1, 1)
+      }
+    }
+  }
 
   if (tank.shieldTicks > 0) {
     drawShield(context, tank)

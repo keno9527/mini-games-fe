@@ -1,6 +1,6 @@
 import { CELL_SIZE, TANK_SIZE, TURN_SNAP } from '@/games/tank-battle/constants.ts'
 import { clamp, rectsIntersect, snapTo } from '@/games/tank-battle/core/geometry.ts'
-import { Direction, type Rect } from '@/games/tank-battle/types.ts'
+import { Direction, TankSide, type Rect } from '@/games/tank-battle/types.ts'
 import type { Tank } from '@/games/tank-battle/entity/Tank.ts'
 import type { TerrainGrid } from '@/games/tank-battle/system/TerrainGrid.ts'
 
@@ -68,7 +68,7 @@ function getMoveCandidate(tank: Tank, direction: Direction): Rect {
 
 /** 候选位置是否被地形、其他坦克或基地阻挡 */
 function isBlocked(candidate: Rect, self: Tank, context: MoveContext): boolean {
-  if (context.terrain.blocksTank(candidate)) {
+  if (context.terrain.blocksTank(candidate, self.side === TankSide.PLAYER && self.hasBoat)) {
     return true
   }
 

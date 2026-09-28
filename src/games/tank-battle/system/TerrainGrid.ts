@@ -134,7 +134,7 @@ export class TerrainGrid {
    * 给定像素矩形是否与阻挡坦克的地形重叠。
    * 砖墙需精确到子块：已被打空的部分可以通行。
    */
-  blocksTank(rect: Rect): boolean {
+  blocksTank(rect: Rect, canCrossWater = false): boolean {
     // 战场边界
     if (
       rect.x < 0 ||
@@ -157,6 +157,7 @@ export class TerrainGrid {
           continue
         }
         if (kind === TerrainKind.WATER) {
+          if (canCrossWater) continue
           return true
         }
         if (this.brickSubBlocks(cellX, cellY, rect)) {

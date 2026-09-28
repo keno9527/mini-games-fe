@@ -614,6 +614,12 @@ function FieldGuide() {
           [POWERUP_SPRITES[PowerUpKind.TIMER], '时钟', '冻结敌方坦克，已发射的炮弹仍在飞行'],
           [POWERUP_SPRITES[PowerUpKind.GRENADE], '手雷', '清除已出场敌军，不增加击杀分'],
           [POWERUP_SPRITES[PowerUpKind.TANK], '坦克', '增加一条生命'],
+          [POWERUP_SPRITES[PowerUpKind.BOAT], '船', '允许渡水，不增加速度或火力；仅在有水关卡掉落'],
+          [
+            POWERUP_SPRITES[PowerUpKind.ARMOR],
+            '护甲',
+            '抵挡一次致命命中后破碎；头盔无敌期间不消耗',
+          ],
         ].map(([icon, name, description]) => (
           <div key={name as string} className="tank-guide-item">
             <svg
@@ -645,8 +651,9 @@ function FieldGuide() {
           </div>
         ))}
       </div>
+      <p>船和护甲仅对拾取者生效，重复拾取不叠加，阵亡或过关后失效；护甲不保护基地。</p>
       <p>
-        草丛遮蔽坦克，水面阻挡移动，冰面产生滑行；普通炮弹破砖，三星炮弹破钢。阵亡后升级归零，过关保留升级。首次达到
+        草丛遮蔽坦克，未装备船时水面阻挡移动，冰面产生滑行；普通炮弹破砖，三星炮弹破钢。阵亡后升级归零，过关保留升级。首次达到
         20,000 分时，每位尚未出局的玩家奖励一条生命。
       </p>
     </>

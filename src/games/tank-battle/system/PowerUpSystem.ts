@@ -7,11 +7,12 @@ import {
 import { rectsIntersect } from '@/games/tank-battle/core/geometry.ts'
 import { POWERUP_SCORE } from '@/games/tank-battle/data/tankSpecs.ts'
 import { PowerUp } from '@/games/tank-battle/entity/PowerUp.ts'
-import { PowerUpKind, SoundEffect } from '@/games/tank-battle/types.ts'
+import { PowerUpKind, SoundEffect, TerrainKind } from '@/games/tank-battle/types.ts'
 import type { World } from '@/games/tank-battle/system/World.ts'
 
 /** 所有道具种类，用于随机抽取 */
-// $E8FA: star and grenade each occupy two of the eight random slots.
+// Keep stars at 25% and the same three carriers per stage. In 16 slots,
+// a boat replaces one grenade and armor replaces one extra life (6.25% each).
 const ALL_KINDS: readonly PowerUpKind[] = [
   PowerUpKind.HELMET,
   PowerUpKind.TIMER,
@@ -20,6 +21,14 @@ const ALL_KINDS: readonly PowerUpKind[] = [
   PowerUpKind.GRENADE,
   PowerUpKind.TANK,
   PowerUpKind.GRENADE,
+  PowerUpKind.STAR,
+  PowerUpKind.HELMET,
+  PowerUpKind.TIMER,
+  PowerUpKind.SHOVEL,
+  PowerUpKind.STAR,
+  PowerUpKind.GRENADE,
+  PowerUpKind.ARMOR,
+  PowerUpKind.BOAT,
   PowerUpKind.STAR,
 ]
 
@@ -30,7 +39,15 @@ const MAX_PLACEMENT_ATTEMPTS = 40
 export function dropPowerUp(world: World): void {
   const cell = findFreeCell(world)
   if (cell === null) return
-  const kind = world.rng.pick(ALL_KINDS) ?? PowerUpKind.STAR
+  let kind = world.rng.pick(ALL_KINDS) ?? PowerUpKind.STAR
+  if (kind === PowerUpKind.BOAT) {
+    let hasWater = false
+    world.terrain.forEachCell((_x, _y, terrain) => {
+      if (terrain === TerrainKind.WATER) hasWater = true
+    })
+    // A boat has no use on dry maps; restore the grenade slot it replaced.
+    if (!hasWater) kind = PowerUpKind.GRENADE
+  }
   world.powerUps = [new PowerUp(kind, cell[0], cell[1])]
 }
 
@@ -107,6 +124,14 @@ function applyPowerUpEffect(
 
     case PowerUpKind.STAR:
       player.tank?.upgrade()
+      break
+
+    case PowerUpKind.BOAT:
+      if (player.tank) player.tank.hasBoat = true
+      break
+
+    case PowerUpKind.ARMOR:
+      if (player.tank) player.tank.hasArmor = true
       break
 
     case PowerUpKind.TANK:

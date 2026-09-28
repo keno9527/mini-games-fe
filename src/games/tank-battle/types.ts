@@ -40,6 +40,8 @@ export enum PowerUpKind {
   STAR = 'star',
   TANK = 'tank',
   TIMER = 'timer',
+  BOAT = 'boat',
+  ARMOR = 'armor',
 }
 
 /** 音效种类 */
