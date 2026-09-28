@@ -26,6 +26,7 @@ dist-ssr
 logs
 log
 *.log
+data/players/.*.tmp
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

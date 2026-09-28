@@ -1,6 +1,8 @@
 import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
+import { readPlayerProgress, stageProgress } from '@/api/playerFiles'
+import { PencilSimple } from '@phosphor-icons/react'
 import '../game-surfaces.css'
 import { BRICK_COLORS, LEVEL_DETAILS, LEVEL_LAYOUTS } from './levels'
 import {
@@ -19,6 +21,8 @@ import {
 } from './physics'
 import LevelEditor from './LevelEditor'
 import { breakableCount, type CustomLevel } from './editor'
+import { BreakoutAudio, loadAudioSettings, saveAudioSettings, type AudioSettings } from './audio'
+import './audio.css'
 
 interface Props {
   userId?: string
@@ -153,6 +157,24 @@ interface PlayerProps extends Props {
 }
 
 function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) {
+  const [audioSettings, setAudioSettings] = useState(loadAudioSettings)
+  const audioSettingsRef = useRef(audioSettings)
+  const audioRef = useRef<BreakoutAudio | null>(null)
+  audioSettingsRef.current = audioSettings
+  useEffect(() => {
+    const audio = new BreakoutAudio(audioSettingsRef.current)
+    audioRef.current = audio
+    return () => {
+      audio.dispose()
+      audioRef.current = null
+    }
+  }, [])
+  const changeAudioSettings = (next: AudioSettings) => {
+    setAudioSettings(next)
+    saveAudioSettings(next)
+    audioRef.current?.setSettings(next)
+    audioRef.current?.unlock()
+  }
   const [status, setStatus] = useState<Status>('idle')
   useGamePlay(
     gameId,
@@ -208,7 +230,17 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
       submittedRef.current = true
       const dur = Math.max(1, Math.floor(playTicksRef.current / 60))
       try {
-        await createRecord(userId, { gameId, score: finalScore, duration: dur, result })
+        stageProgress(gameId, userId, {
+          highestUnlockedLevel: levelIdxRef.current + 1,
+          lastPlayedLevel: levelIdxRef.current + 1,
+        })
+        await createRecord(userId, {
+          gameId,
+          score: finalScore,
+          duration: dur,
+          result,
+          level: levelIdxRef.current + 1,
+        })
       } catch {
         /* ignore */
       }
@@ -241,11 +273,13 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
   const damageBrick = (b: Brick, damage = 1): number => {
     if (!b.alive) return 0
     if (b.type === 'indestructible') {
+      audioRef.current?.play('steel')
       spawnParticles(b.x + b.w / 2, b.y + b.h / 2, '#94a3b8', 4, 2)
       return 0
     }
     b.hp -= damage
     if (b.hp > 0) {
+      audioRef.current?.play('armor')
       spawnParticles(b.x + b.w / 2, b.y + b.h / 2, brickColor(b), 5, 2.5)
       return 5
     }
@@ -254,6 +288,9 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
 
   const destroyBrick = (b: Brick): number => {
     if (!b.alive) return 0
+    audioRef.current?.play(
+      b.type === 'explosive' ? 'explosion' : b.type === 'hard' ? 'break' : 'brick',
+    )
     b.alive = false
     setRemaining(
       bricksRef.current.filter((brick) => brick.alive && brick.type !== 'indestructible').length,
@@ -297,6 +334,7 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
   // ===== 重置整局 =====
   const resetGame = useCallback(
     (startLevel = 0) => {
+      audioRef.current?.stopAll()
       const index = customLevel ? 0 : startLevel
       playTicksRef.current = 0
       clockRef.current = { lastTime: null, remainder: 0 }
@@ -334,11 +372,15 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
   )
 
   useEffect(() => {
-    resetGame()
-  }, [resetGame])
+    const stored = Number(readPlayerProgress(gameId, userId).lastPlayedLevel ?? 1)
+    const saved = Number.isInteger(stored) && stored > 0 ? stored : 1
+    resetGame(customLevel ? 0 : Math.min(LEVEL_LAYOUTS.length - 1, Math.max(0, saved - 1)))
+  }, [resetGame, gameId, userId, customLevel])
 
   // ===== 进入下一关 =====
   const nextLevel = () => {
+    audioRef.current?.stopAll()
+    audioRef.current?.play('clear')
     const next = levelIdxRef.current + 1
     levelIdxRef.current = next
     setLevelIdx(next)
@@ -378,6 +420,7 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
   }
 
   const launchBall = () => {
+    audioRef.current?.play('launch')
     const cfg = cfgRef.current
     const angle = -Math.PI / 2 + 0.25
     const sp = ballSpeed(cfg.ballSpeed, levelIdxRef.current, effectsRef.current.slow > 0)
@@ -394,6 +437,7 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
 
   // ===== 道具拾取 =====
   const applyPowerUp = (type: PowerUpType) => {
+    audioRef.current?.play(type === 'life' ? 'life' : type === 'multiball' ? 'multiball' : 'pickup')
     const eff = effectsRef.current
     noticeRef.current = {
       text: `${POWERUP_META[type].name}${type === 'laser' ? ' · 自动连发' : ''}`,
@@ -791,8 +835,12 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
         currentPaddleWidth(),
         speed,
         (brick) => addScore(damageBrick(brick, ball.piercing ? brick.hp : 1)),
+        () => audioRef.current?.play('wall'),
       )
-      if (bounced) spawnParticles(ball.x, PADDLE_Y, '#fb923c', 4, 2)
+      if (bounced) {
+        audioRef.current?.play('paddle')
+        spawnParticles(ball.x, PADDLE_Y, '#fb923c', 4, 2)
+      }
     }
     for (let i = balls.length - 1; i >= 0; i--) {
       if (balls[i].y - balls[i].r > H) balls.splice(i, 1)
@@ -801,6 +849,8 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
     // 同一帧击碎最后一块砖并落球时，优先判定通关。
     if (!bricksRef.current.some((b) => b.alive && b.type !== 'indestructible')) {
       if (customLevel || levelIdxRef.current === LEVEL_LAYOUTS.length - 1) {
+        audioRef.current?.stopAll()
+        audioRef.current?.play(customLevel ? 'clear' : 'victory')
         scoreRef.current += livesRef.current * 100
         setScore(scoreRef.current)
         statusRef.current = 'won'
@@ -815,18 +865,21 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
     }
 
     if (balls.length === 0) {
+      audioRef.current?.stopAll()
       livesRef.current--
       setLives(livesRef.current)
       comboRef.current = 0
       comboTimerRef.current = 0
       setCombo(0)
       if (livesRef.current <= 0) {
+        audioRef.current?.play('gameover')
         statusRef.current = 'lost'
         setStatus('lost')
         void submitEnd('lose', scoreRef.current)
         return
       }
       // 丢球后清场，避免待发球阶段仍有激光击砖或掉落道具。
+      audioRef.current?.play('lost')
       effectsRef.current = { wider: 0, laser: 0, slow: 0, pierce: 0 }
       lasersRef.current = []
       powerupsRef.current = []
@@ -870,10 +923,12 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
     }
   }, [status, step])
 
-  const pause = useCallback(() => {
+  const pause = useCallback((silent = false) => {
     const current = statusRef.current
     keysRef.current.clear()
+    audioRef.current?.stopAll()
     if (current !== 'playing' && current !== 'ready') return
+    if (!silent) audioRef.current?.play('pause')
     resumeStatusRef.current = current
     statusRef.current = 'paused'
     setStatus('paused')
@@ -881,6 +936,8 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
 
   const resume = useCallback(() => {
     if (statusRef.current !== 'paused') return
+    audioRef.current?.unlock()
+    audioRef.current?.play('resume')
     statusRef.current = resumeStatusRef.current
     setStatus(resumeStatusRef.current)
     canvasRef.current?.focus({ preventScroll: true })
@@ -892,6 +949,7 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
     const pw = currentPaddleWidth()
     const px = paddleXRef.current - pw / 2
     lasersRef.current.push({ x: px + 8, y: PADDLE_Y - 6 }, { x: px + pw - 8, y: PADDLE_Y - 6 })
+    audioRef.current?.play('laser')
     laserCdRef.current = LASER_COOLDOWN
   }
 
@@ -924,16 +982,17 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
     }
     const onKeyUp = (e: KeyboardEvent) => keysRef.current.delete(e.key.toLowerCase())
     const onVisibility = () => {
-      if (document.hidden) pause()
+      if (document.hidden) pause(true)
     }
+    const onBlur = () => pause(true)
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
-    window.addEventListener('blur', pause)
+    window.addEventListener('blur', onBlur)
     document.addEventListener('visibilitychange', onVisibility)
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
-      window.removeEventListener('blur', pause)
+      window.removeEventListener('blur', onBlur)
       document.removeEventListener('visibilitychange', onVisibility)
     }
     // handleLaunch only reads refs.
@@ -956,6 +1015,7 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
   }
 
   const handleLaunch = () => {
+    audioRef.current?.unlock()
     if (statusRef.current === 'idle') {
       stickBallOnPaddle()
       statusRef.current = 'ready'
@@ -997,187 +1057,221 @@ function BreakoutPlayer({ userId, gameId, customLevel, onEditor }: PlayerProps) 
           ◈
         </span>
       </header>
-      <div className="gs-toolbar">
-        {!customLevel && (
-          <label className="breakout-level-select">
-            选择关卡
-            <select
-              value={levelIdx}
-              disabled={!pickingIdle}
-              onChange={(event) => resetGame(Number(event.target.value))}
+      <div className="breakout-layout">
+        <aside className="breakout-sidebar" aria-label="关卡与游戏状态">
+          <div className="breakout-settings">
+            {customLevel ? (
+              <div className="breakout-custom-banner">
+                <p>试玩 · {customLevel.name} · 不计入排行榜</p>
+                <button className="gs-secondary" onClick={onEditor}>
+                  <PencilSimple size={18} aria-hidden="true" />
+                  返回编辑
+                </button>
+              </div>
+            ) : (
+              <>
+                <label className="breakout-level-select">
+                  <span>选择关卡</span>
+                  <select
+                    aria-label="选择关卡"
+                    value={levelIdx}
+                    disabled={!pickingIdle}
+                    onChange={(event) => resetGame(Number(event.target.value))}
+                  >
+                    {LEVEL_DETAILS.map((stage, index) => (
+                      <option key={index} value={index}>
+                        第 {index + 1} 关 · {stage.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button className="gs-secondary" disabled={!pickingIdle} onClick={onEditor}>
+                  <PencilSimple size={18} aria-hidden="true" />
+                  关卡编辑
+                </button>
+              </>
+            )}
+          </div>
+          <div className="breakout-audio" role="group" aria-label="音效设置">
+            <button
+              className="gs-secondary"
+              aria-pressed={audioSettings.enabled}
+              onClick={() =>
+                changeAudioSettings({ ...audioSettings, enabled: !audioSettings.enabled })
+              }
             >
-              {LEVEL_DETAILS.map((stage, index) => (
-                <option key={index} value={index}>
-                  第 {index + 1} 关 · {stage.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        {!customLevel && (
-          <button className="gs-secondary" disabled={!pickingIdle} onClick={onEditor}>
-            关卡编辑
-          </button>
-        )}
-        <span className="gs-caption">
-          {combo > 1
-            ? `${combo} 连击 · ×${(1 + Math.min(combo, 15) * 0.1).toFixed(1)} 得分`
-            : '挡板边缘反弹更斜 · 接住道具扭转战局'}
-        </span>
-      </div>
-      {customLevel && (
-        <div className="breakout-custom-banner">
-          <p>试玩 · {customLevel.name} · 不计入排行榜</p>
-          <button className="gs-secondary" onClick={onEditor}>
-            返回编辑
-          </button>
-        </div>
-      )}
-      <div className="gs-metrics">
-        <div>
-          <span>本局得分</span>
-          <strong>{String(score).padStart(4, '0')}</strong>
-        </div>
-        <div>
-          <span>剩余生命</span>
-          <strong>
-            {lives}
-            <small> 次</small>
-          </strong>
-        </div>
-        <div>
-          <span>当前关卡</span>
-          <strong>
-            {String(levelIdx + 1).padStart(2, '0')}
-            <small> / {totalLevels}</small>
-          </strong>
-        </div>
-      </div>
-      <div className="breakout-stage" aria-label="关卡进度">
-        <div>
-          <strong>{stage.name}</strong>
-          <span>
-            剩余 {remaining} / {brickCount} 块
-          </span>
-        </div>
-        <progress value={brickCount - remaining} max={brickCount} aria-label="砖块清除进度" />
-        <p>{stage.hint}</p>
-      </div>
-      <div className="breakout-frame">
-        <canvas
-          ref={canvasRef}
-          width={W * RENDER_SCALE}
-          height={H * RENDER_SCALE}
-          aria-label="打砖块游戏区域，鼠标、拖动或方向键移动挡板，点击或空格发球，P 键暂停"
-          tabIndex={0}
-          onPointerMove={(e) => {
-            if (e.pointerType === 'mouse' || e.buttons > 0) onPointerMove(e)
-          }}
-          onPointerDown={(e) => {
-            if (e.button !== 0) return
-            e.currentTarget.setPointerCapture(e.pointerId)
-            e.currentTarget.focus({ preventScroll: true })
-            onPointerMove(e)
-            onCanvasClick()
-          }}
-          onPointerUp={(e) => {
-            if (e.currentTarget.hasPointerCapture(e.pointerId))
-              e.currentTarget.releasePointerCapture(e.pointerId)
-          }}
-        />
-        {status === 'ready' && (
-          <div className="breakout-ready" role="status">
-            {readyMessage}
-          </div>
-        )}
-        {status === 'paused' && (
-          <div className="gs-overlay">
-            <span className="gs-eyebrow">TAKE A BREATH</span>
-            <h3>休息一下，手感还在</h3>
-            <p>
-              球和道具已暂停。
-              <br />
-              准备好后继续这次挑战。
-            </p>
-            <button className="gs-primary" onClick={resume}>
-              继续游戏 ↗
+              音效：{audioSettings.enabled ? '开' : '关'}
             </button>
-            <button className="gs-secondary" onClick={restart}>
-              重新开始
-            </button>
+            <label>
+              音量
+              <input
+                type="range"
+                aria-label="音效音量"
+                min="0"
+                max="100"
+                step="5"
+                value={Math.round(audioSettings.volume * 100)}
+                onChange={(event) =>
+                  changeAudioSettings({
+                    ...audioSettings,
+                    volume: Number(event.target.value) / 100,
+                  })
+                }
+              />
+              <output>{Math.round(audioSettings.volume * 100)}%</output>
+            </label>
           </div>
-        )}
-        {(status === 'idle' || status === 'won' || status === 'lost') && (
-          <div className="gs-overlay">
-            <span className="gs-eyebrow">
-              {status === 'idle'
-                ? 'A NEW ANGLE, A NEW RECORD'
-                : status === 'won'
-                  ? 'STAGE CLEAR'
-                  : 'GAME OVER'}
-            </span>
-            <div className="breakout-launch-art" aria-hidden="true">
-              ●
+          <dl className="breakout-stats">
+            <div className="breakout-score">
+              <dt>本局得分</dt>
+              <dd>{String(score).padStart(4, '0')}</dd>
             </div>
-            <h3>
-              {status === 'idle'
-                ? '下一次反弹，由你掌控'
-                : status === 'won'
-                  ? customLevel
-                    ? '漂亮！试玩通关'
-                    : '漂亮！全部通关'
-                  : '再来一次，拿下这一关'}
-            </h3>
-            <p>
-              {status === 'idle' ? '移动鼠标或拖动画面控制挡板。' : `最终得分 ${score}`}
-              <br />
-              {status === 'idle'
-                ? customLevel
-                  ? '接住道具，验证你的砖墙设计。'
-                  : `${totalLevels} 关递进挑战，激光拾取后自动连发。`
-                : customLevel
-                  ? customLevel.name
-                  : `到达第 ${levelIdx + 1} 关`}
-            </p>
-            <button className="gs-primary" onClick={status === 'idle' ? handleLaunch : restart}>
-              {status === 'idle'
-                ? '开始挑战'
-                : customLevel
-                  ? '重新试玩'
-                  : `重试第 ${levelIdx + 1} 关`}{' '}
-              ↗
-            </button>
+            <div>
+              <dt>剩余生命</dt>
+              <dd>
+                {lives}
+                <small> 次</small>
+              </dd>
+            </div>
+            <div>
+              <dt>当前关卡</dt>
+              <dd>
+                {String(levelIdx + 1).padStart(2, '0')}
+                <small> / {totalLevels}</small>
+              </dd>
+            </div>
+          </dl>
+          <div className="breakout-stage" aria-label="关卡进度">
+            <span>
+              剩余 {remaining} / {brickCount} 块
+            </span>
+            <progress value={brickCount - remaining} max={brickCount} aria-label="砖块清除进度" />
+            <p>{stage.hint}</p>
+            {combo > 1 && (
+              <p className="breakout-combo">
+                {combo} 连击 · ×{(1 + Math.min(combo, 15) * 0.1).toFixed(1)} 得分
+              </p>
+            )}
           </div>
-        )}
-      </div>
-      <div className="breakout-controls">
-        <p>
-          鼠标 / 拖动 / ← → / A D 移动挡板
-          <br />
-          点击或空格发球 · P / Esc 暂停 · 激光自动连发
-        </p>
-        <div className="breakout-actions">
-          {status === 'ready' && (
-            <button className="gs-primary" onClick={handleLaunch}>
-              发球
-            </button>
-          )}
-          <button
-            className="gs-secondary"
-            onClick={status === 'paused' ? resume : pause}
-            disabled={status !== 'playing' && status !== 'ready' && status !== 'paused'}
-          >
-            {status === 'paused' ? '继续' : '暂停'}
-          </button>
+        </aside>
+        <div className="breakout-playfield">
+          <div className="breakout-frame">
+            <canvas
+              ref={canvasRef}
+              width={W * RENDER_SCALE}
+              height={H * RENDER_SCALE}
+              aria-label="打砖块游戏区域，鼠标、拖动或方向键移动挡板，点击或空格发球，P 键暂停"
+              tabIndex={0}
+              onPointerMove={(e) => {
+                if (e.pointerType === 'mouse' || e.buttons > 0) onPointerMove(e)
+              }}
+              onPointerDown={(e) => {
+                if (e.button !== 0) return
+                e.currentTarget.setPointerCapture(e.pointerId)
+                e.currentTarget.focus({ preventScroll: true })
+                onPointerMove(e)
+                onCanvasClick()
+              }}
+              onPointerUp={(e) => {
+                if (e.currentTarget.hasPointerCapture(e.pointerId))
+                  e.currentTarget.releasePointerCapture(e.pointerId)
+              }}
+            />
+            {status === 'ready' && (
+              <div className="breakout-ready" role="status">
+                {readyMessage}
+              </div>
+            )}
+            {status === 'paused' && (
+              <div className="gs-overlay">
+                <span className="gs-eyebrow">TAKE A BREATH</span>
+                <h3>休息一下，手感还在</h3>
+                <p>
+                  球和道具已暂停。
+                  <br />
+                  准备好后继续这次挑战。
+                </p>
+                <button className="gs-primary" onClick={resume}>
+                  继续游戏 ↗
+                </button>
+                <button className="gs-secondary" onClick={restart}>
+                  重新开始
+                </button>
+              </div>
+            )}
+            {(status === 'idle' || status === 'won' || status === 'lost') && (
+              <div className="gs-overlay">
+                <span className="gs-eyebrow">
+                  {status === 'idle'
+                    ? 'A NEW ANGLE, A NEW RECORD'
+                    : status === 'won'
+                      ? 'STAGE CLEAR'
+                      : 'GAME OVER'}
+                </span>
+                <div className="breakout-launch-art" aria-hidden="true">
+                  ●
+                </div>
+                <h3>
+                  {status === 'idle'
+                    ? '下一次反弹，由你掌控'
+                    : status === 'won'
+                      ? customLevel
+                        ? '漂亮！试玩通关'
+                        : '漂亮！全部通关'
+                      : '再来一次，拿下这一关'}
+                </h3>
+                <p>
+                  {status === 'idle' ? '移动鼠标或拖动画面控制挡板。' : `最终得分 ${score}`}
+                  <br />
+                  {status === 'idle'
+                    ? customLevel
+                      ? '接住道具，验证你的砖墙设计。'
+                      : `${totalLevels} 关递进挑战，激光拾取后自动连发。`
+                    : customLevel
+                      ? customLevel.name
+                      : `到达第 ${levelIdx + 1} 关`}
+                </p>
+                <button className="gs-primary" onClick={status === 'idle' ? handleLaunch : restart}>
+                  {status === 'idle'
+                    ? '开始挑战'
+                    : customLevel
+                      ? '重新试玩'
+                      : `重试第 ${levelIdx + 1} 关`}{' '}
+                  ↗
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="breakout-controls">
+            <p>
+              鼠标 / 拖动 / ← → / A D 移动挡板
+              <br />
+              点击或空格发球 · P / Esc 暂停 · 激光自动连发
+            </p>
+            <div className="breakout-actions">
+              {status === 'ready' && (
+                <button className="gs-primary" onClick={handleLaunch}>
+                  发球
+                </button>
+              )}
+              <button
+                className="gs-secondary"
+                onClick={status === 'paused' ? resume : () => pause()}
+                disabled={status !== 'playing' && status !== 'ready' && status !== 'paused'}
+              >
+                {status === 'paused' ? '继续' : '暂停'}
+              </button>
+            </div>
+          </div>
+          <div className="breakout-tools" aria-label="道具说明">
+            {(Object.keys(POWERUP_META) as PowerUpType[]).map((t) => (
+              <span key={t}>
+                <i style={{ background: POWERUP_META[t].color }}>{POWERUP_META[t].label}</i>
+                {POWERUP_META[t].name}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="breakout-tools" aria-label="道具说明">
-        {(Object.keys(POWERUP_META) as PowerUpType[]).map((t) => (
-          <span key={t}>
-            <i style={{ background: POWERUP_META[t].color }}>{POWERUP_META[t].label}</i>
-            {POWERUP_META[t].name}
-          </span>
-        ))}
       </div>
     </section>
   )

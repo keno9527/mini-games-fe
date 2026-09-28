@@ -108,6 +108,7 @@ export function advanceBall(
   paddleWidth: number,
   speed: number,
   onHit: (brick: Brick) => void,
+  onWall?: () => void,
 ): boolean {
   setBallSpeed(ball, speed)
   const steps = Math.max(1, Math.ceil(speed / (ball.r / 2)))
@@ -120,13 +121,16 @@ export function advanceBall(
     ball.y += ball.vy / steps
 
     if (ball.x < ball.r) {
+      onWall?.()
       ball.x = ball.r
       ball.vx = Math.abs(ball.vx)
     } else if (ball.x > W - ball.r) {
+      onWall?.()
       ball.x = W - ball.r
       ball.vx = -Math.abs(ball.vx)
     }
     if (ball.y < ball.r) {
+      onWall?.()
       ball.y = ball.r
       ball.vy = Math.abs(ball.vy)
     }

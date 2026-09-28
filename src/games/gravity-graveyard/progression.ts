@@ -1,4 +1,4 @@
-const PROGRESSION_KEY = 'mini-games-local-progression'
+import { readPlayerProgress, stageProgress } from '../../api/playerFiles'
 
 export interface GameProgression {
   liturgies: string[]
@@ -17,11 +17,9 @@ function uniqueStrings(value: unknown): string[] {
   return Array.from(new Set(value.filter((item) => typeof item === 'string' && item.length > 0)))
 }
 
-export function getGameProgression(gameId: string): GameProgression {
+export function getGameProgression(gameId: string, userId?: string): GameProgression {
   try {
-    const raw = window.localStorage.getItem(`${PROGRESSION_KEY}:${gameId}`)
-    if (!raw) return emptyProgression()
-    const stored = JSON.parse(raw) as Partial<GameProgression>
+    const stored = readPlayerProgress(gameId, userId) as Partial<GameProgression>
     return {
       liturgies: uniqueStrings(stored.liturgies),
       tools: uniqueStrings(stored.tools),
@@ -32,11 +30,15 @@ export function getGameProgression(gameId: string): GameProgression {
   }
 }
 
-export function saveGameProgression(gameId: string, progression: GameProgression): void {
+export function saveGameProgression(
+  gameId: string,
+  progression: GameProgression,
+  userId?: string,
+): void {
   const normalized: GameProgression = {
     liturgies: uniqueStrings(progression.liturgies),
     tools: uniqueStrings(progression.tools),
     ships: uniqueStrings(progression.ships),
   }
-  window.localStorage.setItem(`${PROGRESSION_KEY}:${gameId}`, JSON.stringify(normalized))
+  stageProgress(gameId, userId, { ...normalized })
 }

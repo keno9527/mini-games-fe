@@ -1,3 +1,4 @@
+import { readPlayerProgress, stageProgress } from '../../api/playerFiles'
 export interface LevelResult {
   stars: 1 | 2 | 3
   bestMoves: number
@@ -8,16 +9,11 @@ export interface LaserProgression {
   results: Record<string, LevelResult>
 }
 
-const KEY = 'mini-games-laser-mirror'
-
 const emptyProgression = (): LaserProgression => ({ unlocked: 1, results: {} })
 
 export function readProgress(gameId: string, userId?: string): LaserProgression {
-  if (typeof window === 'undefined') return emptyProgression()
   try {
-    const raw = window.localStorage.getItem(`${KEY}:${gameId}:${userId ?? 'guest'}`)
-    if (!raw) return emptyProgression()
-    const parsed = JSON.parse(raw) as Partial<LaserProgression>
+    const parsed = readPlayerProgress(gameId, userId) as Partial<LaserProgression>
     const candidates = parsed.results && typeof parsed.results === 'object' ? parsed.results : {}
     const results = Object.fromEntries(
       Object.entries(candidates).flatMap(([levelId, value]) => {
@@ -47,12 +43,7 @@ export function readProgress(gameId: string, userId?: string): LaserProgression 
 }
 
 export function saveProgress(gameId: string, userId: string | undefined, value: LaserProgression) {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(`${KEY}:${gameId}:${userId ?? 'guest'}`, JSON.stringify(value))
-  } catch {
-    // 存储不可用时仍允许继续游玩。
-  }
+  stageProgress(gameId, userId, { ...value })
 }
 
 export function recordCompletion(

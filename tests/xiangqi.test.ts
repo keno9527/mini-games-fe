@@ -1,3 +1,5 @@
+import { hydratePlayerFile } from '../src/api/playerFiles.ts'
+import { playerFixture } from './helpers/player-server.ts'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
@@ -248,17 +250,8 @@ test('a black mating reply ends the challenge as a loss', () => {
   assert.match(lost.reason, /红帅被将死/)
 })
 
-test('progress persists separately for visitors and players, validates data, and handles storage failure', () => {
-  const values = new Map<string, string>()
-  Object.defineProperty(globalThis, 'window', {
-    configurable: true,
-    value: {
-      localStorage: {
-        getItem: (key: string) => values.get(key) ?? null,
-        setItem: (key: string, value: string) => values.set(key, value),
-      },
-    },
-  })
+test('xiangqi progress is player-scoped and ignores invalid stars', () => {
+  hydratePlayerFile(playerFixture('player-a'))
   const progress = { [levels[0].id]: 3, [levels[1].id]: 2 }
   assert.equal(saveProgress('xiangqi', 'player-a', progress), true)
   assert.deepEqual(readProgress('xiangqi', 'player-a'), progress)
@@ -267,20 +260,13 @@ test('progress persists separately for visitors and players, validates data, and
   assert.deepEqual(readProgress('xiangqi', 'player-b'), {})
   assert.deepEqual(readProgress('xiangqi'), {})
   assert.deepEqual(readProgress('other-game', 'player-a'), {})
-  const key = [...values.keys()][0]
-  for (const raw of [
-    '{broken',
-    'null',
-    '[]',
-    '42',
-    JSON.stringify({ [levels[0].id]: 8, [levels[1].id]: '3', unknown: 2 }),
-  ]) {
-    values.set(key, raw)
-    assert.deepEqual(readProgress('xiangqi', 'player-a'), {})
-  }
+  hydratePlayerFile({
+    ...playerFixture('player-a'),
+    games: {
+      xiangqi: { progress: { [levels[0].id]: 8, [levels[1].id]: '3', unknown: 2 }, records: [] },
+    },
+  })
+  assert.deepEqual(readProgress('xiangqi', 'player-a'), {})
   assert.equal(unlockedLevel(Object.fromEntries(levels.map((l) => [l.id, 3]))), levels.length - 1)
-  window.localStorage.setItem = () => {
-    throw new Error('quota')
-  }
-  assert.equal(saveProgress('xiangqi', 'player-a', progress), false)
+  assert.equal(saveProgress('xiangqi', 'unloaded-player', progress), false)
 })

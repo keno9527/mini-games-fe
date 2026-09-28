@@ -30,13 +30,17 @@ interface Props {
   game: Game
 }
 
+export function GameIcon({ gameId, size = 30 }: { gameId: string; size?: number }) {
+  const Icon = gameIcons[gameId] ?? GameController
+  return <Icon size={size} weight="duotone" aria-hidden="true" />
+}
+
 export default function GameCard({ game }: Props) {
   const { badge, actionLabel = '开始游戏', variant = 'default' } = getGamePresentation(game.id)
-  const CoverIcon = gameIcons[game.id] ?? GameController
   return (
     <GameLaunchLink gameId={game.id} className={`library-card library-card--${variant}`}>
       <div className="library-card-top">
-        <CoverIcon size={30} weight="duotone" aria-hidden="true" />
+        <GameIcon gameId={game.id} />
         {badge && <span>{badge}</span>}
       </div>
       <h3>{game.name}</h3>

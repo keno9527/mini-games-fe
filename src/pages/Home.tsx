@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getGames, getPlayRanking } from '@/api'
-import GameCard from '@/components/GameCard'
+import GameCard, { GameIcon } from '@/components/GameCard'
 import GameLaunchLink from '@/components/GameLaunchLink'
 import { GameCardSkeleton } from '@/components/Skeleton'
 import type { Game, PlayRankItem } from '@/types'
@@ -23,7 +23,15 @@ export default function Home() {
 
   useEffect(() => {
     getGames()
-      .then((games) => setGames(games.filter((game) => !hiddenGameIds.has(game.id))))
+      .then((games) => {
+        const visibleGames = games.filter((game) => !hiddenGameIds.has(game.id))
+        // Shuffle once per visit so ranking refreshes keep the unranked order stable.
+        for (let i = visibleGames.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1))
+          ;[visibleGames[i], visibleGames[j]] = [visibleGames[j], visibleGames[i]]
+        }
+        setGames(visibleGames)
+      })
       .catch(() => setError('本地游戏配置读取失败，请刷新页面重试'))
       .finally(() => setLoading(false))
     const refreshRanking = () => {
@@ -37,63 +45,78 @@ export default function Home() {
   }, [])
 
   const top5 = ranking.slice(0, 5)
+  const rankPositions = new Map(top5.map((item, index) => [item.gameId, index]))
+  const sortedGames = [...games].sort(
+    (a, b) => (rankPositions.get(a.id) ?? top5.length) - (rankPositions.get(b.id) ?? top5.length),
+  )
 
   return (
     <main className="plaza-library">
       <header className="library-heading">
-        <div>
-          <p className="library-eyebrow">闲暇时刻 · 玩一局</p>
+        <div className="library-heading-title">
           <h1>发现下一份乐趣</h1>
-          <p>挑一款喜欢的游戏，慢慢来，也可以挑战自己。</p>
+          <span className="library-count">{loading ? '—' : games.length} 款游戏</span>
         </div>
-        <span className="library-count">{games.length || '—'} 款游戏</span>
+        <p>即点即玩 · 结算后保存玩家进度</p>
       </header>
-      {loading && (
-        <div className="library-grid">
-          {Array.from({ length: 6 }, (_, i) => (
-            <GameCardSkeleton key={i} />
-          ))}
-        </div>
-      )}
-      {error && (
-        <p role="alert" className="library-error">
-          {error}
-        </p>
-      )}
-      {!loading && !error && (
-        <>
-          <div className="library-section-heading">
-            <h2>全部游戏</h2>
-            <span>即点即玩 · 进度保存在本机</span>
-          </div>
-          <div className="library-grid">
-            {games.map((game) => (
-              <GameCard key={game.id} game={game} />
-            ))}
-          </div>
-          <section className="library-popular" aria-labelledby="popular-title">
+      <div className="library-layout">
+        <section className="library-games" aria-labelledby="games-title" aria-busy={loading}>
+          <h2 id="games-title" className="library-section-heading">
+            全部游戏
+          </h2>
+          {loading && (
+            <>
+              <span role="status" className="sr-only">
+                正在加载游戏…
+              </span>
+              <div className="library-grid">
+                {Array.from({ length: 8 }, (_, i) => (
+                  <GameCardSkeleton key={i} />
+                ))}
+              </div>
+            </>
+          )}
+          {error && (
+            <p role="alert" className="library-error">
+              {error}
+            </p>
+          )}
+          {!loading && !error && (
+            <div className="library-grid">
+              {sortedGames.map((game) => (
+                <GameCard key={game.id} game={game} />
+              ))}
+            </div>
+          )}
+        </section>
+        {!loading && !error && (
+          <aside className="library-popular" aria-labelledby="popular-title">
             <h2 id="popular-title">热门排行榜</h2>
-            <p>本机累计 · 按盘数排序，同盘数按时长排序</p>
+            <p>玩家存档累计 · 已结算对局</p>
             {top5.length === 0 ? (
               <p>暂无排行记录，开始一局吧。</p>
             ) : (
               <ol>
                 {top5.map((item, i) => (
                   <li key={item.gameId}>
-                    <GameLaunchLink gameId={item.gameId}>
-                      <span>{String(i + 1).padStart(2, '0')}</span>
-                      <strong>{item.gameName}</strong>
-                      <small>
-                        {item.playCount} 盘 · {formatDuration(item.totalDuration)}
-                      </small>
+                    <GameLaunchLink gameId={item.gameId} className="library-rank-link">
+                      <span className="library-rank-number">{String(i + 1).padStart(2, '0')}</span>
+                      <GameIcon gameId={item.gameId} size={26} />
+                      <div className="library-rank-details">
+                        <strong>{item.gameName}</strong>
+                        <small>
+                          {item.playCount} 盘 · {formatDuration(item.totalDuration)}
+                        </small>
+                      </div>
                     </GameLaunchLink>
                   </li>
                 ))}
               </ol>
             )}
-          </section>
-        </>
-      )}
+            <p className="library-rank-note">按盘数排序，同盘数按时长排序</p>
+          </aside>
+        )}
+      </div>
     </main>
   )
 }

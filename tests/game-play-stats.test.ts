@@ -5,7 +5,9 @@ import {
   comparePlayTotals,
   type PlayTotals,
 } from '../src/features/games/playStats.ts'
-import { addGamePlayStats, createRecord, deleteUser, getPlayRanking } from '../src/api/index.ts'
+import { createUser, createRecord, deleteUser, getPlayRanking } from '../src/api/index.ts'
+import { loadPlayerFile } from '../src/api/playerFiles.ts'
+import { withPlayerServer } from './helpers/player-server.ts'
 
 function session() {
   let clock = 0
@@ -101,91 +103,28 @@ test('ranking sorts by rounds first and duration only on a tie', () => {
   )
 })
 
-test('local totals persist across reads, need no player, and ignore scores and seed rankings', async () => {
-  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
-  const storage = new Map<string, string>()
-  Object.defineProperty(globalThis, 'window', {
-    configurable: true,
-    value: {
-      localStorage: {
-        getItem: (key: string) => storage.get(key) ?? null,
-        setItem: (key: string, value: string) => storage.set(key, value),
-      },
-    },
-  })
-  try {
+test('ranking derives from settled player files and excludes archived players', async () => {
+  await withPlayerServer(async () => {
     assert.deepEqual(await getPlayRanking(), [])
-    addGamePlayStats('snake', { playCount: 2, totalDuration: 10 })
-    addGamePlayStats('memory', { playCount: 1, totalDuration: 999 })
-    addGamePlayStats('tetris', { playCount: 2, totalDuration: 20 })
-    addGamePlayStats('snake', { playCount: 0, totalDuration: 5 })
-    const ranking = await getPlayRanking()
+    const first = await createUser('排名甲')
+    const second = await createUser('排名乙')
+    await loadPlayerFile(first.id)
+    await loadPlayerFile(second.id)
+    for (const user of [first, second])
+      await createRecord(user.id, { gameId: 'snake', score: 100, duration: 10, result: 'lose' })
+    await createRecord(first.id, { gameId: 'memory', score: 1, duration: 999, result: 'win' })
     assert.deepEqual(
-      ranking.map(({ gameId, playCount, totalDuration }) => [gameId, playCount, totalDuration]),
+      (await getPlayRanking()).map(({ gameId, playCount, totalDuration }) => [
+        gameId,
+        playCount,
+        totalDuration,
+      ]),
       [
-        ['tetris', 2, 20],
-        ['snake', 2, 15],
+        ['snake', 2, 20],
         ['memory', 1, 999],
       ],
     )
-    assert.deepEqual(await getPlayRanking(), ranking)
-
-    storage.set('mini-games-local-users', JSON.stringify([{ id: 'player', name: '玩家' }]))
-    await createRecord('player', { gameId: 'snake', score: 9999, duration: 10, result: 'win' })
-    assert.deepEqual(await getPlayRanking(), ranking)
-    await deleteUser('player')
-    assert.deepEqual(await getPlayRanking(), ranking)
-
-    addGamePlayStats('unknown', { playCount: 100, totalDuration: 100 })
-    addGamePlayStats('snake', { playCount: -1, totalDuration: 0 })
-    addGamePlayStats('snake', { playCount: 0.5, totalDuration: 0 })
-    addGamePlayStats('snake', { playCount: 1, totalDuration: NaN })
-    addGamePlayStats('snake', { playCount: 1, totalDuration: Infinity })
-    addGamePlayStats('snake', { playCount: 1, totalDuration: -1 })
-    assert.deepEqual(await getPlayRanking(), ranking)
-  } finally {
-    if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)
-    else Reflect.deleteProperty(globalThis, 'window')
-  }
-})
-
-test('invalid or unavailable browser storage never crashes gameplay', async () => {
-  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
-  let stored = '{broken json'
-  let blocked = false
-  Object.defineProperty(globalThis, 'window', {
-    configurable: true,
-    value: {
-      localStorage: {
-        getItem: () => {
-          if (blocked) throw new Error('blocked')
-          return stored
-        },
-        setItem: (_key: string, value: string) => {
-          if (blocked) throw new Error('blocked')
-          stored = value
-        },
-      },
-    },
+    await deleteUser(second.id)
+    assert.equal((await getPlayRanking()).find((r) => r.gameId === 'snake')?.playCount, 1)
   })
-  try {
-    for (const invalid of [
-      '{broken json',
-      'null',
-      '[]',
-      '42',
-      '{"snake":{"playCount":-1,"totalDuration":2}}',
-    ]) {
-      stored = invalid
-      assert.deepEqual(await getPlayRanking(), [])
-      addGamePlayStats('snake', { playCount: 1, totalDuration: 3 })
-      assert.equal((await getPlayRanking())[0].playCount, 1)
-    }
-    blocked = true
-    assert.doesNotThrow(() => addGamePlayStats('snake', { playCount: 1, totalDuration: 3 }))
-    assert.deepEqual(await getPlayRanking(), [])
-  } finally {
-    if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)
-    else Reflect.deleteProperty(globalThis, 'window')
-  }
 })

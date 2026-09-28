@@ -282,7 +282,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
     message: messageRef.current,
   })
   const [progression, setProgression] = useState<GameProgression>(() =>
-    mergeProgression(getGameProgression(gameId)),
+    mergeProgression(getGameProgression(gameId, userId)),
   )
   const [selectedTool, setSelectedTool] = useState(TOOLS[0].id)
   const [selectedShip, setSelectedShip] = useState(SHIPS[0].id)
@@ -501,7 +501,7 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
       try {
         await createRecord(userId, { gameId, score, duration, result })
       } catch {
-        submittedRef.current = false
+        // The global save queue retries the same record ID.
       }
     },
     [gameId, userId],
@@ -580,14 +580,14 @@ export default function GravityGraveyard({ userId, gameId }: Props) {
         (item): item is ModuleDefinition | LoadoutDefinition => Boolean(item),
       )
       if (discoveries.length > 0) {
-        saveGameProgression(gameId, upgraded)
+        saveGameProgression(gameId, upgraded, userId)
         setProgression(upgraded)
         messageRef.current = `新档案解锁：${discoveries.map((item) => item.name).join(' · ')}`
       }
       syncHud()
       void submitRecord('win', next.score)
     },
-    [gameId, progression, submitRecord, syncHud],
+    [gameId, userId, progression, submitRecord, syncHud],
   )
 
   const placeAnchor = useCallback(

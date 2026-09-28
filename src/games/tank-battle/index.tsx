@@ -185,20 +185,22 @@ function TankBattlePlayer({
             saveProgress(stage, userId, undefined, campaignId, mode)
             setProgressError('')
           } catch {
-            setProgressError('进度未能保存，当前页面仍可重试；关闭后可能丢失进度。')
+            setProgressError('进度未能更新，请检查玩家存档。')
           }
         },
         onStateChange: setUiState,
         onControllersChange: setControllers,
         onMenuChange: setMenu,
         onGameOver: (result) => {
-          if (!userId || result.practice || result.continued || result.campaignId !== 'battle-city')
-            return
+          if (!userId || customMap) return
           createRecord(userId, {
             gameId,
             score: result.score,
             duration: result.duration,
             result: result.victory ? 'win' : 'lose',
+            level: result.levelReached,
+            campaignId: result.campaignId,
+            mode: result.practice ? 'practice' : result.mode,
           }).catch(() => {})
         },
       })

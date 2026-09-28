@@ -22,6 +22,9 @@ export interface GameRecord {
   duration: number
   playedAt: string
   result: 'win' | 'lose' | 'complete'
+  level?: number
+  campaignId?: string
+  mode?: 'single' | 'coop' | 'practice'
 }
 
 export interface GameStat {

@@ -1,45 +1,28 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {
+  getGameProgression,
+  saveGameProgression,
+} from '../src/games/gravity-graveyard/progression.ts'
+import { hydratePlayerFile } from '../src/api/playerFiles.ts'
+import { playerFixture } from './helpers/player-server.ts'
 
-import { getGameProgression, saveGameProgression } from '../src/games/gravity-graveyard/progression.ts'
-
-const values = new Map<string, string>()
-
-Object.defineProperty(globalThis, 'window', {
-  configurable: true,
-  value: {
-    localStorage: {
-      getItem: (key: string) => values.get(key) ?? null,
-      setItem: (key: string, value: string) => values.set(key, value),
-    },
-  },
-})
-
-test('game progression stays isolated by game id and is deduplicated', () => {
-  saveGameProgression('gravity-graveyard', {
+test('progress is staged per player and game, with deduplicated unlocks', () => {
+  hydratePlayerFile(playerFixture('gravity-a'))
+  hydratePlayerFile(playerFixture('gravity-b'))
+  const progress = {
     liturgies: ['twin-choir', 'twin-choir'],
     tools: ['funeral-anchor'],
     ships: ['ivory-coffin'],
-  })
-
-  assert.deepEqual(getGameProgression('gravity-graveyard'), {
+  }
+  saveGameProgression('gravity-graveyard', progress, 'gravity-a')
+  assert.deepEqual(getGameProgression('gravity-graveyard', 'gravity-a'), {
+    ...progress,
     liturgies: ['twin-choir'],
-    tools: ['funeral-anchor'],
-    ships: ['ivory-coffin'],
   })
-  assert.deepEqual(getGameProgression('another-game'), {
-    liturgies: [],
-    tools: [],
-    ships: [],
-  })
-})
-
-test('malformed progression data falls back safely', () => {
-  values.set('mini-games-local-progression:gravity-graveyard', '{broken')
-
-  assert.deepEqual(getGameProgression('gravity-graveyard'), {
-    liturgies: [],
-    tools: [],
-    ships: [],
-  })
+  const empty = { liturgies: [], tools: [], ships: [] }
+  assert.deepEqual(getGameProgression('gravity-graveyard', 'gravity-b'), empty)
+  assert.deepEqual(getGameProgression('another-game', 'gravity-a'), empty)
+  assert.deepEqual(getGameProgression('gravity-graveyard'), empty)
+  assert.throws(() => saveGameProgression('gravity-graveyard', progress), /选择/)
 })

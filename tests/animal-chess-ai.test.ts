@@ -17,7 +17,10 @@ import {
 } from '../src/games/animal-chess-ai/engine.ts'
 import { getCatalogGame } from '../src/features/games/data.ts'
 import { getGameManifest } from '../src/games/registry.ts'
-import { addGamePlayStats, createRecord, getPlayRanking, getRecords } from '../src/api/index.ts'
+import { createUser, createRecord, getPlayRanking, getRecords } from '../src/api/index.ts'
+
+import { loadPlayerFile } from '../src/api/playerFiles.ts'
+import { withPlayerServer } from './helpers/player-server.ts'
 
 const at = (x: number, y: number) => ({ x, y })
 const piece = (side: Piece['side'], animal: Animal, x: number, y: number): Piece => ({
@@ -268,53 +271,36 @@ test('outcomes always use the human red side for win/lose and scoring', () => {
   assert.deepEqual(getOutcome('blue'), { result: 'lose', score: 0 })
 })
 
-test('personal scores persist separately from anonymous game totals', async () => {
-  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
-  const storage = new Map<string, string>([
-    ['mini-games-local-users', JSON.stringify([{ id: 'ai-test-player', name: '测试玩家' }])],
-  ])
-  Object.defineProperty(globalThis, 'window', {
-    configurable: true,
-    value: {
-      localStorage: {
-        getItem: (key: string) => storage.get(key) ?? null,
-        setItem: (key: string, value: string) => storage.set(key, value),
-      },
-    },
-  })
-  try {
-    for (const winner of ['red', 'blue'] as const) {
-      await createRecord('ai-test-player', {
+test('human outcomes persist in player files and feed settled game rankings', async () => {
+  await withPlayerServer(async () => {
+    const player = await createUser('斗兽棋测试')
+    await loadPlayerFile(player.id)
+    for (const winner of ['red', 'blue'] as const)
+      await createRecord(player.id, {
         gameId: 'animal-chess-ai',
         duration: 90,
         ...getOutcome(winner),
       })
-    }
-    await createRecord('ai-test-player', {
+    await createRecord(player.id, {
       gameId: 'animal-chess',
       duration: 30,
       score: 100,
       result: 'complete',
     })
-    const records = await getRecords('ai-test-player')
+    const records = await getRecords(player.id)
     assert.deepEqual(
       records
         .filter((r) => r.gameId === 'animal-chess-ai')
-        .map((r) => [r.result, r.score, r.duration]),
+        .map((r) => [r.result, r.score, r.duration])
+        .sort(),
       [
-        ['win', 100, 90],
         ['lose', 0, 90],
+        ['win', 100, 90],
       ],
     )
-    assert.deepEqual(await getPlayRanking(), [])
-    addGamePlayStats('animal-chess-ai', { playCount: 2, totalDuration: 180 })
-    addGamePlayStats('animal-chess', { playCount: 1, totalDuration: 30 })
     const ranking = await getPlayRanking()
     assert.equal(ranking.find((r) => r.gameId === 'animal-chess-ai')?.playCount, 2)
     assert.equal(ranking.find((r) => r.gameId === 'animal-chess')?.playCount, 1)
     assert.equal(records.length, 3)
-  } finally {
-    if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)
-    else Reflect.deleteProperty(globalThis, 'window')
-  }
+  })
 })

@@ -36,13 +36,15 @@ function Campaign({ gameId, userId }: GameComponentProps) {
   const [saveError, setSaveError] = useState(false)
   const unlocked = unlockedLevel(progress)
   const rulesDialog = useRef<HTMLDialogElement>(null)
-  const complete = useCallback((id: string, stars: number) => {
-    setProgress((previous) => ({ ...previous, [id]: Math.max(previous[id] ?? 0, stars) }))
-  }, [])
-
-  useEffect(() => {
-    setSaveError(!saveProgress(gameId, userId, progress))
-  }, [gameId, userId, progress])
+  const complete = useCallback(
+    (id: string, stars: number) => {
+      const previous = readProgress(gameId, userId)
+      const next = { ...previous, [id]: Math.max(previous[id] ?? 0, stars) }
+      setSaveError(!saveProgress(gameId, userId, next))
+      setProgress(next)
+    },
+    [gameId, userId],
+  )
 
   return (
     <section className="xq-game" aria-label="中国象棋残局闯关">
@@ -128,7 +130,7 @@ function Campaign({ gameId, userId }: GameComponentProps) {
           红方落子一次计 1 步，黑方应对不计步。悔棋回退一整个回合。独立过关获 3
           星；使用提示、使用悔棋各减 1 星，最低 1 星。
         </p>
-        <p>进度自动保存在此浏览器，每关最高 300 分。</p>
+        <p>每局结算后保存到玩家存档，每关最高 300 分。</p>
       </dialog>
       <Puzzle
         key={`${current}:${attempt}`}
@@ -141,7 +143,7 @@ function Campaign({ gameId, userId }: GameComponentProps) {
       />
       {saveError && (
         <p className="xq-storage" role="status">
-          浏览器未能保存进度；本次仍可继续，刷新后可能丢失。
+          进度未能更新，请检查玩家存档状态。
         </p>
       )}
     </section>
@@ -186,6 +188,7 @@ function Puzzle({ level, gameId, userId, onComplete, onRetry, onNext }: PuzzlePr
     void submit({
       score: phase === 'won' ? stars * 100 : 0,
       result: phase === 'won' ? 'win' : 'lose',
+      level: levels.findIndex((item) => item.id === level.id) + 1,
     })
   }, [ended, phase, level.id, stars, onComplete, submit, play])
 

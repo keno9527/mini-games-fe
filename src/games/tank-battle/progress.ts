@@ -1,3 +1,4 @@
+import { readPlayerProgress, stageProgress } from '../../api/playerFiles'
 import { CAMPAIGNS, type CampaignId } from './data/campaigns.ts'
 
 type ProgressStorage = Pick<Storage, 'getItem' | 'setItem'>
@@ -38,10 +39,17 @@ export function isValidStage(
 
 export function loadProgress(
   userId?: string,
-  storage: ProgressStorage = localStorage,
+  storage?: ProgressStorage,
   campaignId: CampaignId = 'battle-city',
   mode: CampaignMode = 'single',
 ): number {
+  if (!storage) {
+    const campaign = readPlayerProgress('tank-battle', userId)[campaignId] as
+      Partial<CampaignProgress> | undefined
+    const value = campaign?.[mode] ?? 0
+    if (!isValidStage(value, campaignId)) throw new Error('Invalid tank progress')
+    return value
+  }
   const raw = storage.getItem(progressKey(userId, campaignId, mode))
   if (raw === null) return 0
   const value: unknown = JSON.parse(raw)
@@ -52,7 +60,7 @@ export function loadProgress(
 export function saveProgress(
   stage: number,
   userId?: string,
-  storage: ProgressStorage = localStorage,
+  storage?: ProgressStorage,
   campaignId: CampaignId = 'battle-city',
   mode: CampaignMode = 'single',
 ): void {
@@ -63,5 +71,7 @@ export function saveProgress(
   } catch {
     // 损坏的进度可以由本次有效进度恢复；存储不可写时由调用方提示。
   }
-  storage.setItem(progressKey(userId, campaignId, mode), JSON.stringify(Math.max(previous, stage)))
+  const value = Math.max(previous, stage)
+  if (storage) storage.setItem(progressKey(userId, campaignId, mode), JSON.stringify(value))
+  else stageProgress('tank-battle', userId, { [campaignId]: { [mode]: value } })
 }

@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "player": {
+    "id": "25856be4-043e-40b0-93bc-ce87326a77dc",
+    "name": "baba",
+    "avatar": "default",
+    "createdAt": "2026-09-28T07:04:02.886Z"
+  },
+  "games": {
+    "xiangqi": {
+      "progress": {
+        "rook-ladder": 3,
+        "cannon-screen": 3,
+        "rook-pursuit": 3
+      },
+      "records": [
+        {
+          "id": "f0bf3576-93ae-42f6-83de-1877dc497ed7",
+          "userId": "25856be4-043e-40b0-93bc-ce87326a77dc",
+          "gameId": "xiangqi",
+          "score": 300,
+          "duration": 2,
+          "result": "win",
+          "playedAt": "2026-09-28T08:09:42.507Z",
+          "level": 2
+        },
+        {
+          "id": "4412f866-3780-417f-9667-50b7178fea5f",
+          "userId": "25856be4-043e-40b0-93bc-ce87326a77dc",
+          "gameId": "xiangqi",
+          "score": 300,
+          "duration": 6,
+          "result": "win",
+          "playedAt": "2026-09-28T08:09:52.831Z",
+          "level": 3
+        }
+      ]
+    }
+  },
+  "guestImported": true
+}

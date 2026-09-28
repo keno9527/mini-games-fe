@@ -62,7 +62,9 @@ export default function GameDetail() {
               </div>
             }
           >
-            <GameComponent userId={currentUser?.id} gameId={id} />
+            {currentUser && (
+              <GameComponent key={`${id}:${currentUser.id}`} userId={currentUser.id} gameId={id} />
+            )}
           </Suspense>
         ) : (
           <div className="game-placeholder">游戏即将开放</div>
