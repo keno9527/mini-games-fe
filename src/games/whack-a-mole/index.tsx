@@ -1,3 +1,4 @@
+import { GameToolbar } from '@/components/GameToolbar'
 import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
@@ -217,6 +218,7 @@ export default function WhackAMole({ userId, gameId }: Props) {
         <div className="gs-segments" aria-label="游戏难度">
           {(Object.keys(CFG) as Level[]).map((lv) => (
             <button
+              data-game-control
               key={lv}
               disabled={!picking}
               aria-pressed={level === lv}
@@ -292,9 +294,11 @@ export default function WhackAMole({ userId, gameId }: Props) {
                   : '留意洞口，点击冒头的地鼠。'}
               </p>
             </div>
-            <button className="gs-primary" onClick={startGame}>
-              {status === 'over' ? '再来一局' : '开始巡游'} ↗
-            </button>
+            <GameToolbar>
+              <button data-game-control className="gs-primary" onClick={startGame}>
+                {status === 'over' ? '再来一局' : '开始巡游'} ↗
+              </button>
+            </GameToolbar>
           </div>
         )}
       </div>

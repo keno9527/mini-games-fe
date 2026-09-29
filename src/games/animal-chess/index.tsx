@@ -1,3 +1,4 @@
+import { GameToolbar } from '@/components/GameToolbar'
 import { useGamePlay } from '@/hooks/useGamePlay'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createRecord } from '@/api'
@@ -180,9 +181,11 @@ export default function AnimalChess({ userId, gameId }: Props) {
             </div>
           </div>
 
-          <button className="gs-primary" type="button" onClick={reset}>
-            重新开局
-          </button>
+          <GameToolbar>
+            <button data-game-control className="gs-primary" type="button" onClick={reset}>
+              重新开局
+            </button>
+          </GameToolbar>
 
           <div className="gs-help animal-rules">
             <strong>强弱顺序</strong>

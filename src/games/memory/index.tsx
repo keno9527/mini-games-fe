@@ -1,3 +1,4 @@
+import { GameToolbar } from '@/components/GameToolbar'
 import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { createRecord } from '@/api'
@@ -174,6 +175,7 @@ export default function MemoryCard({ userId, gameId }: Props) {
         <div className="gs-segments" aria-label="配对难度">
           {(Object.keys(CONFIGS) as DiffLevel[]).map((d) => (
             <button
+              data-game-control
               key={d}
               aria-pressed={difficulty === d}
               onClick={() => {
@@ -185,9 +187,11 @@ export default function MemoryCard({ userId, gameId }: Props) {
             </button>
           ))}
         </div>
-        <button className="gs-secondary" onClick={() => reset()}>
-          ↻ 重新洗牌
-        </button>
+        <GameToolbar>
+          <button data-game-control className="gs-secondary" onClick={() => reset()}>
+            ↻ 重新洗牌
+          </button>
+        </GameToolbar>
       </div>
       <div className="gs-metrics">
         <div>
@@ -249,11 +253,6 @@ export default function MemoryCard({ userId, gameId }: Props) {
               ? '点击任意卡牌开始，每次翻开两张，找到相同的图案。'
               : '不必着急，让每一次翻牌都有迹可循。'}
         </p>
-        {status === 'won' && (
-          <button className="gs-primary" onClick={() => reset()}>
-            再玩一次 ↗
-          </button>
-        )}
       </div>
     </section>
   )

@@ -1,17 +1,16 @@
+import { GameToolbar } from '@/components/GameToolbar'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowCounterClockwise,
   ArrowRight,
   ArrowUUpLeft,
-  CaretLeft,
-  CaretRight,
-  Check,
+  CaretDown,
   CheckCircle,
   Lightbulb,
 } from '@phosphor-icons/react'
 import { useGamePlay } from '@/hooks/useGamePlay'
 import { useGameRecord } from '@/hooks/useGameRecord'
-import { CHAPTERS, PUZZLE_LEVELS } from './levels'
+import { PUZZLE_LEVELS } from './levels'
 import {
   coordinate,
   initialState,
@@ -28,7 +27,8 @@ import {
   saveProgress,
   saveSelection,
 } from './progression'
-import PuzzleBoard, { MiniBoard } from './PuzzleBoard'
+import PuzzleBoard from './PuzzleBoard'
+import LevelPicker from './LevelPicker'
 
 const number = (value: number) => String(value).padStart(2, '0')
 interface Props {
@@ -50,7 +50,7 @@ const newSession = (id: number): Session => ({
 
 export default function PuzzleCampaign({ gameId, userId }: Props) {
   const [selected, setSelected] = useState(() => readSelection(gameId, userId))
-  const [chapter, setChapter] = useState(() => Math.floor((selected - 1) / 6))
+  const [picking, setPicking] = useState(false)
   const [progress, setProgress] = useState(() => readProgress(gameId, userId))
   const [session, setSession] = useState(() => newSession(selected))
   const current = useRef(session)
@@ -58,7 +58,10 @@ export default function PuzzleCampaign({ gameId, userId }: Props) {
   const level = PUZZLE_LEVELS[selected - 1]
   const { state } = session
   const { start, submit } = useGameRecord({ gameId, userId })
-  useGamePlay(gameId, state.moves > 0 && state.status === 'playing' ? 'playing' : 'idle')
+  useGamePlay(
+    gameId,
+    state.moves > 0 && state.status === 'playing' ? (picking ? 'paused' : 'playing') : 'idle',
+  )
   useEffect(() => {
     start()
   }, [start])
@@ -66,8 +69,6 @@ export default function PuzzleCampaign({ gameId, userId }: Props) {
     saveSelection(gameId, userId, selected)
   }, [gameId, userId, selected])
   const completed = Object.keys(progress).length
-  const chapterLevels = PUZZLE_LEVELS.slice(chapter * 6, chapter * 6 + 6)
-  const chapterCompleted = chapterLevels.filter((item) => progress[item.id]).length
   const answers = useMemo(
     () =>
       session.hint && state.status === 'playing'
@@ -96,7 +97,6 @@ export default function PuzzleCampaign({ gameId, userId }: Props) {
   }
   function choose(id: number) {
     setSelected(id)
-    setChapter(Math.floor((id - 1) / 6))
     update(newSession(id))
     start()
   }
@@ -145,23 +145,41 @@ export default function PuzzleCampaign({ gameId, userId }: Props) {
         <PuzzleBoard
           key={selected}
           board={state.board}
-          disabled={state.status !== 'playing'}
+          disabled={picking || state.status !== 'playing'}
           lastBlack={state.lastBlack}
           lastWhite={state.lastWhite}
           winning={winningLine(state.board, state.status === 'lost' ? 2 : 1)}
           hintPoints={hintPoints}
           onPlay={play}
         />
-        <div className="gp-controls">
-          <button onClick={() => choose(selected)}>
-            <ArrowCounterClockwise size={18} />
-            重来
+        <GameToolbar>
+          <button
+            data-game-control
+            type="button"
+            aria-label={`选择关卡，当前第 ${selected} 关，共 ${PUZZLE_LEVELS.length} 关`}
+            aria-haspopup="dialog"
+            aria-expanded={picking}
+            onClick={(event) => {
+              event.currentTarget.focus({ preventScroll: true })
+              setPicking(true)
+            }}
+          >
+            选关 {number(selected)} <CaretDown size={16} aria-hidden="true" />
           </button>
-          <button onClick={undo} disabled={!session.history.length || state.status === 'won'}>
+          <button data-game-control onClick={() => choose(selected)}>
+            <ArrowCounterClockwise size={18} />
+            重新开始
+          </button>
+          <button
+            data-game-control
+            onClick={undo}
+            disabled={!session.history.length || state.status === 'won'}
+          >
             <ArrowUUpLeft size={18} />
             悔棋
           </button>
           <button
+            data-game-control
             onClick={() =>
               update({
                 ...current.current,
@@ -175,7 +193,7 @@ export default function PuzzleCampaign({ gameId, userId }: Props) {
             提示{session.hint ? ` ${session.hint}/3` : ''}
           </button>
           <span className="gp-input-note">点击落子 · 拖动预览</span>
-        </div>
+        </GameToolbar>
         <div
           className={`gp-feedback gp-feedback--${state.status}`}
           role="status"
@@ -205,12 +223,13 @@ export default function PuzzleCampaign({ gameId, userId }: Props) {
             ) : null}
           </div>
           {state.status === 'won' && selected < 30 && (
-            <button className="gp-next" onClick={() => choose(selected + 1)}>
+            <button data-game-control className="gp-next" onClick={() => choose(selected + 1)}>
               下一关 <ArrowRight size={17} />
             </button>
           )}
           {state.status === 'won' && selected === 30 && completed < 30 && (
             <button
+              data-game-control
               className="gp-next"
               onClick={() => choose(PUZZLE_LEVELS.find((item) => !progress[item.id])!.id)}
             >
@@ -218,13 +237,13 @@ export default function PuzzleCampaign({ gameId, userId }: Props) {
             </button>
           )}
           {state.status === 'lost' && (
-            <button className="gp-next" onClick={() => choose(selected)}>
+            <button data-game-control className="gp-next" onClick={() => choose(selected)}>
               重试本关
             </button>
           )}
         </div>
         {session.hint > 0 && state.status === 'playing' && (
-          <div className="gp-hint" role="status">
+          <div className="gp-hint game-panel" role="status">
             <Lightbulb size={18} />
             <div>
               <strong>
@@ -262,101 +281,17 @@ export default function PuzzleCampaign({ gameId, userId }: Props) {
           </p>
         )}
       </section>
-      <aside className="gp-picker" aria-label="残局关卡">
-        <header className="gp-picker-heading">
-          <h3>残局关卡</h3>
-          <span>
-            <b>{completed}</b> / 30 通关
-          </span>
-        </header>
-        <progress value={completed} max={30} aria-label="总通关进度" />
-        <nav className="gp-chapters" aria-label="选择章节">
-          {CHAPTERS.map((item, index) => (
-            <button
-              key={item.name}
-              aria-label={`第 ${index + 1} 章 ${item.name}`}
-              aria-pressed={chapter === index}
-              onClick={() => setChapter(index)}
-            >
-              <span>{number(index + 1)}</span>
-              <small>{item.name.slice(0, 2)}</small>
-            </button>
-          ))}
-        </nav>
-        <div className="gp-chapter-heading">
-          <h4>{CHAPTERS[chapter].name}</h4>
-          <span>{chapterCompleted} / 6</span>
-        </div>
-        <div className="gp-levels">
-          {chapterLevels.map((item) => (
-            <button
-              key={item.id}
-              className={`gp-level${selected === item.id ? ' is-current' : ''}`}
-              aria-current={selected === item.id ? 'step' : undefined}
-              aria-label={`${number(item.id)} ${item.name}，${item.moves} 手内获胜，${progress[item.id] === 2 ? '独立完成' : progress[item.id] ? '已通关' : '未完成'}`}
-              onClick={() => choose(item.id)}
-            >
-              <MiniBoard board={item.board} />
-              <span className="gp-level-copy">
-                <strong>
-                  <span>{number(item.id)}</span> {item.name}
-                </strong>
-                <small>{item.moves} 手内获胜</small>
-              </span>
-              <span
-                className={`gp-level-status${progress[item.id] ? ' is-complete' : ''}`}
-                title={
-                  progress[item.id] === 2 ? '独立完成' : progress[item.id] ? '已通关' : undefined
-                }
-              >
-                {progress[item.id] ? (
-                  <>
-                    <Check weight="bold" size={16} />
-                    <small>{progress[item.id] === 2 ? '独立' : '完成'}</small>
-                  </>
-                ) : selected === item.id ? (
-                  '当前'
-                ) : (
-                  '待解'
-                )}
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="gp-chapter-footer">
-          <button
-            aria-label="上一章"
-            disabled={chapter === 0}
-            onClick={() => setChapter(chapter - 1)}
-          >
-            <CaretLeft />
-          </button>
-          <span>第 {chapter + 1} 章 / 共 5 章</span>
-          <button
-            aria-label="下一章"
-            disabled={chapter === 4}
-            onClick={() => setChapter(chapter + 1)}
-          >
-            <CaretRight />
-          </button>
-        </div>
-        <p className="gp-lesson">{CHAPTERS[chapter].lesson}</p>
-        <details className="gp-rules">
-          <summary>
-            玩法说明 <span>＋</span>
-          </summary>
-          <p>15×15 自由五子棋，五连及以上获胜，没有禁手。黑棋先行，手数只统计黑棋。</p>
-          <p>
-            每次非终结落子都需形成“下一手能成五”的冲四威胁；白棋会优先获胜，否则封堵。连续进攻，在限定手数内取胜。
-          </p>
-          <p>
-            提示依次提供战术、区域和参考解法。使用提示或悔棋仍可通关；本次未使用两者则记为独立完成。
-          </p>
-          <p>
-            30 关均可自由选择。方向键移动焦点，回车落子；触屏可拖动预览，抬手落子，移出棋盘取消。
-          </p>
-        </details>
-      </aside>
+      {picking && (
+        <LevelPicker
+          current={selected}
+          progress={progress}
+          onClose={() => setPicking(false)}
+          onStart={(id) => {
+            choose(id)
+            setPicking(false)
+          }}
+        />
+      )}
     </div>
   )
 }

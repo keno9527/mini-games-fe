@@ -1,3 +1,5 @@
+import { GameToolbar } from '@/components/GameToolbar'
+import { isGameShortcut } from '@/features/games/keyboard'
 import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
@@ -285,6 +287,7 @@ export default function Tetris({ userId, gameId }: Props) {
   useGamePlay(gameId, status === 'playing' || status === 'paused' ? status : 'idle')
 
   const boardRef = useRef(board)
+  const boardElementRef = useRef<HTMLDivElement>(null)
   const activeRef = useRef<Active | null>(active)
   const statusRef = useRef<Status>(status)
   const scoreRef = useRef(0)
@@ -399,6 +402,7 @@ export default function Tetris({ userId, gameId }: Props) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (!isGameShortcut(e)) return
       if (statusRef.current !== 'playing' || !activeRef.current) return
       if (e.key === 'ArrowLeft') {
         e.preventDefault()
@@ -436,6 +440,7 @@ export default function Tetris({ userId, gameId }: Props) {
     startTimeRef.current = Date.now()
     setStatus('playing')
     statusRef.current = 'playing'
+    boardElementRef.current?.focus({ preventScroll: true })
   }
 
   const reset = useCallback(() => {
@@ -484,10 +489,27 @@ export default function Tetris({ userId, gameId }: Props) {
     const next = statusRef.current === 'playing' ? 'paused' : 'playing'
     statusRef.current = next
     setStatus(next)
+    if (next === 'playing') boardElementRef.current?.focus({ preventScroll: true })
   }
 
   return (
     <section className="game-surface tetris-room">
+      <GameToolbar>
+        <button
+          data-game-control
+          type="button"
+          className="game-primary"
+          onClick={pickingIdle ? start : togglePause}
+        >
+          {status === 'playing'
+            ? '暂停游戏'
+            : status === 'paused'
+              ? '继续游戏'
+              : status === 'over'
+                ? '重新开始'
+                : '开始游戏'}
+        </button>
+      </GameToolbar>
       <header className="gs-heading">
         <div>
           <p className="gs-eyebrow">BLOCK STUDIO · 方块实验室</p>
@@ -501,6 +523,7 @@ export default function Tetris({ userId, gameId }: Props) {
         <div className="gs-segments" aria-label="下落难度">
           {(['简单', '中等', '复杂'] as const).map((lv) => (
             <button
+              data-game-control
               key={lv}
               disabled={!pickingIdle}
               aria-pressed={level === lv}
@@ -516,6 +539,9 @@ export default function Tetris({ userId, gameId }: Props) {
         <div className="tetris-board-frame">
           <div
             className="tetris-board"
+            ref={boardElementRef}
+            tabIndex={0}
+            onPointerDown={(event) => event.currentTarget.focus()}
             role="img"
             aria-label={`俄罗斯方块棋盘，已消除 ${lines} 行，得分 ${score}`}
           >
@@ -564,9 +590,6 @@ export default function Tetris({ userId, gameId }: Props) {
                     ? '准备好后，继续你的节奏。'
                     : '填满一行，创造新的空间。'}
               </p>
-              <button className="gs-primary" onClick={status === 'paused' ? togglePause : start}>
-                {status === 'paused' ? '继续游戏' : status === 'over' ? '再来一局' : '开始游戏'} ↗
-              </button>
             </div>
           )}
         </div>
@@ -597,11 +620,7 @@ export default function Tetris({ userId, gameId }: Props) {
               )}
             </div>
           </div>
-          {(status === 'playing' || status === 'paused') && (
-            <button className="gs-secondary" onClick={togglePause}>
-              {status === 'paused' ? '继续游戏' : '暂停游戏'}
-            </button>
-          )}
+
           <div className="gs-help">
             <strong>操作指南</strong>
             <p>
@@ -614,20 +633,40 @@ export default function Tetris({ userId, gameId }: Props) {
           </div>
         </aside>
       </div>
-      <div className="tetris-controls" aria-label="触屏操作">
-        <button disabled={status !== 'playing'} onClick={() => tryMove(-1, 0)} aria-label="左移">
+      <div className="tetris-controls game-controls" aria-label="触屏操作">
+        <button
+          data-game-control
+          disabled={status !== 'playing'}
+          onClick={() => tryMove(-1, 0)}
+          aria-label="左移"
+        >
           ←
         </button>
-        <button disabled={status !== 'playing'} onClick={rotate} aria-label="旋转">
+        <button
+          data-game-control
+          disabled={status !== 'playing'}
+          onClick={rotate}
+          aria-label="旋转"
+        >
           ↻
         </button>
-        <button disabled={status !== 'playing'} onClick={softDrop} aria-label="下移">
+        <button
+          data-game-control
+          disabled={status !== 'playing'}
+          onClick={softDrop}
+          aria-label="下移"
+        >
           ↓
         </button>
-        <button disabled={status !== 'playing'} onClick={() => tryMove(1, 0)} aria-label="右移">
+        <button
+          data-game-control
+          disabled={status !== 'playing'}
+          onClick={() => tryMove(1, 0)}
+          aria-label="右移"
+        >
           →
         </button>
-        <button disabled={status !== 'playing'} onClick={hardDrop}>
+        <button data-game-control disabled={status !== 'playing'} onClick={hardDrop}>
           落下 ⤓
         </button>
       </div>

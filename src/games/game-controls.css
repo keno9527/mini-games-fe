@@ -1,0 +1,321 @@
+/* Shared UI tokens are independent of each playfield's material palette. */
+:root {
+  --ui-bg: #f3f0e8;
+  --ui-panel: #fcfaf4;
+  --ui-text: #283d35;
+  --ui-muted: #697466;
+  --ui-line: #ded7c7;
+  --ui-accent: #25483e;
+  --ui-on-accent: #fcfaf4;
+  --ui-font: 'PingFang SC', 'Segoe UI', system-ui, sans-serif;
+}
+
+.game-ui-standard .game-page-toolbar {
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+.game-page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.game-page-heading h1 {
+  overflow-wrap: anywhere;
+}
+.game-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  max-width: 100%;
+}
+.game-toolbar-actions:empty {
+  display: none;
+}
+.game-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+}
+.game-ui-standard .game-controls {
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+  font-size: 14px;
+}
+.game-ui-standard :is(button[data-game-control], .gs-primary, .gs-secondary),
+.game-ui-standard .game-controls :is(button, select, summary),
+.game-ui-standard .game-controls button[data-game-control],
+.game-ui-standard .gs-segments button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  height: auto;
+  max-width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--ui-line);
+  border-radius: 6px;
+  background: var(--ui-panel);
+  color: var(--ui-text);
+  font: 600 14px/22px var(--ui-font);
+  letter-spacing: normal;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-shadow: none;
+  text-shadow: none;
+  cursor: pointer;
+  transform: none;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+  touch-action: manipulation;
+}
+.game-ui-standard .game-controls select {
+  display: block;
+  padding-right: 28px;
+}
+.game-ui-standard .game-controls option {
+  background: var(--ui-panel);
+  color: var(--ui-text);
+}
+.game-ui-standard .game-controls input:not([type='range']):not([type='checkbox']) {
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-line);
+  border-radius: 6px;
+  background: var(--ui-panel);
+  color: var(--ui-text);
+  font: 14px/22px var(--ui-font);
+}
+.game-ui-standard :is(button[data-game-control], .gs-primary, .gs-secondary):disabled,
+.game-ui-standard .game-controls :is(button, select):disabled,
+.game-ui-standard .gs-segments button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+.game-ui-standard :is(button[data-game-control], .gs-primary, .gs-secondary):not(:disabled):hover,
+.game-ui-standard .game-controls :is(button, select, summary):not(:disabled):hover,
+.game-ui-standard .gs-segments button:not(:disabled):hover {
+  border-color: #8b9e8e;
+  background: #edf0e7;
+  transform: none;
+  filter: none;
+}
+.game-ui-standard
+  button[data-game-control]:is(
+    .gs-primary,
+    .snake-primary,
+    .ms-new-game,
+    .game-primary,
+    [aria-pressed='true'],
+    [aria-current='true'],
+    .is-selected
+  ) {
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+  color: var(--ui-on-accent);
+}
+.game-ui-standard
+  button[data-game-control]:is(
+    .gs-primary,
+    .snake-primary,
+    .ms-new-game,
+    .game-primary,
+    [aria-pressed='true'],
+    [aria-current='true'],
+    .is-selected
+  ):not(:disabled):hover {
+  background: #35604e;
+  color: var(--ui-on-accent);
+}
+.game-ui-standard :is(button[data-game-control], .gs-primary, .gs-secondary):focus-visible,
+.game-ui-standard .game-controls :is(button, select, input, summary):focus-visible,
+.game-ui-standard .gs-segments button:focus-visible {
+  outline: 3px solid #537565;
+  outline-offset: 3px;
+}
+.game-ui-standard :is(.game-panel, .gs-panel) {
+  border: 1px solid var(--ui-line);
+  border-radius: 10px;
+  padding: 20px;
+  background: var(--ui-panel);
+  color: var(--ui-text);
+  font-family: var(--ui-font);
+  box-shadow: none;
+}
+.game-ui-standard .gs-segments {
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.game-ui-standard .gs-panel :is(.gs-eyebrow, .gs-stat, .gs-caption) {
+  color: var(--ui-muted);
+}
+.game-ui-standard .gs-panel :is(h3, strong) {
+  color: var(--ui-text);
+}
+.game-ui-standard .gs-panel p {
+  color: var(--ui-muted);
+}
+.game-ui-standard .gs-stat {
+  border-color: var(--ui-line);
+}
+.game-ui-standard .game-controls :is(.game-action-group, .gs-toolbar) {
+  gap: 12px;
+}
+.game-ui-standard .game-toolbar-actions svg {
+  flex-shrink: 0;
+}
+.game-ui-standard :is(canvas, .snake-board, .tetris-board)[tabindex]:focus-visible {
+  outline: 3px solid #537565;
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .game-toolbar-actions {
+    justify-content: flex-start;
+  }
+  .game-ui-standard :is(.game-panel, .gs-panel) {
+    padding: 16px;
+  }
+  .game-ui-standard .gs-footer {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-ui-standard .game-controls *,
+  .game-ui-standard button[data-game-control] {
+    transition: none;
+  }
+}
+
+.game-ui-standard .game-action-group > button,
+.game-ui-standard .game-action-group > div {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.game-ui-standard .game-action-group > button {
+  gap: 8px;
+}
+.game-ui-standard .game-action-group :is(.xq-level-arrow, .xq-level-select, .xq-rules-button) {
+  margin: 0;
+}
+.game-ui-standard .game-action-group .xq-selected-number {
+  color: inherit;
+  font: inherit;
+}
+.game-ui-standard .game-action-group .xq-level-picker {
+  min-height: 0;
+}
+.game-ui-standard .game-action-group .gp-input-note {
+  display: none;
+}
+.game-ui-standard .game-action-group .ms-chapter-label {
+  display: none;
+}
+.game-ui-standard .game-action-group .ms-level-arrows {
+  gap: 12px;
+}
+.game-ui-standard .game-panel {
+  --gs-text: var(--ui-text);
+  --gs-muted: var(--ui-muted);
+  --gs-line: var(--ui-line);
+  --gs-accent: var(--ui-accent);
+}
+.game-ui-standard .game-panel h2,
+.game-ui-standard .game-panel h3 {
+  color: var(--ui-text);
+}
+.game-ui-standard .game-panel::backdrop {
+  background: #172b2380;
+}
+.game-ui-standard .gravity-mobile-play {
+  background: var(--ui-panel);
+  border-color: var(--ui-line);
+  color: var(--ui-text);
+}
+.game-ui-standard .gravity-touch-controls {
+  border-color: var(--ui-line);
+}
+.game-ui-standard .gravity-archive-count {
+  padding: 12px 20px;
+  background: var(--ui-panel);
+  color: var(--ui-muted);
+  font: 14px/1.5 var(--ui-font);
+}
+.game-ui-standard .gravity-loadout label {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ui-muted);
+}
+.game-ui-standard .gravity-choice {
+  border: 1px solid var(--ui-line);
+  border-radius: 10px;
+  background: var(--ui-panel);
+  padding: 20px;
+  color: var(--ui-text);
+}
+.game-ui-standard .gravity-choice :is(h3, p, strong, span, div) {
+  color: inherit;
+  font-family: var(--ui-font);
+  letter-spacing: normal;
+}
+.game-ui-standard .gravity-choice button {
+  box-shadow: none;
+}
+.game-ui-standard .gravity-mobile-hud :is(strong, span, b),
+.game-ui-standard .gravity-touch-hint {
+  color: var(--ui-text);
+}
+.game-ui-standard .gravity-mobile-stats span {
+  background: var(--ui-bg);
+  border-color: var(--ui-line);
+}
+.game-ui-standard .gravity-loadout {
+  max-width: 100%;
+}
+@media (max-width: 600px) {
+  .game-ui-standard .gravity-choice {
+    padding: 16px;
+  }
+}
+.game-ui-standard .gravity-choice button[data-game-control] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.game-ui-standard .gravity-footer {
+  background: var(--ui-panel);
+  border-color: var(--ui-line);
+  color: var(--ui-muted);
+  font-family: var(--ui-font);
+}
+.game-ui-standard .gravity-footer span {
+  color: var(--ui-accent);
+}
+
+.game-ui-standard .tetris-controls {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.game-ui-standard .game-controls :is(.snake-direction, .gravity-touch-direction),
+.game-ui-standard .gravity-touch-actions button {
+  touch-action: none;
+}

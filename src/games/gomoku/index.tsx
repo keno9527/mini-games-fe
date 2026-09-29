@@ -1,3 +1,4 @@
+import { GameToolbar } from '@/components/GameToolbar'
 import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createRecord } from '@/api'
@@ -292,6 +293,7 @@ function ClassicGomoku({ userId, gameId }: Props) {
         <div className="gs-segments" aria-label="对局难度">
           {(['简单', '中等', '复杂'] as const).map((lv) => (
             <button
+              data-game-control
               key={lv}
               disabled={!picking}
               aria-pressed={level === lv}
@@ -395,9 +397,11 @@ function ClassicGomoku({ userId, gameId }: Props) {
             </div>
           </div>
           {picking && (
-            <button className="gs-primary" onClick={start}>
-              {status === 'idle' ? '开始对局' : '再来一局'} <span>↗</span>
-            </button>
+            <GameToolbar>
+              <button data-game-control className="gs-primary" onClick={start}>
+                {status === 'idle' ? '开始对局' : '再来一局'} <span>↗</span>
+              </button>
+            </GameToolbar>
           )}
           <div className="gs-help">
             <strong>黑白相间，步步为营</strong>
@@ -422,10 +426,18 @@ export default function Gomoku(props: Props) {
     <section className="game-surface gomoku-room gomoku-game" data-mode={mode}>
       <header className="gomoku-modebar">
         <div className="gs-segments" aria-label="五子棋模式">
-          <button aria-pressed={mode === 'classic'} onClick={() => setMode('classic')}>
+          <button
+            data-game-control
+            aria-pressed={mode === 'classic'}
+            onClick={() => setMode('classic')}
+          >
             人机对战
           </button>
-          <button aria-pressed={mode === 'puzzle'} onClick={() => setMode('puzzle')}>
+          <button
+            data-game-control
+            aria-pressed={mode === 'puzzle'}
+            onClick={() => setMode('puzzle')}
+          >
             残局挑战
           </button>
         </div>

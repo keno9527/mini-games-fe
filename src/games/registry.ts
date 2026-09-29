@@ -2,6 +2,7 @@ import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import twentyFourPoints from '@/games/24points/manifest.ts'
 import animalChess from '@/games/animal-chess/manifest.ts'
 import breakout from '@/games/breakout/manifest.ts'
+import breakoutMobile from '@/games/breakout-mobile/manifest.ts'
 import gomoku from '@/games/gomoku/manifest.ts'
 import gravityGraveyard from '@/games/gravity-graveyard/manifest.ts'
 import laserMirror from '@/games/laser-mirror/manifest.ts'
@@ -28,6 +29,7 @@ const gameManifests: readonly GameManifest[] = [
   whackAMole,
   tetris,
   breakout,
+  breakoutMobile,
   gomoku,
 ]
 

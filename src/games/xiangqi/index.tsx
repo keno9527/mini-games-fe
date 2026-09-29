@@ -1,3 +1,4 @@
+import { GameToolbar } from '@/components/GameToolbar'
 import { useGamePlay } from '@/hooks/useGamePlay'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
@@ -50,8 +51,9 @@ function Campaign({ gameId, userId }: GameComponentProps) {
 
   return (
     <section className="xq-game" aria-label="中国象棋残局闯关">
-      <nav className="xq-campaign-toolbar" aria-label="选择关卡">
+      <GameToolbar>
         <button
+          data-game-control
           type="button"
           className="xq-level-arrow"
           aria-label="上一关"
@@ -61,6 +63,7 @@ function Campaign({ gameId, userId }: GameComponentProps) {
           <CaretLeft size={18} />
         </button>
         <button
+          data-game-control
           type="button"
           className="xq-level-select"
           aria-label={`选择关卡，当前第 ${current + 1} 关，共 ${levels.length} 关`}
@@ -78,9 +81,9 @@ function Campaign({ gameId, userId }: GameComponentProps) {
               <CaretDown size={12} />
             </span>
           </span>
-          <span>/ {String(levels.length).padStart(2, '0')}</span>
         </button>
         <button
+          data-game-control
           type="button"
           className="xq-level-arrow"
           aria-label="下一关"
@@ -90,13 +93,14 @@ function Campaign({ gameId, userId }: GameComponentProps) {
           <CaretRight size={18} />
         </button>
         <button
+          data-game-control
           type="button"
           className="xq-rules-button"
           onClick={() => rulesDialog.current?.showModal()}
         >
           规则
         </button>
-      </nav>
+      </GameToolbar>
       {pickerOpen && (
         <LevelPicker
           current={current}
@@ -109,10 +113,19 @@ function Campaign({ gameId, userId }: GameComponentProps) {
           }}
         />
       )}
-      <dialog ref={rulesDialog} className="xq-rules-dialog" aria-labelledby="xq-rules-title">
+      <dialog
+        ref={rulesDialog}
+        className="xq-rules-dialog game-panel game-controls"
+        aria-labelledby="xq-rules-title"
+      >
         <div className="xq-rules-heading">
           <h2 id="xq-rules-title">棋局思路与规则</h2>
-          <button type="button" aria-label="关闭规则" onClick={() => rulesDialog.current?.close()}>
+          <button
+            data-game-control
+            type="button"
+            aria-label="关闭规则"
+            onClick={() => rulesDialog.current?.close()}
+          >
             <X size={22} />
           </button>
         </div>
@@ -403,16 +416,19 @@ function Puzzle({ level, gameId, userId, onComplete, onRetry, onNext }: PuzzlePr
           </div>
           <div className="xq-actions">
             {phase === 'won' && onNext && (
-              <button type="button" className="xq-primary" onClick={onNext}>
+              <button data-game-control type="button" className="game-primary" onClick={onNext}>
                 下一关 →
               </button>
             )}
-            <button type="button" onClick={onRetry} className="xq-primary xq-retry">
-              <ArrowCounterClockwise size={18} aria-hidden="true" />
-              {ended ? '重新挑战' : '重来'}
-            </button>
+            <GameToolbar>
+              <button data-game-control type="button" onClick={onRetry} className="game-primary">
+                <ArrowCounterClockwise size={18} aria-hidden="true" />
+                重新开始
+              </button>
+            </GameToolbar>
             <div>
               <button
+                data-game-control
                 type="button"
                 disabled={ended || !session.history.length || hintRequested}
                 onClick={() => {
@@ -426,6 +442,7 @@ function Puzzle({ level, gameId, userId, onComplete, onRetry, onNext }: PuzzlePr
                 <ArrowUUpLeft size={18} aria-hidden="true" /> 悔棋
               </button>
               <button
+                data-game-control
                 type="button"
                 disabled={phase !== 'red' || hintRequested}
                 onClick={() => {

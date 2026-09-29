@@ -64,6 +64,8 @@ interface GameComponentProps {
 
 具体监听以各游戏实现为准。坦克运行时在 `src/games/tank-battle/runtime.ts:406` 注册可见性监听，并在销毁时移除。
 
+贪吃蛇（机关闯关）、俄罗斯方块与引力墓场的全局玩法 `keydown` 先经过 `src/features/games/keyboard.ts:14`。输入框、按钮、链接、可编辑区域和弹层中的按键，以及组合输入、Ctrl/Meta/Alt 和已处理事件，不触发玩法快捷键；打开的模态弹层也会阻止背景玩法输入。开始或继续时焦点进入游戏画面，普通控件保留自身键盘行为。坦克、打砖块继续使用原有输入处理。
+
 ### 共用手柄能力
 
 `src/features/gamepad/monitor.ts:75` 封装浏览器 Gamepad API，监控连接、焦点和可见性；不安全上下文或 API 不支持时返回明确状态，不启动轮询。销毁时取消 RAF 并解除监听。

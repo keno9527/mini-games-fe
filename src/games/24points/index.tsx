@@ -1,3 +1,4 @@
+import { GameToolbar } from '@/components/GameToolbar'
 import { useGamePlay } from '@/hooks/useGamePlay'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { createRecord } from '@/api'
@@ -206,12 +207,25 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <div className="flex flex-wrap gap-2 justify-center">
+      <GameToolbar>
+        <button
+          data-game-control
+          type="button"
+          className="game-primary"
+          onClick={startGame}
+          disabled={!picking}
+        >
+          {status === 'over' ? '重新开始' : status === 'playing' ? '挑战进行中' : '开始游戏'}
+        </button>
+      </GameToolbar>
+      <div className="game-controls flex flex-wrap gap-3 justify-center">
         {(Object.keys(LEVEL_SECONDS) as Level[]).map((lv) => (
           <button
+            data-game-control
             key={lv}
             type="button"
             disabled={!picking}
+            aria-pressed={level === lv}
             onClick={() => setLevel(lv)}
             className={`px-4 py-2 rounded-full text-sm font-black border-2 transition-all ${
               level === lv
@@ -226,14 +240,14 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
 
       {/* Scoreboard */}
       <div className="flex items-center gap-4">
-        <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl px-5 py-3 text-center shadow-card">
+        <div className="game-panel text-center">
           <p className="text-3xl font-black text-fun-accent">⭐ {score}</p>
           <p className="text-xs text-fun-muted font-semibold">积分</p>
         </div>
         {status === 'playing' && (
           <>
             <div
-              className={`border-2 rounded-2xl px-5 py-3 text-center shadow-card ${timeLeft <= 10 ? 'bg-red-50 border-red-300 animate-pulse' : 'bg-sky-50 border-sky-200'}`}
+              className={`game-panel text-center ${timeLeft <= 10 ? 'bg-red-50 border-red-300 animate-pulse' : 'bg-sky-50 border-sky-200'}`}
             >
               <p
                 className={`text-3xl font-black ${timeLeft <= 10 ? 'text-red-500' : 'text-fun-sky'}`}
@@ -242,7 +256,7 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
               </p>
               <p className="text-xs text-fun-muted font-semibold">剩余秒数</p>
             </div>
-            <div className="bg-green-50 border-2 border-green-200 rounded-2xl px-5 py-3 text-center shadow-card">
+            <div className="game-panel text-center">
               <p className="text-3xl font-black text-fun-green">🔥 {streak}</p>
               <p className="text-xs text-fun-muted font-semibold">连击</p>
             </div>
@@ -280,7 +294,7 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
 
       {/* Input */}
       {status === 'playing' && (
-        <div className="flex flex-col items-center gap-3 w-full max-w-sm">
+        <div className="game-controls flex flex-col items-center gap-3 w-full max-w-sm">
           <div className="flex gap-2 w-full">
             <input
               type="text"
@@ -291,6 +305,7 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
               className="flex-1 bg-fun-bg border-2 border-fun-border rounded-2xl px-4 py-2.5 text-sm text-fun-text placeholder-fun-muted focus:outline-none focus:border-fun-accent transition-colors font-mono font-semibold"
             />
             <button
+              data-game-control
               onClick={() => setExpr((e) => e.slice(0, -1))}
               className="px-3 py-2 rounded-2xl border-2 border-fun-border text-fun-muted hover:text-fun-text hover:border-fun-accent/50 bg-fun-bg transition-all text-sm font-bold shadow-btn hover:shadow-btn-hover"
             >
@@ -302,6 +317,7 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
           <div className="flex gap-2">
             {['+', '-', '*', '/', '(', ')'].map((op) => (
               <button
+                data-game-control
                 key={op}
                 onClick={() => setExpr((e) => e + op)}
                 className={`w-11 h-11 rounded-2xl border-2 font-black transition-all shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 active:scale-95 text-sm ${opColors[op] ?? ''}`}
@@ -313,12 +329,14 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
 
           <div className="flex gap-3">
             <button
+              data-game-control
               onClick={handleSubmit}
-              className="px-7 py-2.5 rounded-full bg-fun-accent text-white font-black text-base shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 transition-all"
+              className="game-primary px-7 py-2.5 rounded-full bg-fun-accent text-white font-black text-base shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 transition-all"
             >
               ✅ 提交
             </button>
             <button
+              data-game-control
               onClick={handleSkip}
               className="px-7 py-2.5 rounded-full border-2 border-fun-border text-fun-text font-bold bg-fun-bg hover:border-fun-accent/50 transition-all shadow-btn hover:shadow-btn-hover hover:-translate-y-0.5 text-sm"
             >
@@ -346,28 +364,16 @@ export default function TwentyFourPoints({ userId, gameId }: Props) {
             用4个数字加减乘除（可加括号）凑出{' '}
             <span className="text-fun-accent font-black text-lg">24</span>
           </p>
-          <button
-            onClick={startGame}
-            className="px-10 py-4 rounded-full bg-fun-accent text-white font-black text-xl shadow-btn hover:shadow-btn-hover hover:-translate-y-1 transition-all"
-          >
-            🎮 开始游戏！
-          </button>
         </div>
       )}
 
       {status === 'over' && (
-        <div className="text-center space-y-4 bg-fun-card border-2 border-fun-border rounded-3xl p-8 shadow-card">
+        <div className="game-panel text-center space-y-4">
           <div className="text-5xl">🎊</div>
           <p className="text-2xl font-black text-fun-text">时间到啦！</p>
           <p className="text-fun-muted font-semibold">
             最终得分：<span className="text-fun-accent text-3xl font-black">{score}</span> 分
           </p>
-          <button
-            onClick={startGame}
-            className="px-10 py-4 rounded-full bg-fun-accent text-white font-black text-lg shadow-btn hover:shadow-btn-hover hover:-translate-y-1 transition-all"
-          >
-            再玩一次 🎮
-          </button>
         </div>
       )}
 

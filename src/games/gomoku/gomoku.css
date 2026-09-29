@@ -28,7 +28,7 @@
 }
 .gp-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 272px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 22px;
   align-items: start;
 }
@@ -41,9 +41,6 @@
 .gp-titlebar,
 .gp-titlebar > div,
 .gp-board-caption,
-.gp-picker-heading,
-.gp-chapter-heading,
-.gp-chapter-footer,
 .gp-controls,
 .gp-feedback,
 .gp-feedback strong {
@@ -146,8 +143,7 @@
   padding: 16px 0 12px;
 }
 .gp-controls button,
-.gp-analysis summary,
-.gp-rules summary {
+.gp-analysis summary {
   font-size: 13px;
 }
 .gp-controls button {
@@ -235,8 +231,7 @@
   line-height: 1.8;
   margin-top: 8px;
 }
-.gp-analysis summary,
-.gp-rules summary {
+.gp-analysis summary {
   cursor: pointer;
 }
 .gp-save-error {
@@ -244,188 +239,11 @@
   font-size: 12px;
   margin-top: 12px;
 }
-.gp-picker {
-  min-width: 0;
-  padding: 16px;
-  background: var(--gs-panel);
-  border: 1px solid #e4d9c8;
-  border-radius: 8px;
-}
-.gp-picker-heading {
-  justify-content: space-between;
-  gap: 6px;
-}
-.gp-picker-heading h3 {
-  margin: 0;
-  font:
-    700 21px 'Songti SC',
-    'SimSun',
-    serif;
-}
-.gp-picker-heading > span {
-  color: var(--gs-muted);
-  font-size: 11px;
-}
-.gp-picker-heading b {
-  color: var(--gs-text);
-  font-size: 16px;
-}
-.gp-picker progress {
-  display: block;
-  appearance: none;
-  border: 0;
-  width: 100%;
-  height: 5px;
-  margin: 12px 0 16px;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #e4ded3;
-}
-.gp-picker progress::-webkit-progress-bar {
-  background: #e4ded3;
-}
-.gp-picker progress::-webkit-progress-value {
-  background: #966746;
-  border-radius: 10px;
-}
-.gp-picker progress::-moz-progress-bar {
-  background: #966746;
-}
-.gp-chapters {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 4px;
-}
-.gp-chapters button {
-  min-height: 45px;
-  padding: 5px 0;
-  border-radius: 4px;
-  background: #f0ebe2;
-  border: 1px solid transparent;
-}
-.gp-chapters span {
-  display: block;
-  font:
-    14px Georgia,
-    serif;
-}
-.gp-chapters small {
-  font-size: 9px;
-}
-.gp-chapters button[aria-pressed='true'] {
-  background: var(--gs-accent);
-  color: #fff9eb;
-}
-.gp-chapter-heading {
-  justify-content: space-between;
-  padding: 14px 0 7px;
-  font-size: 11px;
-  color: var(--gs-muted);
-}
-.gp-chapter-heading h4 {
-  font-size: 12px;
-  color: var(--gs-text);
-  font-weight: 600;
-  margin: 0;
-}
-.gp-levels {
-  display: grid;
-  gap: 4px;
-}
-.gp-level {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  min-width: 0;
-  text-align: left;
-  padding: 8px 6px;
-  border-radius: 5px;
-  border: 1px solid transparent;
-  border-bottom-color: #e8dfd1;
-  min-height: 63px;
-}
-.gp-level:hover {
-  background: #eee5d6;
-}
-.gp-level.is-current {
-  border-color: #a46e50;
-  background: #f0e2d1;
-}
 .gp-mini {
   width: 44px;
   height: 44px;
   flex-shrink: 0;
   border-radius: 4px;
-}
-.gp-level-copy {
-  min-width: 0;
-  flex: 1;
-}
-.gp-level-copy strong {
-  display: block;
-  font-size: 12px;
-  white-space: nowrap;
-}
-.gp-level-copy strong > span {
-  font:
-    11px Georgia,
-    serif;
-  margin-right: 3px;
-}
-.gp-level-copy small {
-  display: block;
-  font-size: 10px;
-  color: var(--gs-muted);
-  margin-top: 5px;
-}
-.gp-level-status {
-  font-size: 9px;
-  flex-shrink: 0;
-  color: var(--gs-muted);
-}
-.gp-level-status.is-complete {
-  color: #47764a;
-}
-.gp-level.is-current .gp-level-status:not(.is-complete) {
-  color: #864d33;
-  font-weight: 700;
-}
-.gp-chapter-footer {
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 10px;
-  font-size: 10px;
-  color: var(--gs-muted);
-}
-.gp-chapter-footer button {
-  padding: 8px;
-  border: 1px solid var(--gs-line);
-  border-radius: 4px;
-}
-.gp-lesson {
-  color: var(--gs-muted);
-  font-size: 11px;
-  line-height: 1.7;
-  margin: 12px 0;
-}
-.gp-rules {
-  border-top: 1px solid var(--gs-line);
-  padding-top: 12px;
-}
-.gp-rules summary {
-  list-style: none;
-  display: flex;
-  justify-content: space-between;
-}
-.gp-rules summary::-webkit-details-marker {
-  display: none;
-}
-.gp-rules p {
-  font-size: 11px;
-  line-height: 1.8;
-  color: var(--gs-muted);
-  margin-top: 8px;
 }
 .gomoku-classic .gomoku-table {
   max-width: 640px;
@@ -438,44 +256,8 @@
   .gp-play {
     max-width: 620px;
   }
-  .gp-picker {
-    max-width: 620px;
-    width: 100%;
-    margin-inline: auto;
-    padding: 14px;
-  }
-  .gp-levels {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-  }
-  .gp-level {
-    display: grid;
-    gap: 5px;
-    min-height: 76px;
-    padding: 10px 8px;
-    border-color: var(--gs-line);
-  }
   .gp-mini {
     display: none;
-  }
-  .gp-level-copy strong {
-    font-size: 12px;
-  }
-  .gp-level-status {
-    min-height: 16px;
-  }
-  .gp-chapters button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 36px;
-  }
-  .gp-chapters small {
-    font-size: 11px;
-  }
-  .gp-picker progress {
-    margin-block: 10px 12px;
   }
   .gomoku-mode-note {
     display: none;
@@ -518,15 +300,6 @@
   .gp-input-note {
     display: none;
   }
-  .gp-level-copy strong {
-    font-size: 11px;
-  }
-  .gp-level-copy strong > span {
-    font-size: 10px;
-  }
-  .gp-picker {
-    padding: 11px;
-  }
   .gp-feedback {
     align-items: flex-start;
   }
@@ -546,7 +319,6 @@
     transition: none !important;
   }
 }
-/* Put mode selection beside the board instead of above it on desktop. */
 @media (min-width: 900px) {
   .game-page--gomoku .game-page-toolbar {
     min-height: 44px;
@@ -556,43 +328,9 @@
     padding: 8px 20px 24px;
   }
   .gomoku-game {
-    max-width: calc(clamp(460px, 100dvh - 236px, 820px) + 254px);
+    max-width: calc(clamp(460px, 100dvh - 290px, 820px) + 20px);
     margin-inline: auto;
     padding: 10px;
-  }
-  .gomoku-game[data-mode='puzzle'] {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 220px;
-    grid-template-rows: auto 1fr;
-    column-gap: 14px;
-    row-gap: 8px;
-    align-items: start;
-  }
-  .gomoku-game[data-mode='puzzle'] .gp-layout {
-    display: contents;
-  }
-  .gomoku-game[data-mode='puzzle'] .gomoku-modebar {
-    grid-column: 2;
-    grid-row: 1;
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-  .gomoku-game[data-mode='puzzle'] .gomoku-mode-note {
-    display: none;
-  }
-  .gomoku-game[data-mode='puzzle'] .gs-segments {
-    width: 100%;
-    padding: 3px;
-  }
-  .gomoku-game[data-mode='puzzle'] .gs-segments button {
-    flex: 1;
-    padding: 7px 10px;
-  }
-  .gp-play {
-    grid-column: 1;
-    grid-row: 1 / 3;
-    max-width: none;
   }
   .gp-titlebar {
     margin-bottom: 3px;
@@ -603,79 +341,4 @@
   .gp-board-caption {
     margin-bottom: 6px;
   }
-  .gp-picker {
-    grid-column: 2;
-    grid-row: 2;
-    width: 100%;
-    padding: 10px;
-  }
-  .gp-picker-heading h3 {
-    font-size: 18px;
-  }
-  .gp-picker-heading > span {
-    font-size: 10px;
-  }
-  .gp-picker progress {
-    margin: 8px 0 10px;
-    height: 4px;
-  }
-  .gp-chapters {
-    gap: 3px;
-  }
-  .gp-chapters button {
-    display: block;
-    min-height: 40px;
-    padding: 3px 0;
-  }
-  .gp-chapters small {
-    font-size: 9px;
-    white-space: nowrap;
-  }
-  .gp-chapter-heading {
-    padding-top: 10px;
-  }
-  .gp-levels {
-    grid-template-columns: 1fr;
-    gap: 3px;
-  }
-  .gp-level {
-    display: flex;
-    min-height: 49px;
-    padding: 6px;
-    gap: 6px;
-  }
-  .gp-mini {
-    display: none;
-  }
-  .gp-level-copy strong {
-    font-size: 12px;
-  }
-  .gp-level-copy small {
-    margin-top: 2px;
-  }
-  .gp-chapter-footer {
-    display: none;
-  }
-  .gp-lesson {
-    margin: 8px 0;
-    font-size: 10px;
-  }
-  .gp-rules {
-    padding-top: 8px;
-  }
-  .gp-controls {
-    padding-top: 8px;
-    padding-bottom: 6px;
-  }
-  .gp-input-note {
-    display: none;
-  }
-}
-.gp-level-status.is-complete {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-.gp-level-status.is-complete small {
-  font-size: 9px;
 }

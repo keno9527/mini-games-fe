@@ -1,3 +1,4 @@
+import { GameToolbar } from '@/components/GameToolbar'
 import { useGamePlay } from '@/hooks/useGamePlay'
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { useGameRecord } from '@/hooks/useGameRecord'
@@ -150,12 +151,13 @@ export default function LaserMirror({ userId, gameId }: Props) {
       </header>
 
       <div className="gs-toolbar">
-        <div className="laser-levels" aria-label="选择关卡">
+        <div className="laser-levels game-controls" aria-label="选择关卡">
           {LASER_LEVELS.map((item, index) => {
             const result = progression.results[item.id]
             const unlocked = index < progression.unlocked
             return (
               <button
+                data-game-control
                 type="button"
                 key={item.id}
                 disabled={!unlocked}
@@ -251,25 +253,40 @@ export default function LaserMirror({ userId, gameId }: Props) {
               {trace.solved ? `使用 ${moves} 步点亮全部水晶。` : '点击镜面旋转；墙体会吸收光束。'}
             </p>
           </div>
-          <button type="button" className="gs-primary" onClick={hint} disabled={settled}>
-            提示
-          </button>
-          <button
-            type="button"
-            className="gs-secondary"
-            onClick={undo}
-            disabled={!history.length || settled}
-          >
-            撤销
-          </button>
-          <button type="button" className="gs-secondary" onClick={reset}>
-            重置
-          </button>
-          {settled && levelIndex + 1 < LASER_LEVELS.length && (
-            <button type="button" className="gs-primary" onClick={() => loadLevel(levelIndex + 1)}>
-              下一关
+          <GameToolbar>
+            {' '}
+            <button
+              data-game-control
+              type="button"
+              className="gs-primary"
+              onClick={hint}
+              disabled={settled}
+            >
+              提示
             </button>
-          )}
+            <button
+              data-game-control
+              type="button"
+              className="gs-secondary"
+              onClick={undo}
+              disabled={!history.length || settled}
+            >
+              撤销
+            </button>
+            <button data-game-control type="button" className="gs-secondary" onClick={reset}>
+              重置
+            </button>
+            {settled && levelIndex + 1 < LASER_LEVELS.length && (
+              <button
+                data-game-control
+                type="button"
+                className="gs-primary"
+                onClick={() => loadLevel(levelIndex + 1)}
+              >
+                下一关
+              </button>
+            )}
+          </GameToolbar>
         </aside>
       </div>
 

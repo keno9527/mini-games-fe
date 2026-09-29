@@ -2,6 +2,7 @@ import { Suspense, useEffect, useState } from 'react'
 /* eslint-disable react-hooks/static-components -- 动态获取懒加载游戏组件是预期模式 */
 import { useParams, Link } from 'react-router-dom'
 import { getGame } from '@/api'
+import { GameToolbarProvider } from '@/components/GameToolbar'
 import { ArrowLeft } from '@phosphor-icons/react'
 import { getGameComponent } from '@/games/registry'
 import { useUserStore } from '@/store/userStore'
@@ -41,35 +42,49 @@ export default function GameDetail() {
   }
 
   const GameComponent = getGameComponent(id)
+  const sharedControls = id !== 'tank-battle' && id !== 'breakout'
+  const stage = (
+    <div className="game-stage">
+      {GameComponent ? (
+        <Suspense
+          fallback={
+            <div className="game-placeholder" role="status">
+              正在准备游戏…
+            </div>
+          }
+        >
+          {currentUser && (
+            <GameComponent key={`${id}:${currentUser.id}`} userId={currentUser.id} gameId={id} />
+          )}
+        </Suspense>
+      ) : (
+        <div className="game-placeholder">游戏即将开放</div>
+      )}
+    </div>
+  )
   return (
-    <main className={`game-page game-page--${id}`}>
-      <header className="game-page-toolbar">
-        <Link to="/" className="game-back" aria-label="返回首页">
-          <ArrowLeft size={20} aria-hidden="true" />
-          <span>返回</span>
-        </Link>
-        <h1>{game.name.split(' · ')[0]}</h1>
-        {game.name.includes(' · ') && (
-          <span className="game-page-subtitle">{game.name.split(' · ').slice(1).join(' · ')}</span>
-        )}
-      </header>
-      <div className="game-stage">
-        {GameComponent ? (
-          <Suspense
-            fallback={
-              <div className="game-placeholder" role="status">
-                正在准备游戏…
-              </div>
-            }
-          >
-            {currentUser && (
-              <GameComponent key={`${id}:${currentUser.id}`} userId={currentUser.id} gameId={id} />
+    <main className={`game-page game-page--${id}${sharedControls ? ' game-ui-standard' : ''}`}>
+      {sharedControls ? (
+        <GameToolbarProvider key={`${id}:${currentUser?.id}`} title={game.name}>
+          {stage}
+        </GameToolbarProvider>
+      ) : (
+        <>
+          <header className="game-page-toolbar">
+            <Link to="/" className="game-back" aria-label="返回首页">
+              <ArrowLeft size={20} aria-hidden="true" />
+              <span>返回</span>
+            </Link>
+            <h1>{game.name.split(' · ')[0]}</h1>
+            {game.name.includes(' · ') && (
+              <span className="game-page-subtitle">
+                {game.name.split(' · ').slice(1).join(' · ')}
+              </span>
             )}
-          </Suspense>
-        ) : (
-          <div className="game-placeholder">游戏即将开放</div>
-        )}
-      </div>
+          </header>
+          {stage}
+        </>
+      )}
     </main>
   )
 }

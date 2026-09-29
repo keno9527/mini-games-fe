@@ -24,6 +24,7 @@ const gameIcons: Record<string, Icon> = {
   minesweeper: Bomb,
   'laser-mirror': Lightbulb,
   breakout: Target,
+  'breakout-mobile': Target,
 }
 
 interface Props {

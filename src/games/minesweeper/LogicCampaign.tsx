@@ -1,3 +1,6 @@
+import { GameToolbar } from '@/components/GameToolbar'
+import { CaretDown } from '@phosphor-icons/react'
+import LevelPicker from './LevelPicker'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { GameComponentProps } from '@/games/manifest'
 import { useGameRecord } from '@/hooks/useGameRecord'
@@ -6,7 +9,6 @@ import { useGamePlay } from '@/hooks/useGamePlay'
 import { isCleared, reveal, toggleFlag } from './engine'
 import { LOGIC_LEVELS, type LogicLevel } from './levels'
 import {
-  CHAPTERS,
   LESSONS,
   chapterUnlocked,
   completeLevel,
@@ -21,27 +23,11 @@ export function LogicCampaign({ userId, gameId }: GameComponentProps) {
   const [saveError, setSaveError] = useState(false)
   const [selected, setSelected] = useState(() => resumeLogicLevel(progress))
   const [attempt, setAttempt] = useState(0)
-  const picker = useRef<HTMLDetailsElement>(null)
-  const chapterIndex = Math.floor((selected - 1) / 5)
+  const [picking, setPicking] = useState(false)
   const choose = (id: number) => {
-    if (id !== selected) {
-      setSelected(id)
-      setAttempt((a) => a + 1)
-    }
-    if (picker.current) {
-      picker.current.open = false
-      picker.current.querySelector('summary')?.focus()
-    }
+    setSelected(id)
+    setAttempt((a) => a + 1)
   }
-  useEffect(() => {
-    const dismiss = (event: PointerEvent) => {
-      if (picker.current && !picker.current.contains(event.target as Node))
-        picker.current.open = false
-    }
-    document.addEventListener('pointerdown', dismiss)
-    return () => document.removeEventListener('pointerdown', dismiss)
-  }, [])
-  const count = Object.values(progress).filter((p) => p.completed).length
   const finish = (unaided: boolean) => {
     const next = completeLevel(readLogicProgress(gameId, userId), selected, unaided)
     setProgress(next)
@@ -54,72 +40,23 @@ export function LogicCampaign({ userId, gameId }: GameComponentProps) {
   }
   return (
     <section className="ms-game ms-logic" data-difficulty="简单" aria-label="逻辑闯关">
-      <div className="ms-selection-bar">
-        <span className="ms-chapter-label">
-          第 {chapterIndex + 1} 章 · {CHAPTERS[chapterIndex]}
-        </span>
-        <details
-          className="ms-picker"
-          ref={picker}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape' && picker.current) {
-              picker.current.open = false
-              picker.current.querySelector('summary')?.focus()
-            }
+      <GameToolbar>
+        <button
+          data-game-control
+          type="button"
+          aria-label={`选择关卡，当前第 ${selected} 关，共 ${LOGIC_LEVELS.length} 关`}
+          aria-haspopup="dialog"
+          aria-expanded={picking}
+          onClick={(event) => {
+            event.currentTarget.focus({ preventScroll: true })
+            setPicking(true)
           }}
         >
-          <summary aria-label="选择关卡">
-            {String(selected).padStart(2, '0')} · {LOGIC_LEVELS[selected - 1].name}
-            <span aria-hidden="true"> ▾</span>
-          </summary>
-          <div className="ms-picker-panel">
-            <p className="ms-picker-progress">已完成 {count} / 20 关</p>
-            {CHAPTERS.map((name, chapter) => {
-              const unlocked = chapterUnlocked(chapter, progress)
-              const levels = LOGIC_LEVELS.slice(chapter * 5, chapter * 5 + 5)
-              const completed = levels.filter((l) => progress[l.id]?.completed).length
-              return (
-                <section key={name}>
-                  <h3>
-                    {chapter + 1}. {name}{' '}
-                    <small>
-                      {unlocked
-                        ? `${completed} / 5${completed === 5 ? ' · 本章完成' : ''}`
-                        : '待解锁'}
-                    </small>
-                  </h3>
-                  {!unlocked && <p>完成上一章任意 4 关，或通过上一章第 5 关结业题。</p>}
-                  <div className="ms-level-list">
-                    {levels.map((level) => (
-                      <button
-                        key={level.id}
-                        disabled={!unlocked}
-                        aria-pressed={selected === level.id}
-                        onClick={() => choose(level.id)}
-                      >
-                        <span>
-                          {String(level.id).padStart(2, '0')} · {level.name}
-                        </span>
-                        <small>
-                          {progress[level.id]?.unaided
-                            ? '✦ 无提示通关'
-                            : progress[level.id]?.completed
-                              ? '✓ 已通关'
-                              : `${level.rows} × ${level.cols} · ${level.mines.length} 雷`}
-                        </small>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              )
-            })}
-            <p className="ms-picker-note">
-              {userId ? '通关后保存至玩家档案。' : '访客进度保存在本机。'}换关会重置当前盘面。
-            </p>
-          </div>
-        </details>
+          选关 {String(selected).padStart(2, '0')} <CaretDown size={16} aria-hidden="true" />
+        </button>
         <div className="ms-level-arrows">
           <button
+            data-game-control
             aria-label="上一关"
             disabled={selected === 1}
             onClick={() => choose(selected - 1)}
@@ -127,6 +64,7 @@ export function LogicCampaign({ userId, gameId }: GameComponentProps) {
             ←
           </button>
           <button
+            data-game-control
             aria-label="下一关"
             disabled={selected === 20 || !chapterUnlocked(Math.floor(selected / 5), progress)}
             onClick={() => choose(selected + 1)}
@@ -134,12 +72,13 @@ export function LogicCampaign({ userId, gameId }: GameComponentProps) {
             →
           </button>
         </div>
-      </div>
+      </GameToolbar>
       <LogicRound
         key={`${selected}:${attempt}`}
         gameId={gameId}
         userId={userId}
         level={LOGIC_LEVELS[selected - 1]}
+        pickerOpen={picking}
         onComplete={finish}
         onRetry={() => setAttempt((a) => a + 1)}
         onNext={
@@ -151,6 +90,17 @@ export function LogicCampaign({ userId, gameId }: GameComponentProps) {
             : undefined
         }
       />
+      {picking && (
+        <LevelPicker
+          current={selected}
+          progress={progress}
+          onClose={() => setPicking(false)}
+          onStart={(id) => {
+            choose(id)
+            setPicking(false)
+          }}
+        />
+      )}
       {saveError && (
         <p className="ms-live-note" role="alert">
           进度暂存失败，请检查玩家档案或存储状态后重试。
@@ -164,6 +114,7 @@ function LogicRound({
   level,
   gameId,
   userId,
+  pickerOpen,
   onComplete,
   onRetry,
   onNext,
@@ -171,6 +122,7 @@ function LogicRound({
   level: LogicLevel
   gameId: string
   userId?: string
+  pickerOpen: boolean
   onComplete: (unaided: boolean) => void
   onRetry: () => void
   onNext?: () => void
@@ -189,16 +141,26 @@ function LogicRound({
   const record = useGameRecord({ userId, gameId })
   const start = useRef(0)
   const cells = useRef<(HTMLButtonElement | null)[]>([])
-  const play = useGamePlay(gameId, status === 'playing' ? 'playing' : 'idle')
+  const play = useGamePlay(
+    gameId,
+    status === 'playing' ? (pickerOpen ? 'paused' : 'playing') : 'idle',
+  )
   const ended = status === 'won' || status === 'lost' || status === 'learning'
   useEffect(() => {
-    if (status !== 'playing') return
+    if (status !== 'playing' || pickerOpen) return
     const timer = setInterval(
       () => setElapsed(Math.floor((Date.now() - start.current) / 1000)),
       1000,
     )
     return () => clearInterval(timer)
-  }, [status])
+  }, [status, pickerOpen])
+  useEffect(() => {
+    if (status !== 'playing' || !pickerOpen) return
+    const pausedAt = Date.now()
+    return () => {
+      start.current += Date.now() - pausedAt
+    }
+  }, [status, pickerOpen])
   const begin = () => {
     if (status === 'idle') {
       start.current = Date.now()
@@ -349,14 +311,25 @@ function LogicRound({
           </div>
         </div>
       </div>
-      <div className="ms-compact-tools" role="group" aria-label="棋盘操作">
-        <button disabled={ended} aria-pressed={mode === 'reveal'} onClick={() => setMode('reveal')}>
+      <div className="ms-compact-tools game-controls" role="group" aria-label="棋盘操作">
+        <button
+          data-game-control
+          disabled={ended}
+          aria-pressed={mode === 'reveal'}
+          onClick={() => setMode('reveal')}
+        >
           揭开
         </button>
-        <button disabled={ended} aria-pressed={mode === 'flag'} onClick={() => setMode('flag')}>
+        <button
+          data-game-control
+          disabled={ended}
+          aria-pressed={mode === 'flag'}
+          onClick={() => setMode('flag')}
+        >
           插旗
         </button>
         <button
+          data-game-control
           disabled={ended}
           aria-expanded={hintTier > 0}
           onClick={() => (hintTier > 0 ? clearHint() : requestHint())}
@@ -364,8 +337,13 @@ function LogicRound({
         >
           提示
         </button>
-        <button onClick={onRetry}>重试</button>
+        <GameToolbar>
+          <button data-game-control onClick={onRetry}>
+            重新开始
+          </button>
+        </GameToolbar>
         <button
+          data-game-control
           aria-label="规则与操作"
           aria-expanded={showHelp}
           onClick={() => setShowHelp((v) => !v)}
@@ -378,6 +356,7 @@ function LogicRound({
           <h4>额外线索 · 点击高亮范围</h4>
           {level.extras.map((extra, i) => (
             <button
+              data-game-control
               key={extra.name}
               aria-pressed={region === i}
               onClick={() => setRegion(region === i ? null : i)}
@@ -414,8 +393,13 @@ function LogicRound({
         </div>
       )}
       {!ended && hintTier > 0 && (
-        <div className="ms-hint">
-          <button className="ms-new-game" onClick={requestHint} disabled={hintTier === 3}>
+        <div className="ms-hint game-panel">
+          <button
+            data-game-control
+            className="ms-new-game"
+            onClick={requestHint}
+            disabled={hintTier === 3}
+          >
             {hintTier === 0
               ? '提示：观察哪里'
               : hintTier === 1
@@ -435,7 +419,9 @@ function LogicRound({
                   {hint.mine ? ' 是雷，可以插旗。' : ' 安全，可以揭开；若已插旗，先取消标记。'}
                 </p>
               )}
-              <button onClick={clearHint}>收起提示</button>
+              <button data-game-control onClick={clearHint}>
+                收起提示
+              </button>
             </div>
           )}
         </div>
@@ -443,12 +429,13 @@ function LogicRound({
       {ended && (
         <div className="ms-round-actions">
           {status === 'won' && onNext && (
-            <button className="ms-new-game" onClick={onNext}>
+            <button data-game-control className="ms-new-game" onClick={onNext}>
               下一关 →
             </button>
           )}
           {status === 'lost' && (
             <button
+              data-game-control
               className="ms-new-game"
               onClick={() => {
                 setStatus('learning')
@@ -461,7 +448,7 @@ function LogicRound({
         </div>
       )}
       {showHelp && (
-        <div className="ms-help">
+        <div className="ms-help game-panel">
           <h4>规则与操作</h4>
           <p>{LESSONS[Math.floor((level.id - 1) / 5)]}</p>
           <p>固定盘面，未知格需推理后再揭开。数字表示周围八格的雷数；揭开全部安全格即可通关。</p>
@@ -469,9 +456,7 @@ function LogicRound({
             方向键移动，Enter / 空格执行当前模式，F 或右键插旗。触屏可切换插旗模式。零格会自动展开。
           </p>
           <p>提示根据当前线索推理，旗帜只是笔记。查看本段规则不影响无提示记录。</p>
-          <p>
-            章内自由选关；通过任意四关或第五关结业题，解锁下一章。闯关进度独立记录，不混入经典模式的计分排行。
-          </p>
+          <p>章内自由选关；通过任意四关或第五关结业题，解锁下一章。通关与无提示记录分别保留。</p>
         </div>
       )}
     </div>

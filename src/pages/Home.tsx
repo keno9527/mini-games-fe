@@ -26,6 +26,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [ranking, setRanking] = useState<PlayRankItem[]>([])
+  const [rankingUnavailable, setRankingUnavailable] = useState(false)
 
   useEffect(() => {
     getGames()
@@ -42,8 +43,14 @@ export default function Home() {
       .finally(() => setLoading(false))
     const refreshRanking = () => {
       getPlayRanking()
-        .then((ranking) => setRanking(ranking.filter((item) => !hiddenGameIds.has(item.gameId))))
-        .catch(() => {})
+        .then((ranking) => {
+          setRanking(ranking.filter((item) => !hiddenGameIds.has(item.gameId)))
+          setRankingUnavailable(false)
+        })
+        .catch(() => {
+          setRanking([])
+          setRankingUnavailable(true)
+        })
     }
     refreshRanking()
     window.addEventListener('storage', refreshRanking)
@@ -93,7 +100,9 @@ export default function Home() {
           <aside className="library-popular" aria-labelledby="popular-title">
             <h2 id="popular-title">热门排行榜</h2>
             <p>玩家存档累计 · 已结算对局</p>
-            {top5.length === 0 ? (
+            {rankingUnavailable ? (
+              <p role="status">排行榜暂不可用，不影响进入游戏。</p>
+            ) : top5.length === 0 ? (
               <p>暂无排行记录，开始一局吧。</p>
             ) : (
               <ol>

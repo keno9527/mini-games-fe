@@ -30,6 +30,7 @@ npx tsx --tsconfig tsconfig.app.json --test tests/player-files.test.ts tests/pla
 | 契约                                                                          | 文件                                                                                              |
 | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | manifest 元数据、内置游戏加载和运行时销毁                                     | `tests/game-modules.test.ts`                                                                      |
+| 全局游戏快捷键避让浏览器组合键、输入法、已处理事件及模态弹层 | `tests/game-keyboard.test.ts` |
 | 编译期拒绝非 HTTPS 外链、混合 runtime 字段                                    | `tests/game-manifest.typecheck.ts`                                                                |
 | 内部路由、外部新标签页、未注册游戏入口                                        | `tests/game-launch-link.test.ts`                                                                  |
 | 暂存不落盘、玩家隔离、结算幂等、并发、响应丢失重试、迁移、损坏文件、HTTP 限制 | `tests/player-files.test.ts`                                                                      |
