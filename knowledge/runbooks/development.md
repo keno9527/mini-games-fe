@@ -56,7 +56,9 @@ npx prettier --check 'knowledge/**/*.md'
 
 ### 样式
 
-Tailwind 工具类、fun/CRT 令牌和字体配置见 `tailwind.config.js:1`；全局布局见 `src/index.css`，游戏共用表面样式见 `src/games/game-surfaces.css`。新增页面优先核对现有布局与样式入口。
+全站以 `src/index.css` 中的广场风格为默认。Tailwind 的 fun/CRT 配置仍存在，但不能据此推断当前页面视觉；`.gs-*` 也尚未覆盖全部游戏。页面外壳、样式作用域、展示字段与响应式现状见 [前端页面与样式架构](../architecture/frontend-presentation.md)。
+
+新增与改动 UI 按 [交互与视觉约定](../contracts/ui-conventions.md) 统一按钮、面板和工具栏，仅游戏主画面保留独立主题与细节空间。涉及布局、控件或状态反馈时，按 [UI 走查手册](./ui-review.md) 检查；既有差异标为待对齐。
 
 ## 构建产物
 

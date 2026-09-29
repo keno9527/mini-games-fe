@@ -13,6 +13,8 @@ interface GameComponentProps {
 
 游戏内部状态机自行管理（例如 idle、playing、paused、won/lost），跨边界结算通过直接函数调用完成，没有通用事件总线。
 
+按钮文案、状态展示、弹层和游戏主画面自定义边界见 [交互与视觉约定](./ui-conventions.md)。UI 中的“通关”和文件保存成功分别表达，保存状态遵循以下运行契约。
+
 ### 战绩提交事件
 
 | 触发时机                   | 调用与约束                                                                    |
