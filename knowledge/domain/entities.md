@@ -153,7 +153,9 @@ interface GameManifest {
 }
 ```
 
-`GamePresentation` 提供封面渐变、图标及可选徽标、按钮文案、展示变体；`GameModule` 默认导出接收 `GameComponentProps` 的 React 组件。`embedded` 懒加载模块，`external` 在新标签页打开 HTTPS 站点。
+`GamePresentation` 声明封面渐变、图标及可选徽标、按钮文案、展示变体。实际展示取决于消费方：首页卡片使用徽标、动作文案和变体类名，未消费封面渐变与图标字段；详细映射见 [前端页面与样式架构](../architecture/frontend-presentation.md#展示配置到页面的映射)。
+
+`GameModule` 默认导出接收 `GameComponentProps` 的 React 组件。`embedded` 懒加载模块，`external` 在新标签页打开 HTTPS 站点。
 
 ## 游戏内成长实体（引力墓场专属）
 

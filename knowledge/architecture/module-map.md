@@ -17,6 +17,8 @@ Vite → scripts/player-data → data/players/*.json
 
 这是关键调用关系，具体调用与状态变化见 [数据流](./data-flow.md)。游戏目录内部不应反向依赖页面或其他游戏的内部实现；共用输入能力放在 `src/features/gamepad/`。
 
+页面外壳、共用控件、样式层次和响应式分工见 [前端页面与样式架构](./frontend-presentation.md)；新增与改动 UI 遵循 [交互与视觉约定](../contracts/ui-conventions.md)。
+
 ## 目录职责
 
 | 目录                                     | 职责                                  | 关键入口                                                                             |

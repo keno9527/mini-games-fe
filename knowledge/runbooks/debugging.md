@@ -59,7 +59,9 @@ app 类型检查覆盖 `src/` 和 manifest 类型契约；`npm run build` 还检
 
 ## 第 5 层：视觉与布局
 
-Tailwind 类不生效时检查 `tailwind.config.js:3` 的 content 范围、全局及游戏共用 CSS；字体问题检查 Google Fonts 网络请求和后备字体栈。构建成功不能替代 Canvas、音频、触屏或真实手柄的浏览器验证。
+先按 [前端页面与样式架构](../architecture/frontend-presentation.md#样式来源与生效范围) 定位全站外壳、页面或游戏规则，检查选择器优先级、变量继承和当前媒体/容器条件。Tailwind 类不生效时再核对 `tailwind.config.js:3` 的 content 范围；字体问题检查 Google Fonts 网络请求和后备字体栈。
+
+游戏主题污染按钮或其他页面时，检查 `--gs-*` 的继承范围与专用 CSS 作用域。尺寸和状态行为的预期以 [交互与视觉约定](../contracts/ui-conventions.md) 为准，浏览器验证步骤见 [UI 走查手册](./ui-review.md)。构建成功不能替代 Canvas、音频、触屏或真实手柄验证。
 
 ## 快速自检命令
 
