@@ -2,66 +2,59 @@
 
 ## 分层总览
 
-项目采用"广场框架 + 游戏插件"的结构。广场层提供路由、数据、通用组件；游戏层通过统一的 manifest 接口注册，彼此隔离。
+项目采用“广场框架 + 游戏模块”的结构。浏览器层负责路由、玩家入口、游戏运行与结算；本机 Vite 中间件负责文件读写，双方共用玩家 schema。
 
-```
-┌─────────────────────────────────────────────────────┐
-│  pages/        页面：Home / GameDetail / Profile     │  路由层
-├─────────────────────────────────────────────────────┤
-│  components/   通用组件：GameCard / Header / ...      │  视图层
-│  features/     广场领域配置：catalog / data           │
-├─────────────────────────────────────────────────────┤
-│  games/        游戏注册表 + 各游戏独立目录             │  游戏运行时
-│   ├── registry.ts      聚合所有 manifest，懒加载组件   │
-│   └── <game>/          每个游戏自包含实现              │
-├─────────────────────────────────────────────────────┤
-│  api/          localStorage 异步封装（getGames 等）    │  数据层
-│  store/        Zustand 当前用户（persist）            │
-│  hooks/        跨游戏复用 hook（useGameRecord）        │
-│  types/        全局 TypeScript 类型                   │
-└─────────────────────────────────────────────────────┘
+```text
+App / pages / components
+  ├─ store/userStore → api/playerFiles → 同源 HTTP
+  ├─ features/games → games/registry → manifest → 懒加载游戏
+  └─ 游戏 → api/index / hooks → api/playerFiles
+                                  ↓
+                         features/players/schema
+                                  ↑
+Vite → scripts/player-data → data/players/*.json
 ```
 
-依赖方向：`pages → components/features/games → api/store/hooks/types`。游戏目录内部不应反向依赖页面或其他游戏。
+这是关键调用关系，具体调用与状态变化见 [数据流](./data-flow.md)。游戏目录内部不应反向依赖页面或其他游戏的内部实现；共用输入能力放在 `src/features/gamepad/`。
 
 ## 目录职责
 
-| 目录                  | 职责                | 关键文件                                                                    |
-| --------------------- | ------------------- | --------------------------------------------------------------------------- |
-| `src/pages/`          | 路由页面            | `Home.tsx` 广场首页、`GameDetail.tsx` 游戏详情/挂载、`Profile.tsx` 个人战绩 |
-| `src/components/`     | 无业务状态的通用 UI | `GameCard.tsx`、`Header.tsx`、`Skeleton.tsx`、`UserSelector.tsx`            |
-| `src/features/games/` | 广场领域配置        | `data.ts` 游戏清单+排行种子、`catalog.ts` 展示与战绩文案辅助                |
-| `src/games/`          | 游戏注册表与实现    | `registry.ts`、`manifest.ts`（接口定义）、各 `<game>/`                      |
-| `src/api/`            | 数据访问            | `index.ts` 封装 localStorage，暴露 Promise 接口                             |
-| `src/store/`          | 全局状态            | `userStore.ts` 当前登录用户（Zustand + persist）                            |
-| `src/hooks/`          | 复用 hook           | `useGameRecord.ts` 统一战绩提交（防重、计时）                               |
-| `src/types/`          | 全局类型            | `index.ts` 定义 Game / User / GameRecord 等                                 |
+| 目录                                     | 职责                                  | 关键入口                                                                             |
+| ---------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------ |
+| `src/pages/`                             | 广场、游戏详情、个人战绩、手柄诊断    | `Home.tsx:24`、`GameDetail.tsx:10`、`Profile.tsx`、`GamepadTest.tsx`                 |
+| `src/components/`                        | 通用 UI、玩家准入、保存反馈           | `PlayerGate.tsx:5`、`UserSelector.tsx:13`、`SaveStatus.tsx:5`                        |
+| `src/features/games/`                    | 注册清单适配、展示辅助、排行比较      | `data.ts:4`、`catalog.ts:33`、`playStats.ts:55`                                      |
+| `src/features/players/`                  | 文件 schema、校验、合并及旧数据迁移   | `schema.ts:8`、`migration.ts:22`                                                     |
+| `src/features/gamepad/`                  | 手柄监控与玩家绑定                    | `monitor.ts:96`、`players.ts:35`                                                     |
+| `src/games/`                             | manifest、注册表与游戏实现            | `manifest.ts:37`、`registry.ts:18`                                                   |
+| `src/api/`                               | HTTP 客户端、内存进度、结算队列与统计 | `playerFiles.ts:55`、`index.ts:28`                                                   |
+| `src/store/`、`src/hooks/`、`src/types/` | 当前玩家、跨游戏 hook、共享类型       | `userStore.ts:13`、`useGameRecord.ts:32`、`useGamePlay.ts:5`、`src/types/index.ts:1` |
+| `scripts/`、`data/players/`              | 本机文件服务、构建脚本与持久化数据    | `scripts/player-data.ts:20`、`scripts/prepare-sites-worker.mjs:7`                    |
 
 ## 游戏模块契约
 
-每个游戏目录必须包含 `manifest.ts`，默认导出一个满足 `GameManifest` 的对象。契约的唯一文档定义见 [领域实体](../domain/entities.md#游戏注册接口)，代码定义见 `src/games/manifest.ts`。
+每个游戏目录必须包含默认导出的 `manifest.ts`，契约定义见 [领域实体](../domain/entities.md#游戏注册接口) 和 `src/games/manifest.ts:37`。
 
-`embedded` 游戏入口组件接收 `GameComponentProps`（`{ userId?, gameId }`），自行管理内部状态，并在对局结束时调用 `createRecord` 提交战绩。`external` 游戏只提供安全跳转，不挂载本地组件。
+`embedded` 游戏接收 `{ userId?, gameId }`。虽然类型允许省略 `userId`，当前应用会先完成玩家选择和档案加载，`GameDetail` 使用游戏 ID 与玩家 ID 组成的 key 挂载游戏，切换玩家时重建游戏实例（`src/pages/GameDetail.tsx:65`）。游戏按自身结算粒度调用 `createRecord`；进度暂存和持久化的区别见 [数据流](./data-flow.md#4-对局与战绩提交流)。
+
+`external` 游戏提供 HTTPS 地址，由统一启动入口打开新标签页，不挂载本地组件。注册、首页隐藏和移除注册的不同效果见 [开发手册](../runbooks/development.md#添加一个新游戏)。
 
 ### 游戏内部分层（以 tank-battle 为例）
 
-复杂游戏可在自身目录内进一步分层，不影响广场：
+| 子目录               | 职责                                         |
+| -------------------- | -------------------------------------------- |
+| `core/`              | 游戏循环、输入、音频、几何工具与玩家加入大厅 |
+| `entity/`、`system/` | 实体定义、移动、AI、生成、碰撞等规则         |
+| `render/`、`scene/`  | Canvas 渲染与场景切换                        |
+| `data/`、`editor/`   | 战役和关卡数据、自定义地图编辑               |
 
-- `core/`：游戏循环、输入、音频、几何工具
-- `entity/`：实体定义（Tank / Bullet / ...）
-- `system/`：逻辑系统（移动 / AI / 生成 / 碰撞）
-- `render/`：Canvas 渲染
-- `scene/`：场景管理（标题 / 战斗 / 结算）
-- `data/`：关卡、精灵、数值配置
-
-简单游戏可单文件实现（如 `gomoku/index.tsx`）。
+简单游戏可集中实现；包含关卡、解题、进度等独立逻辑的游戏按职责拆分。知识库记录共用契约，各游戏算法以就近源码和测试为准。
 
 ## 路径别名
 
-- `@/*` → `src/*`（配置于 `tsconfig.app.json` 与 `vite.config.ts`，两处需保持一致）。
-- 游戏内部相对路径与别名混用均可，跨目录引用优先使用 `@/`。
+- `@/*` 指向 `src/*`，配置于 `tsconfig.app.json:17` 与 `vite.config.ts:8`，两处需保持一致。
+- 测试通过 `tsx --tsconfig tsconfig.app.json` 解析别名，命令见 [测试手册](../runbooks/testing.md)。
 
 ## 构建输出
 
-- `vite build` 将客户端产物输出到 `dist/client/`。
-- `scripts/prepare-sites-worker.mjs` 在构建后生成 `dist/server/index.js`（Cloudflare Sites Worker，处理 SPA fallback）。
+`npm run build` 执行类型检查、客户端构建和静态 Worker 生成。`scripts/player-data.ts` 通过 Vite 插件运行，不会随静态 Worker 一起提供服务。环境能力见 [系统上下文](./system-context.md#运行环境)。
