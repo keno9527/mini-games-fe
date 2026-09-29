@@ -1,61 +1,75 @@
-# 事件与回调
+# 游戏生命周期事件与回调
 
-本项目无 MQ / 消息总线。"事件"指前端游戏生命周期中广场框架与游戏模块之间的回调约定，以及少量浏览器事件。
-
-## 游戏模块生命周期回调
-
-游戏入口组件接收 `GameComponentProps`（见 `src/games/manifest.ts`）：
+## 游戏组件 Props
 
 ```ts
 interface GameComponentProps {
-  userId?: string   // 当前用户；未登录时为 undefined
-  gameId: string    // 游戏自身 id，用于提交战绩
+  userId?: string
+  gameId: string
 }
 ```
 
-游戏组件内部自行管理状态机（典型状态：`idle → playing → won/lost`），并在对局结束时调用 `createRecord`。这不是事件总线，而是直接的函数调用。
+类型定义于 `src/games/manifest.ts:4`。类型层面 userId 可选，当前应用入口则要求档案加载完成；玩家切换时通过组件 key 重建游戏，见 [模块划分](../architecture/module-map.md#游戏模块契约)。
+
+游戏内部状态机自行管理（例如 idle、playing、paused、won/lost），跨边界结算通过直接函数调用完成，没有通用事件总线。
 
 ### 战绩提交事件
 
-| 触发时机 | 调用 | 参数 |
-|----------|------|------|
-| 游戏胜利 | `createRecord(userId, { result: 'win', ... })` | score / duration |
-| 游戏失败 | `createRecord(userId, { result: 'lose', ... })` | score / duration |
-| 闯关/无尽结束 | `createRecord(userId, { result: 'complete', ... })` | score / duration |
+| 触发时机                   | 调用与约束                                                                    |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| 游戏定义的胜利、失败或完成 | `createRecord` 提交 score、duration、result，可附关卡、战役和模式             |
+| 同一局/关卡重复通知        | 游戏需防重；可使用 `useGameRecord`，每次开局调用 `start()` 重置计时和提交标记 |
+| 已有暂存进度的结算         | `createRecord` 同时提交当前进度快照；单纯暂存不会写文件                       |
+| 文件保存失败               | 全局 `SaveStatus` 显示错误和 pending 数，提供重试；有 pending 时监听离开页面  |
 
-提交需防重复：游戏组件应使用 `submittedRef`（或复用 `useGameRecord` hook）保证一局只提交一次。提交失败应静默处理，不阻塞游戏 UI。
+`src/hooks/useGameRecord.ts:32` 默认按 start 后经过的墙钟时间计算 duration，也允许显式传入游戏自身计时。不要将其默认时间理解为自动扣除了暂停或后台时长。各游戏应按自己的规则选择计时来源。
+
+`useGamePlay` 只在内存跟踪开始、暂停、可见性和卸载，不写持久化统计；排行来自结算记录（`src/hooks/useGamePlay.ts:4`）。重试和幂等规则见 [数据流](../architecture/data-flow.md#防重与失败恢复)。
 
 ### tank-battle 的 onGameOver 回调
 
-坦克大战通过独立 runtime 挂载（`src/games/tank-battle/runtime.ts`），其 `mountTankBattle` 接收选项：
+`mountTankBattle` 接收画布、容器和 `TankBattleOptions`，返回带 `destroy()` 的控制句柄（`src/games/tank-battle/runtime.ts:34`）。
 
-```ts
-interface TankBattleOptions {
-  initialHighScore?: number
-  onGameOver?: (result: TankBattleResult) => void
-}
-```
+| 回调 / 选项组                                                 | 用途                           |
+| ------------------------------------------------------------- | ------------------------------ |
+| campaignId、initialProgress、onCampaignChange、onStageReached | 战役与单人/双人进度            |
+| onControllersChange、onMenuChange、onStateChange              | 控制器、大厅菜单、运行状态同步 |
+| initialHighScore、onGameOver                                  | 注入高分和接收结算             |
+| customLevel                                                   | 自定义地图试玩                 |
 
-`onGameOver` 在游戏结束（胜利或失败）时触发，`TankBattleResult` 含 `score`、`duration`、`victory`，由 React 包装组件（`index.tsx`）转调 `createRecord`。
+完整类型见 `src/games/tank-battle/runtime.ts:55`。React 包装在 `onGameOver` 中提交关卡、战役及 single/coop/practice 模式；自定义地图试玩跳过战绩提交（`src/games/tank-battle/index.tsx:194`）。
 
 ## 广场框架事件
 
-| 事件源 | 事件 | 处理方 |
-|--------|------|--------|
-| React Router | 路由变化 `/`、`/game/:id`、`/profile` | `App.tsx` 路由表 |
-| GameDetail 卸载 | 游戏组件 unmount | 游戏内部 `useEffect` cleanup 取消 RAF / 移除监听 / 释放音频 |
-| Zustand store | `currentUser` 变化 | Header / GameDetail / Profile 响应式更新 |
+| 事件源         | 处理                                                     |
+| -------------- | -------------------------------------------------------- |
+| HashRouter     | 四条路由由 `src/App.tsx:17` 定义                         |
+| 当前玩家变化   | 页面读取 Zustand 状态；GameDetail 重建玩家对应的游戏组件 |
+| 保存状态变化   | `subscribeSaves` 通知 `SaveStatus`；用户可重试待保存结算 |
+| 浏览器 storage | 首页重新拉取排行；不等同于文件系统实时订阅               |
+| 游戏组件卸载   | 游戏自身清理循环、监听、音频和其他运行资源               |
 
 ## 浏览器事件
 
-游戏内部监听的浏览器事件（以各游戏实现为准）：
+### 键鼠、触屏与页面可见性
 
-- `keydown` / `keyup`：方向键、WASD、空格等（如贪吃蛇、俄罗斯方块、打砖块、坦克大战）。
-- `pointermove` / `pointerdown`：鼠标/触屏控制（如打砖块挡板、引力墓场锚点）。
-- `visibilitychange`：页面切后台时暂停游戏循环（坦克大战 `runtime.ts` 实现）。
-- `beforeunload` / `blur`：清空按键状态，避免按键"卡住"（打砖块实现）。
+| 事件                      | 典型用途                                   |
+| ------------------------- | ------------------------------------------ |
+| keydown / keyup           | 方向、动作与菜单操作                       |
+| pointermove / pointerdown | 指针控制和触屏操作                         |
+| visibilitychange / blur   | 游戏按需暂停或清空按键，避免后台继续输入   |
+| beforeunload              | 全局提示待保存结算；不是文件保存成功的保证 |
+
+具体监听以各游戏实现为准。坦克运行时在 `src/games/tank-battle/runtime.ts:406` 注册可见性监听，并在销毁时移除。
+
+### 共用手柄能力
+
+`src/features/gamepad/monitor.ts:75` 封装浏览器 Gamepad API，监控连接、焦点和可见性；不安全上下文或 API 不支持时返回明确状态，不启动轮询。销毁时取消 RAF 并解除监听。
+
+`src/features/gamepad/players.ts:50` 只绑定 standard mapping 设备，避免重复绑定；绑定或焦点恢复后需先释放控制输入，设备断开时释放相应绑定。坦克的加入/重连大厅另由 `src/games/tank-battle/core/TankLobby.ts` 管理，测试入口见 [测试手册](../runbooks/testing.md)。
 
 ## 跨游戏约定
 
-- 游戏组件被卸载时**必须**释放所有资源：`cancelAnimationFrame`、`removeEventListener`、关闭 `AudioContext`。tank-battle 的 `runtime.ts` 通过返回 `destroy()` 句柄示范了这一约定。
-- 游戏不应直接修改广场状态或调用其他游戏的内部模块；所有跨边界通信通过 props 与 `src/api/` 完成。
+- 组件卸载时释放持有的 RAF、事件订阅、音频及 Worker 等资源；独立 runtime 应暴露统一销毁入口。
+- 玩家身份、文件存档和共用输入通过 props、`src/api/` 和共用模块协作，避免直接依赖其他游戏内部状态。
+- 结算粒度、计时方式和进度字段要与游戏规则一致，并由相应测试验证；函数名包含 save 不代表已经落盘。

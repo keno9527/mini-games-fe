@@ -8,7 +8,7 @@
 - 仓库地址：git@github.com:keno9527/mini-games-fe.git
 - 主分支：main
 - 技术栈：React 19 + TypeScript + Vite 8 + React Router 7 + Zustand + Tailwind CSS 3
-- 数据：纯前端，localStorage 持久化，无后端服务
+- 数据：本机 Vite HTTP 中间件读写 `data/players/*.json`；localStorage 保留待保存结算备份、偏好及部分游戏数据。运行边界见 `knowledge/architecture/system-context.md`。
 
 ## 开发约定
 
@@ -23,7 +23,7 @@
 - 游戏注册与配置：`src/games/<game-id>/manifest.ts`
 - 广场清单与排行辅助：`src/features/games/`
 - 游戏实现：`src/games/<game-id>/`（所有游戏含 `manifest.ts`；仅 `embedded` 运行时需要 `index.tsx`）
-- 本地数据封装：`src/api/`
+- 本地数据封装：`src/api/`；玩家 schema 与迁移：`src/features/players/`；文件服务：`scripts/player-data.ts`
 - 配置目录：`.trae/rules/`（包含 workspace_rules.md）
 
 ## 运行与构建

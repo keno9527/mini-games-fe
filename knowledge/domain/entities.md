@@ -1,41 +1,35 @@
 # 领域实体
 
-全局领域类型定义于 `src/types/index.ts`。游戏内部实体（如坦克、子弹等）定义在各自游戏目录内，不在此跨游戏共享。
+共享展示与战绩类型定义于 `src/types/index.ts:1`，玩家文件及运行时校验定义于 `src/features/players/schema.ts:3`。游戏内部实体保留在各游戏目录。
 
 ## Game
 
-广场中的一个游戏条目。
-
 ```ts
 interface Game {
-  id: string // 唯一标识，如 'tank-battle'
-  name: string // 展示名
-  description: string // 卡片简介
-  tags: string[] // 分类标签，用于筛选与展示
-  difficulties: string[] // 难度档位，如 ['简单','中等','复杂']
+  id: string
+  name: string
+  description: string
+  tags: string[]
+  difficulties: string[]
 }
 ```
 
-所有游戏的 `Game` 都由各自 `manifest.ts` 的 `game` 字段提供，经 `src/games/registry.ts` 聚合。运行方式不属于 `Game` 实体，由 manifest 的 `runtime` 判别。
+`Game` 来自各 manifest 的 `game` 字段，由注册表聚合。运行方式属于 manifest 的 `runtime`；首页隐藏名单属于展示策略，均不是 `Game` 的持久化字段。
 
 ## User
-
-本地玩家。
 
 ```ts
 interface User {
   id: string
   name: string
   avatar: string
-  createdAt: string // ISO 时间
+  createdAt: string // 可解析的时间字符串；创建时生成 ISO 时间
 }
 ```
 
-用户通过 `UserSelector` 组件在本地创建/切换，无密码认证。当前登录用户保存在 Zustand store（`mini-game-user`）。
+本机玩家无密码认证。用户信息保存在 `PlayerFile.player`，当前选择保存在 Zustand 内存中。玩家名称去空格后为 1–20 个字符，活跃玩家之间不允许忽略大小写的同名；创建时服务端生成 UUID（`src/features/players/schema.ts:34`、`scripts/player-data.ts:71`）。
 
 ## GameRecord
-
-单局战绩，是排行与统计的数据源。
 
 ```ts
 interface GameRecord {
@@ -44,17 +38,56 @@ interface GameRecord {
   gameId: string
   score: number
   duration: number // 秒
-  playedAt: string // ISO 时间
+  playedAt: string
   result: 'win' | 'lose' | 'complete'
+  level?: number
+  campaignId?: string
+  mode?: 'single' | 'coop' | 'practice'
 }
 ```
 
-- `win` / `lose`：有明确胜负的游戏（如五子棋、坦克大战）。
-- `complete`：以分数结算的无尽/闯关游戏（如俄罗斯方块、贪吃蛇、24 点）。
+一条记录代表游戏定义的一次结算，不一定代表一次页面访问或完整战役。例如打砖块按关卡尝试结算。`win` / `lose` 表示胜负，`complete` 表示完成；具体触发由游戏规则决定。
+
+服务端要求分数和时长为非负安全整数、关卡为正安全整数，校验玩家和游戏归属，并要求同一玩家文件内记录 ID 唯一。ID 还承担结算幂等键的作用（`src/features/players/schema.ts:44`、`src/features/players/schema.ts:140`）。
+
+## PlayerFile 与 Settlement
+
+```ts
+type ProgressData = Record<string, unknown>
+interface PlayerGame {
+  progress: ProgressData
+  records: GameRecord[]
+}
+interface PlayerFile {
+  version: 1
+  player: User
+  games: Record<string, PlayerGame>
+  archived?: boolean
+  legacyImported?: boolean
+  guestImported?: boolean
+}
+interface Settlement {
+  record: GameRecord
+  progress: ProgressData
+}
+```
+
+文件路径为 `data/players/<player.id>.json`。`parsePlayerFile` 只接受版本 1，校验文件内部归属和记录 ID；文件仓库另检查文件名与玩家 ID 一致。`archived` 保留档案但使其退出列表和排行，并阻止新结算；导入标记用于区分旧玩家导入与游客认领（`src/features/players/schema.ts:115`、`scripts/player-data.ts:95`）。
+
+## ProgressData 与合并规则
+
+`ProgressData` 是经过运行时校验的 JSON 对象。值支持嵌套对象、字符串数组、字符串、布尔值、null 和有限非负数；拒绝危险键、过深对象及超限数组（`src/features/players/schema.ts:72`）。不能因为 TypeScript 类型为 `unknown` 就存入任意运行时对象。
+
+| 同字段旧值与新值 | 合并规则                                                       |
+| ---------------- | -------------------------------------------------------------- |
+| 都是对象         | 递归合并                                                       |
+| 都是数组         | 去重并集                                                       |
+| 都是数值         | 默认取最大值；`bestMoves` 取最小值；`lastPlayedLevel` 使用新值 |
+| 其他情况         | 使用新值                                                       |
+
+规则定义于 `src/features/players/schema.ts:95`，由客户端暂存和服务端结算共用。新增进度字段需核对其语义是否适合上述规则；它不是任意状态快照的覆盖协议。
 
 ## GameStat
-
-单个游戏在某用户下的聚合统计。
 
 ```ts
 interface GameStat {
@@ -66,9 +99,9 @@ interface GameStat {
 }
 ```
 
-## UserStats
+单个游戏在某玩家下的已保存记录聚合。
 
-用户的总览统计，由 `getUserStats` 实时聚合 `GameRecord` 得出，不单独持久化。
+## UserStats
 
 ```ts
 interface UserStats {
@@ -77,27 +110,28 @@ interface UserStats {
   totalGames: number
   totalTime: number
   totalScore: number
-  gameStats: GameStat[] // 按 playCount 降序
+  gameStats: GameStat[]
 }
 ```
 
-## PlayRankItem
+实时从文件记录聚合，不单独持久化。`gameStats` 按次数降序，已移除注册的游戏仍保留在个人统计中（`src/api/index.ts:28`）。
 
-热门排行榜条目。
+## PlayRankItem
 
 ```ts
 interface PlayRankItem {
   gameId: string
   gameName: string
   playCount: number
+  totalDuration: number
 }
 ```
 
-由 `defaultPlayRanking`（种子数据）与本地记录计数合并生成。
+来自未归档玩家的已保存结算，排除未注册游戏，没有种子数据。具体排序与首页过滤见 [数据流](../architecture/data-flow.md#2-广场首页加载)。
 
 ## 游戏注册接口
 
-`src/games/manifest.ts` 定义了游戏模块的注册契约，不属于持久化实体，但是游戏域的核心接口：
+`src/games/manifest.ts:37` 定义注册契约：
 
 ```ts
 interface GameManifest {
@@ -119,16 +153,16 @@ interface GameManifest {
 }
 ```
 
-`embedded` 运行时按需加载本仓库 React 游戏模块；`external` 运行时由 `GameLaunchLink` 安全地在新标签页打开独立站点。
+`GamePresentation` 提供封面渐变、图标及可选徽标、按钮文案、展示变体；`GameModule` 默认导出接收 `GameComponentProps` 的 React 组件。`embedded` 懒加载模块，`external` 在新标签页打开 HTTPS 站点。
 
 ## 游戏内成长实体（引力墓场专属）
 
-`src/games/gravity-graveyard/progression.ts` 定义了跨局持久化的成长结构，仅该游戏使用：
-
 ```ts
 interface GameProgression {
-  liturgies: string[] // 已解锁模块
-  tools: string[] // 已解锁引力工具
-  ships: string[] // 已解锁飞船
+  liturgies: string[]
+  tools: string[]
+  ships: string[]
 }
 ```
+
+该结构记录解锁模块、工具和飞船。`src/games/gravity-graveyard/progression.ts:20` 按玩家和游戏从缓存读取、去重，并通过 `stageProgress` 暂存；持久化遵循共用结算流程。其他游戏的进度字段以各自模块为准，工程级存储差异见 [数据流](../architecture/data-flow.md#6-游戏内成长)。

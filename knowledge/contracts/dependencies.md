@@ -2,44 +2,43 @@
 
 ## npm 运行时依赖
 
-定义于 `package.json` 的 `dependencies`：
+版本范围以 `package.json:19` 的 dependencies 为准，实际解析版本由 `package-lock.json` 锁定。
 
-| 包 | 版本 | 用途 |
-|----|------|------|
-| `react` | ^19.2.4 | UI 框架 |
-| `react-dom` | ^19.2.4 | React DOM 渲染器 |
-| `react-router-dom` | ^7.6.0 | 路由（使用 `HashRouter`） |
-| `zustand` | ^5.0.5 | 全局状态（当前用户），使用 `persist` 中间件 |
+| 包                      | 版本范围 | 用途                                      |
+| ----------------------- | -------- | ----------------------------------------- |
+| `@phosphor-icons/react` | ^2.1.10  | 界面图标                                  |
+| `react`、`react-dom`    | ^19.2.4  | UI 与 DOM 渲染                            |
+| `react-router-dom`      | ^7.6.0   | HashRouter 路由                           |
+| `zustand`               | ^5.0.5   | 当前玩家与恢复状态，不使用 persist 中间件 |
 
 ## npm 开发依赖（关键项）
 
-| 包 | 用途 |
-|----|------|
-| `vite` | 构建工具与 dev server |
-| `@vitejs/plugin-react` | Vite 的 React 插件 |
-| `typescript` | 类型检查（`tsc -b`） |
-| `tailwindcss` / `postcss` / `autoprefixer` | 样式管线 |
-| `eslint` + `typescript-eslint` + `eslint-plugin-react-hooks` / `react-refresh` | 代码检查 |
-| `prettier` + `eslint-config-prettier` | 代码格式化 |
-| `tsx` | 运行 TypeScript 测试文件 |
-| `@types/node` | Node 类型（构建脚本与测试使用） |
+| 范围       | 依赖与用途                                                                                    |
+| ---------- | --------------------------------------------------------------------------------------------- |
+| 构建       | `vite`、`@vitejs/plugin-react`、`typescript`                                                  |
+| 样式       | `tailwindcss`、`postcss`、`autoprefixer`                                                      |
+| 检查与格式 | `eslint`、`typescript-eslint`、React Hooks/Refresh 插件、`prettier`、`eslint-config-prettier` |
+| 测试与类型 | `tsx`、`@types/node`、React 类型包                                                            |
 
-Node 版本要求：`^20.19.0 || ^22.13.0 || >=24`，与 `package.json#engines` 及当前 Vite / ESLint 要求保持一致。
+`package.json:6` 声明 Node 版本范围为 `^20.19.0 || ^22.13.0 || >=24`。本机文件服务使用 Node 内置 HTTP、文件和 crypto 能力，不依赖独立数据库。
 
 ## 外部网络依赖
 
-| 资源 | URL | 用途 | 降级策略 |
-|------|-----|------|----------|
-| Google Fonts | `https://fonts.googleapis.com` | Nunito / Press Start 2P / VT323 字体 | 加载失败时使用 `system-ui` / `monospace` 回退（Tailwind font-family 已配置兜底） |
+| 资源         | 地址                                                        | 用途 / 失败行为                                                  |
+| ------------ | ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| 本机文件接口 | 同源 `/__player-data/players`                               | 玩家、战绩和主要进度；服务不可用时显示错误，不回退为浏览器主存档 |
+| Google Fonts | `https://fonts.googleapis.com`、`https://fonts.gstatic.com` | 字体样式与文件；加载失败时使用字体栈后备字体                     |
 
-> 架构支持通过 manifest 的 `external` runtime 接入外链游戏（`GameLaunchLink` 会渲染为 `<a target="_blank">`），但当前没有游戏使用该能力，因此除字体外无其他外部网络依赖。
+字体由 `index.html:8` 引入；字体栈见 `tailwind.config.js:33`。游戏图片、纹理及音频位于 `public/`。manifest 支持 HTTPS 外链游戏，但当前已注册游戏均使用内置运行时。
 
 ## localStorage 依赖
 
-数据层完全依赖浏览器 `localStorage`，无 IndexedDB / cookie / 服务端存储。键清单见 [architecture/data-flow.md#7-localstorage-键总览](../architecture/data-flow.md)。
+浏览器存储与玩家文件并存。上次玩家 ID、待保存结算备份、旧数据迁移标记、部分游戏进度及编辑器/偏好数据的权威键清单见 [数据流](../architecture/data-flow.md#7-localstorage-键总览)。
 
-清除浏览器数据会导致用户、战绩、成长全部丢失，无云端恢复途径。
+清除浏览器数据不会删除已经保存的玩家文件，但可能丢失尚未提交成功的结算备份和仅保存在浏览器中的内容。文件损坏、备份与恢复见 [排障手册](../runbooks/debugging.md)。
 
 ## 构建产物依赖
 
-构建脚本 `scripts/prepare-sites-worker.mjs` 在 `vite build` 后生成 `dist/server/index.js`，该 Worker 面向 Cloudflare Sites 部署（依赖 `env.ASSETS` 绑定）。若部署到其他静态托管平台，该文件可忽略，仅需部署 `dist/client/`。
+`vite.config.ts:7` 加载本机文件插件；插件只在 dev / preview 挂载。静态 Worker 由 `scripts/prepare-sites-worker.mjs:7` 生成，依赖 `env.ASSETS`，只处理静态资源与回退，不提供玩家接口。
+
+因此不能用“上传 dist 即具备全部能力”描述当前发布方式；支持的环境与待确认部署目标见 [系统上下文](../architecture/system-context.md#运行环境)。
