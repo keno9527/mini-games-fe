@@ -109,6 +109,7 @@ export interface GameSnapshot {
   remaining: number
   combo: number
   message: string
+  challengeStarted: boolean
 }
 
 /** Mobile-only simulation; no DOM, file API or browser storage dependencies. */
@@ -128,6 +129,7 @@ export class MobileGame {
   flash = 0
   combo = 0
   message = '先左右滑动，再点发球'
+  challengeStarted = false
   onSound: (sound: BreakoutSound) => void = () => {}
   onStopSounds: () => void = () => {}
   onSettlement: (lastPlayedLevel: number, score: number) => void = () => {}
@@ -162,6 +164,7 @@ export class MobileGame {
       remaining: this.remaining,
       combo: this.combo,
       message: this.message,
+      challengeStarted: this.challengeStarted,
     }
   }
 
@@ -170,6 +173,7 @@ export class MobileGame {
     this.level = Math.max(0, Math.min(LEVEL_LAYOUTS.length - 1, Math.trunc(level)))
     this.score = 0
     this.lives = 3
+    this.challengeStarted = false
     this.playTicks = 0
     this.paddleX = W / 2
     this.loadStage()
@@ -212,6 +216,7 @@ export class MobileGame {
 
   launch() {
     if (this.status !== 'ready') return
+    this.challengeStarted = true
     const speed = ballSpeed(CONFIG.ballSpeed, this.level, false)
     for (const ball of this.balls) {
       ball.vx = Math.sin(0.25) * speed

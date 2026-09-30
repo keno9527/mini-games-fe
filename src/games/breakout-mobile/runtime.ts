@@ -10,12 +10,13 @@ interface Elements {
   root: HTMLElement
   canvas: HTMLCanvasElement
   stage: HTMLElement
-  pad: HTMLElement
+  controls: HTMLElement
 }
 interface Callbacks {
   update: (snapshot: GameSnapshot) => void
   landscape: (value: boolean) => void
   audioError: (message: string) => void
+  dragged?: () => void
 }
 
 /** Mount once per visit; all global changes and resources have symmetric cleanup. */
@@ -25,7 +26,7 @@ export function mountMobileGame(
   save: MobileSave,
   callbacks: Callbacks,
 ) {
-  const { root, canvas, stage, pad } = elements
+  const { root, canvas, stage, controls } = elements
   const audio = new MobileAudio(save.data.audio, callbacks.audioError)
   const drag = new PaddleDrag()
   let raf: number | undefined
@@ -33,13 +34,14 @@ export function mountMobileGame(
   let previousSnapshot = ''
   let landscape = false
   let sheetOpen = false
+  let learnedDrag = false
   const orientation = window.matchMedia('(orientation: landscape)')
 
   const releaseDrag = (id?: number) => {
     const released = drag.end(id)
     if (released === null) return
-    if (pad.hasPointerCapture(released)) pad.releasePointerCapture(released)
-    pad.classList.remove('is-dragging')
+    if (controls.hasPointerCapture(released)) controls.releasePointerCapture(released)
+    controls.classList.remove('is-dragging')
   }
   const publish = () => {
     const snapshot = game.snapshot()
@@ -48,7 +50,7 @@ export function mountMobileGame(
       previousSnapshot = serialized
       callbacks.update(snapshot)
     }
-    pad.setAttribute('aria-valuenow', String(Math.round((game.paddleX / W) * 100)))
+    controls.setAttribute('aria-valuenow', String(Math.round((game.paddleX / W) * 100)))
   }
   const draw = () => drawGame(canvas, game)
   const frame = (time: number) => {
@@ -119,6 +121,9 @@ export function mountMobileGame(
     const height = Math.max(1, Math.round(size.height * scale))
     canvas.style.width = `${size.width}px`
     canvas.style.height = `${size.height}px`
+    const boardTop = (stage.clientHeight - size.height) / 2
+    root.style.setProperty('--bm-control-top', `${boardTop + size.height / 2}px`)
+    root.style.setProperty('--bm-launch-top', `${boardTop + size.height * 0.38}px`)
     if (canvas.width !== width) canvas.width = width
     if (canvas.height !== height) canvas.height = height
     draw()
@@ -126,6 +131,8 @@ export function mountMobileGame(
   const down = (event: PointerEvent) => {
     if (
       event.button !== 0 ||
+      (event.target instanceof Element &&
+        event.target.closest('button, a, input, select, textarea, dialog, [data-game-action]')) ||
       landscape ||
       sheetOpen ||
       (game.status !== 'ready' && game.status !== 'playing')
@@ -134,19 +141,23 @@ export function mountMobileGame(
     if (
       drag.begin(event.pointerId, event.clientX, game.paddleX, canvas.getBoundingClientRect().width)
     ) {
-      pad.setPointerCapture(event.pointerId)
-      pad.classList.add('is-dragging')
+      controls.setPointerCapture(event.pointerId)
+      controls.classList.add('is-dragging')
     }
   }
   const move = (event: PointerEvent) => {
     const x = drag.move(event.pointerId, event.clientX, game.paddleWidth / 2)
     if (x === null) return
+    if (x !== game.paddleX && !learnedDrag) {
+      learnedDrag = true
+      callbacks.dragged?.()
+    }
     game.moveTo(x)
     refresh()
   }
   const up = (event: PointerEvent) => releaseDrag(event.pointerId)
   const keyboard = (event: KeyboardEvent) => {
-    if (landscape || sheetOpen) return
+    if (landscape || sheetOpen || (game.status !== 'ready' && game.status !== 'playing')) return
     if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
       event.preventDefault()
       const x =
@@ -163,12 +174,12 @@ export function mountMobileGame(
   game.onSound = audio.play
   game.onStopSounds = audio.stopAll
   game.onSettlement = (lastPlayedLevel, bestScore) => save.update({ lastPlayedLevel, bestScore })
-  pad.addEventListener('pointerdown', down)
-  pad.addEventListener('pointermove', move)
-  pad.addEventListener('pointerup', up)
-  pad.addEventListener('pointercancel', up)
-  pad.addEventListener('lostpointercapture', up)
-  pad.addEventListener('keydown', keyboard)
+  controls.addEventListener('pointerdown', down)
+  controls.addEventListener('pointermove', move)
+  controls.addEventListener('pointerup', up)
+  controls.addEventListener('pointercancel', up)
+  controls.addEventListener('lostpointercapture', up)
+  controls.addEventListener('keydown', keyboard)
   window.addEventListener('blur', background)
   window.addEventListener('pagehide', background)
   document.addEventListener('visibilitychange', visibility)
@@ -225,12 +236,12 @@ export function mountMobileGame(
       if (raf !== undefined) cancelAnimationFrame(raf)
       releaseDrag()
       observer.disconnect()
-      pad.removeEventListener('pointerdown', down)
-      pad.removeEventListener('pointermove', move)
-      pad.removeEventListener('pointerup', up)
-      pad.removeEventListener('pointercancel', up)
-      pad.removeEventListener('lostpointercapture', up)
-      pad.removeEventListener('keydown', keyboard)
+      controls.removeEventListener('pointerdown', down)
+      controls.removeEventListener('pointermove', move)
+      controls.removeEventListener('pointerup', up)
+      controls.removeEventListener('pointercancel', up)
+      controls.removeEventListener('lostpointercapture', up)
+      controls.removeEventListener('keydown', keyboard)
       window.removeEventListener('blur', background)
       window.removeEventListener('pagehide', background)
       document.removeEventListener('visibilitychange', visibility)

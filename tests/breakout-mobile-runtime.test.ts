@@ -7,6 +7,10 @@ import { MobileAudio } from '../src/games/breakout-mobile/audio.ts'
 
 class Events extends EventTarget {
   count = 0
+  interactive = false
+  closest() {
+    return this.interactive ? this : null
+  }
   override addEventListener(...args: Parameters<EventTarget['addEventListener']>) {
     this.count++
     super.addEventListener(...args)
@@ -62,6 +66,7 @@ test('mobile lifecycle pauses on background/rotation and restores global layout,
   let nextFrame = 0
   let disconnected = false
   const restore = mockGlobals({
+    Element: Events,
     window: win,
     document: doc,
     requestAnimationFrame: (callback: FrameRequestCallback) => {
@@ -107,35 +112,89 @@ test('mobile lifecycle pauses on background/rotation and restores global layout,
   const save = new MobileSave(() => ({ getItem: () => null, setItem() {} }))
   save.data.audio.enabled = false
   let session: ReturnType<typeof mountMobileGame> | undefined
+  let learned = 0
   try {
     session = mountMobileGame(
       {
         root: { style: { setProperty() {} } } as unknown as HTMLElement,
         stage: { clientWidth: 300, clientHeight: 400 } as HTMLElement,
         canvas: canvas as unknown as HTMLCanvasElement,
-        pad: pad as unknown as HTMLElement,
+        controls: pad as unknown as HTMLElement,
       },
       game,
       save,
-      { update() {}, landscape() {}, audioError() {} },
+      {
+        update() {},
+        landscape() {},
+        audioError() {},
+        dragged() {
+          learned++
+        },
+      },
     )
     assert.match(viewport.content, /viewport-fit=cover/)
     assert.equal(doc.body.style.overflow, 'hidden')
     assert.equal(canvas.width, 600, 'render pixel ratio is capped at two')
+    pad.interactive = true
+    pad.dispatchEvent(
+      Object.assign(new Event('pointerdown'), { button: 0, pointerId: 2, clientX: 100 }),
+    )
+    assert.equal(pointers.size, 0, 'buttons and menu controls never begin a paddle drag')
+    pad.interactive = false
     pad.dispatchEvent(
       Object.assign(new Event('pointerdown'), { button: 0, pointerId: 3, clientX: 100 }),
     )
     assert.equal(pointers.size, 1)
+    assert.equal(game.paddleX, 240, 'touch down never teleports the paddle')
+    assert.equal(game.status, 'ready', 'touch down never launches')
+    pad.dispatchEvent(Object.assign(new Event('pointermove'), { pointerId: 3, clientX: 100 }))
+    assert.equal(learned, 0, 'a stationary touch does not dismiss onboarding')
+    pad.dispatchEvent(
+      Object.assign(new Event('pointerdown'), { button: 0, pointerId: 4, clientX: 180 }),
+    )
+    pad.dispatchEvent(Object.assign(new Event('pointermove'), { pointerId: 4, clientX: 280 }))
+    assert.equal(game.paddleX, 240, 'a second finger cannot take control')
     pad.dispatchEvent(Object.assign(new Event('pointermove'), { pointerId: 3, clientX: 130 }))
     assert.equal(game.paddleX, 288)
+    assert.equal(learned, 1)
+    assert.equal(game.status, 'ready', 'dragging cannot launch')
     pad.dispatchEvent(Object.assign(new Event('pointercancel'), { pointerId: 3 }))
     assert.equal(pointers.size, 0)
+    pad.dispatchEvent(Object.assign(new Event('pointermove'), { pointerId: 3, clientX: 150 }))
+    assert.equal(game.paddleX, 288, 'cancelled pointers cannot leave a residual drag')
+    session.pause()
+    session.settings(true)
+    session.settings(false)
+    session.resume()
+    assert.equal(
+      game.status,
+      'ready',
+      'closing settings and continuing a ready game never launches',
+    )
     session.launch()
+    pad.dispatchEvent(
+      Object.assign(new Event('pointerdown'), { button: 0, pointerId: 5, clientX: 100 }),
+    )
+    pad.dispatchEvent(Object.assign(new Event('pointerup'), { pointerId: 5 }))
+    assert.equal(game.status, 'playing', 'lifting a finger does not pause')
+    pad.dispatchEvent(
+      Object.assign(new Event('pointerdown'), { button: 0, pointerId: 6, clientX: 100 }),
+    )
+    pad.dispatchEvent(Object.assign(new Event('lostpointercapture'), { pointerId: 6 }))
+    assert.equal(pointers.size, 0)
     assert.equal(frames.size, 1)
     doc.hidden = true
     doc.dispatchEvent(new Event('visibilitychange'))
     assert.equal(game.status, 'paused')
     assert.equal(frames.size, 0)
+    const frozen = JSON.stringify(game.snapshot())
+    pad.dispatchEvent(
+      Object.assign(new Event('pointerdown'), { button: 0, pointerId: 7, clientX: 100 }),
+    )
+    pad.dispatchEvent(Object.assign(new Event('keydown'), { key: 'ArrowRight' }))
+    game.frame(90000)
+    assert.equal(pointers.size, 0, 'paused input cannot capture pointers')
+    assert.equal(JSON.stringify(game.snapshot()), frozen)
     doc.hidden = false
     doc.dispatchEvent(new Event('visibilitychange'))
     assert.equal(game.status, 'paused', 'foreground never resumes automatically')
@@ -152,7 +211,9 @@ test('mobile lifecycle pauses on background/rotation and restores global layout,
     session.resume()
     assert.equal(game.status, 'paused', 'a settings sheet gates gameplay')
     session.settings(false)
+    assert.equal(game.status, 'paused', 'returning from settings stays paused')
     session.resume()
+    assert.equal(game.status, 'playing', 'continuing resumes immediately with no countdown')
     assert.equal(frames.size, 1)
     session.destroy()
     session = undefined

@@ -95,6 +95,30 @@ test('pause freezes physics and effects; repeated pause preserves ready/playing 
   )
 })
 
+test('challenge confirmation eligibility survives pauses and level transitions but resets on retry', () => {
+  const game = new MobileGame()
+  assert.equal(game.snapshot().challengeStarted, false)
+  game.pause()
+  game.resume()
+  assert.equal(game.snapshot().challengeStarted, false)
+  game.launch()
+  assert.equal(game.snapshot().challengeStarted, true)
+  game.pause()
+  game.resume()
+  game.bricks = []
+  game.tick()
+  assert.equal(game.status, 'ready')
+  assert.equal(
+    game.snapshot().challengeStarted,
+    true,
+    'a new level is still part of the same challenge',
+  )
+  game.reset()
+  assert.equal(game.snapshot().challengeStarted, false)
+  assert.equal(game.score, 0)
+  assert.equal(game.lives, 3)
+})
+
 test('30, 60 and 120 Hz preserve mobile physics speed', () => {
   const samples: string[] = []
   for (const hz of [30, 60, 120]) {
