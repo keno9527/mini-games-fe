@@ -10,10 +10,14 @@ import type { Game } from '@/types'
 
 export default function GameDetail() {
   const { id } = useParams<{ id: string }>()
-  const { currentUser } = useUserStore()
+  const { currentUser, restoreStatus, restoreLastPlayer } = useUserStore()
   const [game, setGame] = useState<Game | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    void restoreLastPlayer()
+  }, [restoreLastPlayer])
 
   useEffect(() => {
     if (!id) return
@@ -23,7 +27,7 @@ export default function GameDetail() {
       .finally(() => setLoading(false))
   }, [id])
 
-  if (loading)
+  if (loading || restoreStatus !== 'ready')
     return (
       <main className="game-placeholder" role="status">
         正在准备游戏…
@@ -53,9 +57,11 @@ export default function GameDetail() {
             </div>
           }
         >
-          {currentUser && (
-            <GameComponent key={`${id}:${currentUser.id}`} userId={currentUser.id} gameId={id} />
-          )}
+          <GameComponent
+            key={`${id}:${currentUser?.id ?? 'guest'}`}
+            userId={currentUser?.id}
+            gameId={id}
+          />
         </Suspense>
       ) : (
         <div className="game-placeholder">游戏即将开放</div>

@@ -41,6 +41,7 @@ function App() {
         />
         <Route element={<PlazaLayout />}>
           <Route path="/" element={<Home />} />
+          <Route path="/game/:id" element={<GameDetail />} />
           <Route
             element={
               <PlayerGate>
@@ -48,7 +49,6 @@ function App() {
               </PlayerGate>
             }
           >
-            <Route path="/game/:id" element={<GameDetail />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/gamepad" element={<GamepadTest />} />
           </Route>

@@ -24,5 +24,12 @@ test('progress is staged per player and game, with deduplicated unlocks', () => 
   assert.deepEqual(getGameProgression('gravity-graveyard', 'gravity-b'), empty)
   assert.deepEqual(getGameProgression('another-game', 'gravity-a'), empty)
   assert.deepEqual(getGameProgression('gravity-graveyard'), empty)
-  assert.throws(() => saveGameProgression('gravity-graveyard', progress), /选择/)
+  saveGameProgression('gravity-graveyard', progress)
+  assert.deepEqual(getGameProgression('gravity-graveyard'), {
+    ...progress,
+    liturgies: ['twin-choir'],
+  })
+  assert.deepEqual(getGameProgression('gravity-graveyard', 'gravity-b'), empty)
+  assert.deepEqual(getGameProgression('another-game'), empty)
+  assert.throws(() => saveGameProgression('gravity-graveyard', progress, 'missing-player'), /选择/)
 })

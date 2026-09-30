@@ -238,7 +238,9 @@ test('completion unlocks sequentially, preserves gems and best moves, and isolat
   assert.deepEqual(readProgress('snake', 'snake-b'), {})
   assert.deepEqual(readProgress('snake'), {})
   assert.equal(readPlayerProgress('snake', 'snake-a').classicScore, 100)
-  assert.throws(() => saveProgress('snake', undefined, replay), /选择/)
+  saveProgress('snake', undefined, replay)
+  assert.deepEqual(readProgress('snake'), replay)
+  assert.deepEqual(readProgress('snake', 'snake-b'), {})
   let all = replay
   for (const level of levels) all = recordCompletion(all, level.id, 50, false)
   assert.equal(unlockedLevel(all), 8)

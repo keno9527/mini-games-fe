@@ -12,6 +12,8 @@ import {
 const BASE = '/__player-data/players'
 const BACKUP_KEY = 'mini-games-pending-settlements-v1'
 const files = new Map<string, PlayerFile>()
+// Guest unlocks survive route changes, but are not written to player files.
+const guestProgress = new Map<string, ProgressData>()
 const listeners = new Set<() => void>()
 let state = { saving: 0, pending: 0, error: '', saved: false }
 let queue = Promise.resolve()
@@ -86,7 +88,9 @@ export async function loadPlayerFile(id: string): Promise<PlayerFile> {
   return files.get(id)!
 }
 export function readPlayerProgress(gameId: string, userId?: string): ProgressData {
-  return structuredClone(userId ? (files.get(userId)?.games[gameId]?.progress ?? {}) : {})
+  return structuredClone(
+    userId ? (files.get(userId)?.games[gameId]?.progress ?? {}) : (guestProgress.get(gameId) ?? {}),
+  )
 }
 /** Stage only in memory. createRecord commits this snapshot when the round settles. */
 export function stageProgress(
@@ -94,6 +98,13 @@ export function stageProgress(
   userId: string | undefined,
   progress: ProgressData,
 ): void {
+  if (userId === undefined && validId(gameId)) {
+    guestProgress.set(
+      gameId,
+      mergeProgress(guestProgress.get(gameId) ?? {}, parseProgress(progress)),
+    )
+    return
+  }
   const file = userId ? files.get(userId) : undefined
   if (!file || !validId(gameId)) throw new Error('请先选择并加载玩家档案')
   const game = file.games[gameId] ?? { progress: {}, records: [] }

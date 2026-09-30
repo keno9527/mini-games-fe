@@ -71,6 +71,7 @@ export default function Home() {
             全部游戏
             <span className="library-count">{loading ? '—' : games.length} 款游戏</span>
           </h1>
+          <p className="mb-4 text-sm text-slate-600">无需登录，点击游戏即可游客试玩。</p>
           {loading && (
             <>
               <span role="status" className="sr-only">
